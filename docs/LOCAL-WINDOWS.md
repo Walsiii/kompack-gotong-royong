@@ -1,64 +1,52 @@
-# Kompack lokal di Windows
+# Kompack Windows — sekali klik
 
-Folder tujuan: `G:\Hackathon\Kompack!`. Aplikasi dan server data berjalan di PC ini; peta geografis dan pencarian jalur memakai koneksi internet ke OpenFreeMap/OpenStreetMap dan Valhalla.
+Unduh [Kompack-Windows.zip](../release/Kompack-Windows.zip). Paket menyertakan runtime Node.js Windows x64, aplikasi yang sudah dibuild, server data bersama, dan setup HTTPS. Tidak memerlukan pemasangan Git/Node atau menjalankan npm.
 
-## Pasang dan buka
+1. Ekstrak seluruh ZIP ke folder biasa.
+2. Klik **Install-Kompack.cmd**. Paket dipasang ke **G:\Hackathon\Kompack!**. Jika folder tersebut berisi proyek lama, installer mempertahankannya dan menggunakan subfolder **Kompack-Local**.
+3. Browser terbuka ke **https://localhost:5173** setelah HTTPS, halaman aplikasi, dan berkas JavaScript berhasil diperiksa.
 
-Pasang Git for Windows dan Node.js 24 LTS jika belum tersedia. Jalankan di **PowerShell Windows**:
+Untuk membuka lagi, klik **Start-Kompack.cmd** di folder pemasangan. Biarkan terminal terbuka selama digunakan; tutup dengan Ctrl+C. Jalankan aplikasi melalui launcher agar halaman dilayani server bersama API realtime.
 
-```powershell
-$installer = Join-Path $env:TEMP 'Install-Kompack.ps1'
-Invoke-WebRequest 'https://raw.githubusercontent.com/Walsiii/gotong-royong-/refs/heads/claude/hackathon-multiplatform-app-qhsbtv/scripts/Install-Kompack.ps1' -UseBasicParsing -OutFile $installer
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer
-```
+## HTTPS otomatis
 
-Installer mengambil branch aplikasi, memasang dependensi, menjalankan tes/build, lalu membuka `http://localhost:5173` setelah server siap. Jika folder tujuan sudah berisi file, origin berbeda, atau ada perubahan lokal, installer berhenti dan mempertahankan file tersebut. Perubahan kebijakan eksekusi hanya berlaku untuk proses PowerShell itu.
+Launcher membuat CA lokal Kompack pada akun Windows saat ini, memasang sertifikat publiknya ke trust store akun itu, lalu membuat sertifikat server untuk localhost dan IP jaringan PC. Kunci root CA tidak diekspor. Kunci sertifikat server disimpan dalam PFX di folder `.kompack/tls` yang dibatasi untuk akun Windows tersebut. Root dan kunci dibuat di PC pemasangan; ZIP tidak membawa kunci atau CA milik mesin pembuat paket.
 
-Berikutnya, klik dua kali **Start-Kompack.cmd** di folder tersebut. Biarkan jendela terminal terbuka selama aplikasi digunakan. Tutup dengan Ctrl+C. Untuk port lain:
+Bila IP PC berubah, launcher memperbarui sertifikat saat dibuka lagi. CA tetap sama, sehingga HP yang sudah mempercayainya tidak perlu memasangnya ulang. Launcher memeriksa HTTPS dengan verifikasi sertifikat aktif.
 
-```powershell
-& 'G:\Hackathon\Kompack!\scripts\Start-Kompack.ps1' -Port 5174
-```
+## Buka di HP
 
-## Peta, GPS, dan data realtime
+Hubungkan HP dan PC ke Wi-Fi yang sama. Jika Windows menampilkan dialog firewall Node, izinkan pada jaringan **Private** yang digunakan bersama.
 
-- Daftar pertama di browser PC pemilik. Profil ini mendapat tombol akun demo Ketua RT. Pertahankan profil browser ini agar akses pemilik tetap tersedia.
-- Perangkat/browser lain mendaftar sebagai warga dengan ID berbeda, mengikuti wilayah yang dibuat pemilik pertama.
-- Laporan, misi, peserta, bukti, keputusan RT, hadiah, dan poin tersinkron melalui server lokal tanpa reload. Server menerapkan aturan misi, batas kuota, kepemilikan bukti, segel, dan penilaian bukti; browser tidak mengirim keseluruhan database untuk menimpa data bersama.
-- Untuk GPS bergerak, pilih pendaftaran dengan lokasi perangkat atau matikan **Aku → Mode uji**, lalu izinkan lokasi. Klik **Mulai navigasi** pada misi. Posisi dan progres rute mengikuti pembaruan GPS; rute dicari ulang ketika pengguna keluar jalur. Ketepatan lokasi mengikuti kemampuan perangkat. Laptop dapat lebih kasar daripada GPS ponsel.
-- Peta jalan memakai data geografis penyedia ubin. Pembaruan ruas jalan mengikuti jadwal penyedia. Marker misi/laporan diperbarui segera ketika data server berubah.
-- Status sambungan ada di **Aku**. Saat sambungan putus, perubahan tidak diklaim berhasil. Sambungan event mencoba pulih dan memuat keadaan terbaru.
+Terminal PC menampilkan dua alamat:
 
-Untuk mencoba dua akun di satu PC, gunakan dua profil browser atau browser biasa + incognito. Tab di profil browser yang sama memakai identitas yang sama.
+- **http://IP-PC:5172/** — halaman panduan sertifikat HP.
+- **https://IP-PC:5173/** — aplikasi Kompack.
 
-## Perangkat lain di Wi-Fi yang sama
+Buka alamat panduan terlebih dahulu, unduh sertifikat, lalu pasang **sekali** melalui pengaturan HP. Halaman tersebut menyediakan langkah Android/iPhone dan sidik SHA-256 yang dapat dibandingkan dengan terminal PC. Setelah itu buka tautan HTTPS di halaman yang sama.
 
-```powershell
-& 'G:\Hackathon\Kompack!\scripts\Start-Kompack.ps1' -Lan
-```
+Pemasangan sertifikat HP memerlukan persetujuan pemilik perangkat melalui Android/iOS; aplikasi tidak dapat memberikan persetujuan tersebut sendiri. Setelah sertifikat dipercaya, browser dapat meminta izin kamera dan GPS pada origin HTTPS Kompack.
 
-Launcher menampilkan alamat IP PC. Buka alamat itu di perangkat lain. Jika Windows meminta akses firewall, izinkan untuk jaringan **Private** yang digunakan bersama. Mode ini ditujukan untuk percobaan pada jaringan tepercaya; sesi pemilik lokal belum menggantikan sistem akun produksi untuk akses publik.
+## Data dan realtime
 
-Sinkronisasi data bekerja melalui HTTP LAN. Kamera dan GPS browser HP memerlukan **HTTPS dengan sertifikat yang dipercaya perangkat**, sedangkan `localhost` pada PC sudah dianggap konteks aman. Server mendukung sertifikat lokal milikmu:
+Perangkat pertama yang mendaftar mendapat akses akun demo Ketua RT. Daftarkan perangkat pemilik terlebih dahulu dan pertahankan profil browsernya. Perangkat berikutnya mendapat identitas warga berbeda di wilayah yang sama. Dua akun di satu PC dapat dicoba memakai profil browser terpisah atau incognito.
 
-```powershell
-$env:KOMPACK_TLS_CERT = 'G:\Hackathon\certs\kompack.pem'
-$env:KOMPACK_TLS_KEY = 'G:\Hackathon\certs\kompack-key.pem'
-& 'G:\Hackathon\Kompack!\scripts\Start-Kompack.ps1' -Lan
-```
+Laporan, misi, peserta, bukti, keputusan RT, hadiah, dan poin tersinkron melalui server tanpa reload. Server memproses perubahan secara berurutan, menjalankan aturan kuota/kepemilikan dan penilaian bukti, serta mencegah poin ganda. Data awal berisi contoh warga/misi.
 
-Gunakan sertifikat yang mencakup localhost dan alamat IP PC, serta pasang CA penerbitnya pada perangkat pengujian. Launcher tidak mematikan verifikasi sertifikat. Untuk HTTP LAN, gunakan mode uji untuk mencoba alur foto/lokasi.
+Untuk GPS bergerak, pilih **Pakai lokasiku (GPS)** ketika mendaftar, atau matikan **Aku → Mode uji**. Izinkan lokasi dan tekan **Mulai navigasi** pada misi. Ketepatan lokasi mengikuti perangkat; laptop dapat lebih kasar daripada ponsel. Ubin geografis dan rute jalan kaki memakai koneksi internet ke OpenFreeMap/OpenStreetMap dan Valhalla.
 
-## Penyimpanan dan pengujian
+Data bersama tersimpan di **.kompack/world.json** pada PC. Installer mempertahankan `.kompack` saat update. Untuk mencadangkan, hentikan server dan salin folder `.kompack`. Mode ini ditujukan untuk percobaan pada Wi-Fi tepercaya; sesi pemilik lokal belum menggantikan autentikasi produksi untuk akses publik.
 
-Data server ada di **.kompack/world.json**, termasuk foto dan sesi anggota. Folder `.kompack` diabaikan Git dan dipertahankan saat update. Untuk mencadangkan, hentikan server dan salin file tersebut. Server menyimpan perubahan secara atomik. Menghapus profil browser tidak menghapus data bersama di PC.
+## Pengujian paket
 
-Saat profil standalone lama bergabung, snapshot lamanya dicadangkan ke IndexedDB dengan nama `kompack-offline-backup-*`; bukti lama tidak ditulis ulang. Semua anggota server memakai data bersama milik server. Versi standalone masih tersedia lewat `npm run dev` pada origin browser yang belum terhubung ke server lokal.
+`npm run build:portable` membangun web, membundel aturan server tanpa Vite saat runtime, menyertakan Node Windows, dan menghasilkan ZIP dengan checksum berkas. Distribusi Node untuk build lintas platform diverifikasi terhadap SHA-256 resmi Node.js.
+
+Workflow **windows-portable** menguji installer dan launcher pada Windows, jalur dengan spasi/tanda seru dan drive G, HTTPS tepercaya, pemuatan JavaScript, registrasi, API kamera/GPS, serta pengiriman laporan melalui Microsoft Edge. Kamera dan GPS pada pengujian browser memakai perangkat simulasi Chromium, bukan klaim pengujian hardware HP. Hasil workflow dicatat pada Git notes `kompack-windows` untuk commit sumber dan artifact workflow.
+
+Source checkout tetap dapat digunakan dengan Node.js 24 LTS:
 
 ```powershell
-npm run test:routing
-npm run test:realtime
+npm ci
 npm run build
+.\scripts\Start-Kompack.ps1 -Lan
 ```
-
-Tes realtime menjalankan dua identitas, event perubahan, pembatasan RT, percobaan pemalsuan jarak, perebutan slot terakhir, segel bukti, pemeriksaan server, pencegahan poin ganda, dan pemulihan setelah restart. Walkthrough browser diuji dengan profil terpisah di Linux; launcher Windows belum dieksekusi pada PC Windows pengguna.

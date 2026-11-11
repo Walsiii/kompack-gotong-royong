@@ -4,16 +4,23 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createServer as createViteServer } from 'vite'
+import { productionFiles } from './static.mjs'
 
 export async function startLocal({ port = Number(process.env.PORT || 5173), host = '127.0.0.1', directory = process.env.KOMPACK_DATA_DIR || '.kompack' } = {}) {
   const root = fileURLToPath(new URL('../', import.meta.url))
   const file = path.resolve(root, directory, 'world.json')
   await mkdir(path.dirname(file), { recursive: true })
-  const tls = process.env.KOMPACK_TLS_CERT && process.env.KOMPACK_TLS_KEY
+  const tls = process.env.KOMPACK_TLS_PFX
+    ? { pfx: await readFile(process.env.KOMPACK_TLS_PFX), passphrase: process.env.KOMPACK_TLS_PASSWORD }
+    : process.env.KOMPACK_TLS_CERT && process.env.KOMPACK_TLS_KEY
     ? { cert: await readFile(process.env.KOMPACK_TLS_CERT), key: await readFile(process.env.KOMPACK_TLS_KEY) } : null
   const server = tls ? https.createServer(tls) : http.createServer()
-  const vite = await createViteServer({ root, cacheDir: path.resolve(path.dirname(file), 'vite-cache'), server: { middlewareMode: true, hmr: { server }, watch: null }, appType: 'spa' })
+  const production = process.env.KOMPACK_PRODUCTION === '1'
+  const vite = production ? {
+    ssrLoadModule: () => import('../dist/server/domain.mjs'),
+    middlewares: await productionFiles(path.join(root,'dist')),
+    close: async () => {},
+  } : await (await import('vite')).createServer({ root, cacheDir: path.resolve(path.dirname(file), 'vite-cache'), server: { middlewareMode: true, ws: { server }, watch: null }, appType: 'spa' })
   const { createWorldActions, EMPTY, ME } = await vite.ssrLoadModule('/src/lib/world.ts')
   const { LEADER, MY_GROUP } = await vite.ssrLoadModule('/src/lib/seed.ts')
   const { validateFix, assessSubmission, verifySeal } = await vite.ssrLoadModule('/src/lib/integrity.ts')
@@ -62,7 +69,8 @@ export async function startLocal({ port = Number(process.env.PORT || 5173), host
     for await (const chunk of req) { size += chunk.length; if (size > 16_000_000) reject('Data terlalu besar.'); value += chunk }
     return JSON.parse(value)
   }
-  const readSession = req => sessions[(req.headers.cookie || '').split(';').map(x => x.trim()).find(x => x.startsWith('kompack-session='))?.slice(16)]
+  const sessionToken = req => (req.headers.cookie || '').split(';').map(x => x.trim()).find(x => x.startsWith('kompack-session='))?.slice(16)
+  const readSession = req => sessions[sessionToken(req)]
   const cookie = token => `kompack-session=${token}; HttpOnly; SameSite=Strict; Path=/api; Max-Age=31536000${tls ? '; Secure' : ''}`
   async function command(input, session) {
     const { action, args: a } = input
@@ -131,7 +139,10 @@ export async function startLocal({ port = Number(process.env.PORT || 5173), host
     try {
       if (req.method==='GET' && url.pathname==='/api/config') return json(res,200,{service:'kompack-local'})
       let session = readSession(req)
-      if (req.method==='GET' && url.pathname==='/api/session') return json(res,200,session?snapshot(session):{meId:null})
+      if (req.method==='GET' && url.pathname==='/api/session') {
+        if (tls && session) res.setHeader('Set-Cookie',cookie(sessionToken(req)))
+        return json(res,200,session?snapshot(session):{meId:null})
+      }
       if (req.method==='POST' && url.pathname==='/api/register') {
         if (session) return json(res,200,snapshot(session))
         const input = await body(req), p=input.profile

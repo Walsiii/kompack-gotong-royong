@@ -20,3 +20,5 @@ android/.idea
 # Tauri (Rust)
 src-tauri/target
 src-tauri/gen
+
+.portable-build/

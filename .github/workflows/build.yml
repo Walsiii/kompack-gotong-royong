@@ -4,6 +4,49 @@ on:
   workflow_dispatch:
 
 jobs:
+  windows-portable:
+    if: github.ref == 'refs/heads/claude/hackathon-multiplatform-app-qhsbtv'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run build:portable
+      - name: Test native Windows launcher, trusted HTTPS and camera/GPS browser APIs
+        shell: powershell
+        run: ./tests/windows-launcher.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kompack-windows-portable
+          path: |
+            release/Kompack-Windows.zip
+            ${{ runner.temp }}/kompack-windows-browser-report.json
+            ${{ runner.temp }}/kompack-windows-error.txt
+      - name: Record Windows validation against source commit
+        if: always()
+        shell: powershell
+        env:
+          VALIDATION_STATUS: ${{ job.status }}
+        run: |
+          $reportPath = Join-Path $env:RUNNER_TEMP 'kompack-windows-browser-report.json'
+          $result = @{ sourceSha=$env:GITHUB_SHA; status=$env:VALIDATION_STATUS; runner='windows-latest'; runUrl="https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID" }
+          if (Test-Path -LiteralPath $reportPath) { $result.browser = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json }
+          $errorPath = Join-Path $env:RUNNER_TEMP 'kompack-windows-error.txt'
+          if (Test-Path -LiteralPath $errorPath) { $result.error = Get-Content -Raw -LiteralPath $errorPath }
+          $note = Join-Path $env:RUNNER_TEMP 'kompack-validation.json'
+          [IO.File]::WriteAllText($note, ($result | ConvertTo-Json -Depth 8), [Text.Encoding]::UTF8)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          $existing = git ls-remote origin refs/notes/kompack-windows
+          if ($existing) { git fetch origin refs/notes/kompack-windows:refs/notes/kompack-windows }
+          git notes --ref=kompack-windows add -f --file $note $env:GITHUB_SHA
+          git push origin refs/notes/kompack-windows
+
   web-apk:
     runs-on: ubuntu-latest
     steps:

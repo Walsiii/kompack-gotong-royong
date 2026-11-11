@@ -10,7 +10,7 @@ Tampilan bawaan hitam-putih dengan Public Sans; aksen Hutan/Senja bisa dipilih d
 
 ## Cara mencoba
 
-**Windows lokal + sinkron antar perangkat:** gunakan [panduan pemasangan ke G:\Hackathon\Kompack!](docs/LOCAL-WINDOWS.md). Installer membuka aplikasi beserta server data lokal; peluncuran berikutnya cukup klik **Start-Kompack.cmd**. Pilih `npm run local` jika menjalankan manual. `npm run local:lan` membuka akses perangkat pada jaringan tepercaya yang sama.
+**Windows lokal, sekali klik:** unduh [Kompack-Windows.zip](release/Kompack-Windows.zip), ekstrak, lalu klik **Install-Kompack.cmd**. Runtime Node dan setup HTTPS sudah disertakan. Paket memasang aplikasi ke G:\Hackathon\Kompack! dan membuka browser setelah server siap. [Panduan HP dan HTTPS](docs/LOCAL-WINDOWS.md).
 
 | Platform | Cara |
 |---|---|
