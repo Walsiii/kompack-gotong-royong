@@ -1,0 +1,21 @@
+node_modules
+dist
+dev-dist
+*.local
+.DS_Store
+
+# Android / Capacitor
+android/.gradle
+android/build
+android/app/build
+android/local.properties
+android/capacitor-cordova-android-plugins
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/.idea
+*.iml
+
+# Tauri (Rust)
+src-tauri/target
+src-tauri/gen

@@ -1,0 +1,20 @@
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { Capacitor } from '@capacitor/core'
+import '@fontsource-variable/archivo/wdth.css'
+import '@fontsource-variable/onest/index.css'
+import '@fontsource/martian-mono/400.css'
+import '@fontsource/martian-mono/600.css'
+import './styles.css'
+import App from './App'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+// PWA (offline + bisa dipasang) hanya untuk versi web; di dalam APK aset sudah ikut terpasang.
+if (!Capacitor.isNativePlatform() && import.meta.env.PROD) {
+  void import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }))
+}
