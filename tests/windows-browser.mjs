@@ -45,7 +45,7 @@ try {
   await page.getByRole('button',{name:/^Kirim ke grup/}).click()
   await page.waitForURL(/grup/)
   assert.deepEqual(errors,[])
-  const report={sourceSha:process.env.GITHUB_SHA,platform:process.platform,node:process.version,https:tls,ignoreHTTPSErrors:false,secureContext:true,cameraStream:true,geolocation:true,registration:true,appCamera:true,reportSubmitted:true,deviceFixtures:'Chromium simulated camera and geolocation; no physical device claimed',project:root,errors}
+  const report={sourceSha:process.env.GITHUB_SHA,packageSha256:process.env.KOMPACK_PACKAGE_SHA256,platform:process.platform,node:process.version,https:tls,ignoreHTTPSErrors:false,secureContext:true,cameraStream:true,geolocation:true,registration:true,appCamera:true,reportSubmitted:true,deviceFixtures:'Chromium simulated camera and geolocation; no physical device claimed',project:root,errors}
   await writeFile(path.join(root,'.kompack','windows-browser-report.json'),JSON.stringify(report,null,2))
   console.log(JSON.stringify(report))
 } finally {if(browser)await browser.close();await app.close()}

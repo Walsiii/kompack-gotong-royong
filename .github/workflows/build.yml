@@ -15,7 +15,6 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci
-      - run: npm run build:portable
       - name: Test native Windows launcher, trusted HTTPS and camera/GPS browser APIs
         shell: powershell
         run: ./tests/windows-launcher.ps1
