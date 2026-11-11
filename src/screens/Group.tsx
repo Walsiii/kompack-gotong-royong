@@ -392,9 +392,9 @@ export function Group() {
         <Button
           full
           className="mt-3"
-          onClick={() => {
+          onClick={async () => {
             if (!me) return
-            const r = broadcast(groupId, me.id, callText)
+            const r = await broadcast(groupId, me.id, callText)
             if (!r.ok) return toast(r.error, 'warn')
             setCalling(false)
             navigator.vibrate?.([60, 80, 60, 80, 120])

@@ -10,6 +10,8 @@ Tampilan bawaan hitam-putih dengan Public Sans; aksen Hutan/Senja bisa dipilih d
 
 ## Cara mencoba
 
+**Windows lokal + sinkron antar perangkat:** gunakan [panduan pemasangan ke G:\Hackathon\Kompack!](docs/LOCAL-WINDOWS.md). Installer membuka aplikasi beserta server data lokal; peluncuran berikutnya cukup klik **Start-Kompack.cmd**. Pilih `npm run local` jika menjalankan manual. `npm run local:lan` membuka akses perangkat pada jaringan tepercaya yang sama.
+
 | Platform | Cara |
 |---|---|
 | **Android** | Unduh artifact `kompack-apk` dari workflow Build terbaru, atau jalankan `npm run android:apk`. APK dalam `release/` adalah build sebelumnya. |
@@ -57,7 +59,9 @@ Validasi: `npm run test:routing` menguji parser rute, pembatalan/timeout, dan ku
 
 Aturannya ada di `src/lib/integrity.ts` dan `src/lib/store.ts`.
 
-**Batasan purwarupa:** data masih tersimpan di perangkat (IndexedDB), warga lain adalah data contoh, dan pemeriksaan berjalan di klien. Untuk produksi, fungsi di `integrity.ts` perlu dijalankan ulang di server (Supabase/Firebase) supaya klien yang dimodifikasi tidak bisa memberi poin sendiri.
+**Mode lokal bersama:** server PC menyimpan data di `.kompack/world.json`, menjalankan aturan misi dan pemeriksaan bukti, serta mengirim perubahan ke browser anggota lewat Server-Sent Events. Perangkat pertama menjadi pemilik akun demo RT, anggota berikutnya memakai ID warga berbeda. Kuota dan perubahan data diproses berurutan, sehingga slot dan poin tidak dihitung dua kali. Data awal tetap berisi warga/misi contoh.
+
+**Mode standalone:** `npm run dev` tanpa server lokal tetap memakai IndexedDB dan sinkron antartab browser yang sama. Untuk penggunaan publik, mode server lokal perlu dilengkapi autentikasi akun produksi dan pemeriksaan provenance foto/GPS di luar input klien.
 
 ## Teknologi
 

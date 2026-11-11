@@ -126,8 +126,8 @@ export function Territory() {
                 small
                 className="ml-auto"
                 disabled={!!problem}
-                onClick={() => {
-                  const r = save(group.id, ring)
+                onClick={async () => {
+                  const r = await save(group.id, ring)
                   if (!r.ok) return toast(r.error, 'warn')
                   toast(`Wilayah ${group.name} disimpan.`)
                   nav(-1)

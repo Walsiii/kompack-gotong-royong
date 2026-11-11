@@ -6,6 +6,7 @@
  * memakai backend — perangkat tidak boleh jadi satu-satunya penentu poin.
  */
 import { RULES } from './catalog'
+import { sha256 as portableSHA256 } from '@noble/hashes/sha2.js'
 import { distM, fmtDist } from './geo'
 import type { Check, CheckStatus, Evidence, Fix, Person, Misi, Submission } from './types'
 
@@ -68,7 +69,11 @@ async function sha256(text: string): Promise<string> {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
     return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('')
   }
-  // cadangan bila halaman tidak berjalan di konteks aman (http di jaringan lokal)
+  return Array.from(portableSHA256(new TextEncoder().encode(text)), b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// Read old offline demo seals without rewriting previously captured evidence.
+function legacyHash(text: string): string {
   let h1 = 0x811c9dc5
   let h2 = 0x01000193
   for (let i = 0; i < text.length; i++) {
@@ -87,6 +92,10 @@ export async function sealEvidence(e: Omit<Evidence, 'seal'>, userId: string, re
 
 export async function verifySeal(e: Evidence, userId: string, ref: string): Promise<boolean> {
   const { seal, ...rest } = e
+  if (seal.startsWith('fnv')) {
+    const imgHash = legacyHash(rest.img)
+    return legacyHash([userId, ref, rest.at, rest.lat.toFixed(6), rest.lng.toFixed(6), Math.round(rest.acc), rest.hash, rest.sample ? 1 : 0, rest.simulated ? 1 : 0, imgHash].join('|')) === seal
+  }
   return (await sealEvidence(rest, userId, ref)) === seal
 }
 

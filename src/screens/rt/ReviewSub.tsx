@@ -66,9 +66,9 @@ export function ReviewSub() {
   const open = sub.status === 'pending' && !verdict
   const self = sub.userId === me.id
 
-  const decide = (approve: boolean) => {
+  const decide = async (approve: boolean) => {
     setRejecting(false)
-    const r = review(sub.id, me.id, approve, approve ? undefined : custom.trim() || reason)
+    const r = await review(sub.id, me.id, approve, approve ? undefined : custom.trim() || reason)
     if (!r.ok) {
       toast(r.error, 'warn')
       return

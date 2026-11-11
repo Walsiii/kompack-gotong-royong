@@ -100,8 +100,8 @@ export function ReviewReport() {
               key={r}
               type="button"
               className="rounded-xl bg-paper px-3.5 py-3 text-left font-medium hover:bg-surface"
-              onClick={() => {
-                const res = dismiss(post.id, me.id, r)
+              onClick={async () => {
+                const res = await dismiss(post.id, me.id, r)
                 setAsk(false)
                 if (!res.ok) toast(res.error, 'warn')
                 else {

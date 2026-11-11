@@ -4,8 +4,9 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Celebration } from './components/Celebration'
 import { Shell } from './components/Shell'
 import { Logo } from './components/art'
-import { ToastHost } from './components/ui'
+import { ToastHost, toast } from './components/ui'
 import { useGeoWatcher } from './lib/location'
+import { connectLive, useLive } from './lib/live'
 import { useHydrated, useIsRT, useStore } from './lib/store'
 import { Group } from './screens/Group'
 import { Leaderboard } from './screens/Leaderboard'
@@ -59,7 +60,11 @@ export default function App() {
   const hydrated = useHydrated()
   const registered = useStore((s) => s.meId !== null)
   const [minTime, setMinTime] = useState(false)
+  const liveReady = useLive(s => s.ready)
+  const liveError = useLive(s => s.error)
   useGeoWatcher()
+  useEffect(() => { if (hydrated) void connectLive(useStore) }, [hydrated])
+  useEffect(() => { if (liveError) toast(liveError, 'warn') }, [liveError])
 
   useEffect(() => {
     const t = setTimeout(() => setMinTime(true), 900)
@@ -67,14 +72,14 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!hydrated) return
+    if (!hydrated || !liveReady || !registered) return
     const roll = () => useStore.getState().rollDemo()
     roll()
     const id = setInterval(roll, 60000)
     return () => clearInterval(id)
-  }, [hydrated])
+  }, [hydrated, liveReady, registered])
 
-  const ready = hydrated && minTime
+  const ready = hydrated && liveReady && minTime
   return (
     <MotionConfig reducedMotion="user"><HashRouter>
       {ready && (registered ? <Screens /> : <Onboarding />)}

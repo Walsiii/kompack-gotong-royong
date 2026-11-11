@@ -50,9 +50,9 @@ export function Report() {
   if (!photo) problems.push('Ambil foto di lokasi.')
   if (text.trim().length < 10) problems.push('Ceritakan masalahnya (minimal 10 huruf).')
 
-  const send = () => {
+  const send = async () => {
     if (!photo || problems.length) return
-    const r = createReport({ authorId: me.id, kind, category, text, place, photo })
+    const r = await createReport({ authorId: me.id, kind, category, text, place, photo })
     if (!r.ok) {
       toast(r.error, 'warn')
       return

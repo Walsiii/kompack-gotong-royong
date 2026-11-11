@@ -6,7 +6,7 @@ import { CATS } from '../lib/catalog'
 import { circleRing, ringCenter } from '../lib/geo'
 import type { Category, LatLng, Ring } from '../lib/types'
 import { avatarSvg, catIconSvg } from './art'
-import { RASTER_TILES, kompackStyle, mapPalette } from './mapStyle'
+import { RASTER_TILES, VECTOR_URL, kompackStyle, mapPalette } from './mapStyle'
 
 export interface MapPin {
   id: string
@@ -224,6 +224,14 @@ export function Map3D({
       }
     })
     const fbTimer = window.setTimeout(() => !vectorOk && useFallback(), 7000)
+    const retryTiles = () => {
+      const vector = map.getSource('ofm') as maplibregl.VectorTileSource | undefined
+      vector?.setUrl(VECTOR_URL)
+      const raster = map.getSource('osm-raster') as maplibregl.RasterTileSource | undefined
+      raster?.setTiles([RASTER_TILES])
+      map.triggerRepaint()
+    }
+    window.addEventListener('online', retryTiles)
 
     map.on('load', () => {
       loaded.current = true
@@ -321,6 +329,7 @@ export function Map3D({
     const store = markers.current
     return () => {
       window.clearTimeout(fbTimer)
+      window.removeEventListener('online', retryTiles)
       window.clearTimeout(orbitStopTimer)
       themeObserver.disconnect()
       if (orbitRaf) cancelAnimationFrame(orbitRaf)

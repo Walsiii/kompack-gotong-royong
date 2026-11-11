@@ -112,7 +112,7 @@ export function useGeoWatcher(): void {
       id = navigator.geolocation.watchPosition(
         (p) => onReading(p.coords.latitude, p.coords.longitude, p.coords.accuracy, p.timestamp || Date.now()),
         (err) => {
-          if (err.code === err.PERMISSION_DENIED) useGeo.setState({ status: 'denied' })
+          if (err.code === err.PERMISSION_DENIED) useGeo.setState({ status: 'denied', pos: null, acc: null, at: 0 })
           else if (!useGeo.getState().pos) useGeo.setState({ status: 'unavailable' })
         },
         { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 },
@@ -120,7 +120,18 @@ export function useGeoWatcher(): void {
     } catch {
       useGeo.setState({ status: 'unavailable' })
     }
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return
+      navigator.geolocation.getCurrentPosition(
+        p => onReading(p.coords.latitude, p.coords.longitude, p.coords.accuracy, p.timestamp || Date.now()),
+        () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 12000 },
+      )
+    }
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('online', refresh)
     return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('online', refresh)
       if (id !== null) navigator.geolocation.clearWatch(id)
     }
   }, [testMode, registered, nonce])

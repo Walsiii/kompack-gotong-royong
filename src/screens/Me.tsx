@@ -1,3 +1,4 @@
+import { useLive } from '../lib/live'
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { ArrowLeftRight, Check, ChevronRight, FlaskConical, MapPinned, RotateCcw, ShieldCheck, Ticket } from 'lucide-react'
@@ -34,6 +35,7 @@ export function Me() {
   const nav = useNavigate()
   const now = useNow(60000)
   const me = useMe()
+  const live = useLive()
   const rt = useIsRT()
   const group = useMyGroup()
   const snap = useSnap()
@@ -316,24 +318,24 @@ export function Me() {
                     ? 'Kembali ke akunmu sendiri.'
                     : 'Masuk sebagai Pak Hendra untuk mencoba memeriksa setoran dan laporan. Ini akun terpisah: kamu tetap tidak bisa menyetujui setoranmu sendiri.'}
                 </p>
-                <Button small tone="dark" className="mt-2.5" onClick={switchAccount}>
-                  {rt ? 'Kembali ke akunku' : 'Masuk sebagai Ketua RT'}
+                <Button small tone="dark" className="mt-2.5" onClick={switchAccount} disabled={!live.canRT}>
+                  {rt ? 'Kembali ke akunku' : live.canRT ? 'Masuk sebagai Ketua RT' : 'Pengurus memakai perangkat pemilik'}
                 </Button>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4">
               <RotateCcw size={20} className="mt-0.5 flex-none text-ink-2" />
               <div className="min-w-0 flex-1">
-                <p className="font-semibold">Mulai ulang demo</p>
-                <p className="text-[0.86rem] text-ink-2">Hapus semua data di perangkat ini.</p>
-                <Button small tone="ghost" className="mt-2.5" onClick={() => setAskReset(true)}>
+                <p className="font-semibold">{live.mode === 'server' ? 'Data bersama' : 'Mulai ulang demo'}</p>
+                <p className="text-[0.86rem] text-ink-2">{live.mode === 'server' ? 'Data tersimpan di PC pemilik server dan tersinkron ke perangkat yang bergabung.' : 'Hapus semua data di perangkat ini.'}</p>
+                <Button small tone="ghost" className="mt-2.5" onClick={() => setAskReset(true)} disabled={live.mode === 'server'}>
                   Hapus data
                 </Button>
               </div>
             </div>
           </div>
           <p className="mt-3 px-1 text-[0.8rem] text-ink-3">
-            Kompack! 2.0 / {isNative ? 'Android' : 'Web'} / purwarupa tim Batak Intelligence. Data tersimpan di perangkat ini.
+            Kompack! 2.0 / {isNative ? 'Android' : 'Web'} / purwarupa tim Batak Intelligence. {live.mode === 'server' ? (live.connected ? 'Server lokal terhubung. Perubahan tersinkron langsung.' : 'Server lokal terputus. Menunggu sambungan.') : 'Data tersimpan di perangkat ini.'}
           </p>
         </section>
       </Section>
@@ -351,8 +353,8 @@ export function Me() {
               </Button>
               <Button
                 className="flex-1"
-                onClick={() => {
-                  const r = redeem(confirm.id, me.id)
+                onClick={async () => {
+                  const r = await redeem(confirm.id, me.id)
                   setConfirm(null)
                   if (r) setTicket(r)
                   else toast('Poinmu belum cukup.', 'warn')

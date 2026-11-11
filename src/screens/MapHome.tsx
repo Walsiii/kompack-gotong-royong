@@ -189,9 +189,11 @@ export function MapHome() {
             meId={me?.id}
             rt={rt}
             author={personById(users, sel.post.authorId)?.name ?? 'Warga'}
-            onWitness={() => {
-              if (!me) return
-              toggleWitness(sel.post.id, me.id)
+            onWitness={async () => {
+              if (!me) return false
+              const wasSeen = (sel.post.witnesses ?? []).includes(me.id)
+              await toggleWitness(sel.post.id, me.id)
+              return (useStore.getState().posts.find(p => p.id === sel.post.id)?.witnesses ?? []).includes(me.id) !== wasSeen
             }}
             onOpen={() => nav(rt ? `/rt/laporan/${sel.post.id}` : `/grup?ch=${sel.post.channel}&post=${sel.post.id}`)}
           />
@@ -455,7 +457,7 @@ function QuestFocus({ v, now, rt, onOpen, onDirections }: { v: QuestView; now: n
 }
 
 function ReportFocus({ post, dist, now, meId, rt, author, onWitness, onOpen }: {
-  post: Post; dist: number | null; now: number; meId?: string; rt: boolean; author: string; onWitness: () => void; onOpen: () => void
+  post: Post; dist: number | null; now: number; meId?: string; rt: boolean; author: string; onWitness: () => Promise<boolean>; onOpen: () => void
 }) {
   const mine = post.authorId === meId
   const seen = !!meId && (post.witnesses ?? []).includes(meId)
@@ -467,7 +469,7 @@ function ReportFocus({ post, dist, now, meId, rt, author, onWitness, onOpen }: {
       </div>
       <div className="mission-ticket-meta"><span>{mine ? 'Kamu' : author}</span><span>{fmtAgo(post.at, now)}</span>{dist !== null && <span>{fmtDist(dist)}</span>}</div>
       <div className="map-report-actions">
-        {!rt && !mine && <Button tone={seen ? 'plang' : 'soft'} className="flex-1" onClick={() => { onWitness(); if (!seen) toast('Terima kasih, kesaksianmu membantu RT memprioritaskan.') }}><Eye size={17} aria-hidden="true" />{seen ? 'Ikut melihat' : 'Saya juga lihat'} ({post.witnesses?.length ?? 0})</Button>}
+        {!rt && !mine && <Button tone={seen ? 'plang' : 'soft'} className="flex-1" onClick={async () => { const saved = await onWitness(); if (saved && !seen) toast('Terima kasih, kesaksianmu membantu RT memprioritaskan.') }}><Eye size={17} aria-hidden="true" />{seen ? 'Ikut melihat' : 'Saya juga lihat'} ({post.witnesses?.length ?? 0})</Button>}
         <Button tone="dark" className="flex-1" onClick={onOpen}>{rt ? 'Tinjau laporan' : 'Buka di grup'}</Button>
       </div>
     </article>

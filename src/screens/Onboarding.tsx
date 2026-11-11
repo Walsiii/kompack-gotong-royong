@@ -64,8 +64,12 @@ export function Onboarding() {
       }
     }
     setActing('me')
-    await register({ name: name.trim(), avatar, birthYear: Number(year), home, testMode: test })
-    nav('/', { replace: true })
+    try {
+      await register({ name: name.trim(), avatar, birthYear: Number(year), home, testMode: test })
+      nav('/', { replace: true })
+    } catch {
+      toast('Pendaftaran belum tersimpan. Periksa sambungan ke server lokal lalu coba lagi.', 'warn')
+    } finally { setBusy(null) }
   }
 
   return (

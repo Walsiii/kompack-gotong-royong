@@ -139,7 +139,7 @@ export function QuestFlow() {
       setHoldKey((k) => k + 1)
       return
     }
-    const res = checkIn(q.id, me.id, fix, r.dist)
+    const res = await checkIn(q.id, me.id, fix, r.dist)
     setChecking(false)
     if (!res.ok) {
       toast(res.error, 'warn')
@@ -160,10 +160,10 @@ export function QuestFlow() {
   const doSubmit = () => {
     if (!sub || !assess || assess.block) return
     setSending(true)
-    t.current = window.setTimeout(() => {
-      submit(sub.id, note, assess.checks)
+    t.current = window.setTimeout(async () => {
+      await submit(sub.id, note, assess.checks)
       setSending(false)
-      navigator.vibrate?.(50)
+      if (useStore.getState().subs.find(s => s.id === sub.id)?.status === 'pending') navigator.vibrate?.(50)
     }, 700)
   }
 

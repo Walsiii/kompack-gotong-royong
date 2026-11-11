@@ -88,10 +88,10 @@ export function QuestEditor() {
 
   if (!me || !group) return null
 
-  const publish = () => {
+  const publish = async () => {
     if (errors.length) return
     const input = { title: title.trim(), category: cat, desc: desc.trim(), place: place.trim(), lat: pin.lat, lng: pin.lng, radius, minMinutes, startAt, endAt, points, slots }
-    const r = from ? acceptReport(from.id, me.id, input) : createQuest(input, me.id)
+    const r = await (from ? acceptReport(from.id, me.id, input) : createQuest(input, me.id))
     if (!r.ok) return toast(r.error, 'warn')
     navigator.vibrate?.([30, 40, 70])
     toast('Misi terbit. Warga sudah bisa melihatnya di peta.')
