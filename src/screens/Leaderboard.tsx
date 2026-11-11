@@ -18,7 +18,7 @@ function Shape({ ring, active }: { ring: Ring; active: boolean }) {
   const d = ring.map((p, i) => `${i ? 'L' : 'M'}${((p.lng - x0) * s + 2).toFixed(1)} ${((y1 - p.lat) * s + 2).toFixed(1)}`).join(' ') + 'Z'
   return (
     <svg viewBox="0 0 44 44" width="44" height="44" className="flex-none" aria-hidden="true">
-      <path d={d} fill={active ? 'rgba(255,90,31,.18)' : 'rgba(15,31,25,.06)'} stroke={active ? '#FF5A1F' : '#85938C'} strokeWidth="1.6" strokeDasharray="3 2" strokeLinejoin="round" />
+      <path d={d} fill={active ? 'var(--color-accent-soft)' : 'var(--color-surface)'} stroke={active ? 'var(--color-ink-3)' : 'var(--color-line)'} strokeWidth="1.6" strokeDasharray="3 2" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -78,7 +78,7 @@ export function Leaderboard() {
             {mine && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 overflow-hidden rounded-[22px] bg-ink p-4 text-white">
                 <div>
-                  <p className="mono text-[0.8rem] text-rompi">Posisimu</p>
+                  <p className="mono text-[0.8rem] text-inverse">Posisimu</p>
                   <p className="font-display wd-wide text-[2.6rem] font-bold leading-none">
                     #<CountUp value={mine.place} duration={0.6} />
                   </p>
@@ -86,7 +86,7 @@ export function Leaderboard() {
                 <div className="min-w-0 flex-1 border-l border-white/15 pl-4">
                   <p className="font-semibold">dari {rows.length} warga muda</p>
                   <p className="mt-0.5 flex items-center gap-1.5 text-[0.86rem] text-white/75">
-                    <TrendingUp size={15} className="flex-none text-rompi" />
+                    <TrendingUp size={15} className="flex-none text-inverse" />
                     {ahead ? `${ahead.points - mine.points + 1} poin lagi menyalip ${ahead.person.name}` : 'Kamu di puncak. Pertahankan!'}
                   </p>
                 </div>
@@ -103,7 +103,7 @@ export function Leaderboard() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: Math.min(i, 12) * 0.03 }}
-                    className={`grid grid-cols-[28px_36px_minmax(0,1fr)_auto] items-center gap-x-3 rounded-2xl px-2.5 py-2.5 ${isMe ? 'bg-[#FFF1EA]' : ''}`}
+                    className={`grid grid-cols-[28px_36px_minmax(0,1fr)_auto] items-center gap-x-3 rounded-2xl px-2.5 py-2.5 ${isMe ? 'bg-surface' : ''}`}
                   >
                     <span className={`mono tnum text-center text-[0.9rem] font-semibold ${r.place <= 3 ? 'text-rompi' : 'text-ink-3'}`}>{r.place}</span>
                     <Avatar index={r.person.avatar} size={36} />
@@ -112,16 +112,16 @@ export function Leaderboard() {
                         {r.person.name}
                         {isMe && <span className="ml-1.5 text-[0.8rem] font-medium text-rompi">kamu</span>}
                       </p>
-                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#E9EDE8]">
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface">
                         <motion.div
-                          className={`h-full rounded-full ${isMe ? 'bg-rompi' : 'bg-plang'}`}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(r.points / max) * 100}%` }}
+                          className={`h-full w-full origin-left rounded-full ${isMe ? 'bg-rompi' : 'bg-plang'}`}
+                          initial={{ scaleX: 0 }}
+                          animate={{ scaleX: r.points / max }}
                           transition={{ type: 'spring', stiffness: 70, damping: 16, delay: 0.1 + Math.min(i, 12) * 0.03 }}
                         />
                       </div>
                       <p className="mt-1 truncate text-[0.8rem] text-ink-3">
-                        {rankOf(pointsOf(snap, r.person.id)).name} · {r.quests} misi
+                        {rankOf(pointsOf(snap, r.person.id)).name} / {r.quests} misi
                       </p>
                     </div>
                     <span className="font-display wd-wide tnum text-right text-[1.1rem] font-bold">{r.points}</span>
@@ -134,7 +134,7 @@ export function Leaderboard() {
           <>
             <div className="reflect-stripes overflow-hidden rounded-[22px] p-[3px]" style={{ animation: 'kp-sweep 6s linear infinite' }}>
               <div className="rounded-[19px] bg-white p-4">
-                <p className="eyebrow">Lomba kebersihan {group?.rw}</p>
+                <p className="meta-label">Lomba kebersihan {group?.rw}</p>
                 <p className="mt-1 font-display text-[1.25rem] font-bold leading-tight">RT dengan poin warga muda tertinggi bulan ini dapat kas pemuda Rp500.000</p>
               </div>
             </div>
@@ -147,7 +147,7 @@ export function Leaderboard() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.08 }}
-                    className={`flex items-center gap-3 rounded-2xl px-3 py-3 ${mineRt ? 'bg-[#FFF1EA]' : ''}`}
+                    className={`flex items-center gap-3 rounded-2xl px-3 py-3 ${mineRt ? 'bg-surface' : ''}`}
                   >
                     <span className={`mono w-5 text-center font-semibold ${i === 0 ? 'text-rompi' : 'text-ink-3'}`}>{i + 1}</span>
                     <Shape ring={r.g.territory} active={mineRt} />
@@ -155,11 +155,11 @@ export function Leaderboard() {
                       <p className="font-display text-[1.1rem] font-bold leading-tight">
                         {r.g.name} {mineRt && <span className="text-[0.8rem] font-medium text-rompi">RT-mu</span>}
                       </p>
-                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#E9EDE8]">
+                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface">
                         <motion.div
-                          className={`h-full rounded-full ${mineRt ? 'bg-rompi' : 'bg-plang'}`}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(r.points / rtMax) * 100}%` }}
+                          className={`h-full w-full origin-left rounded-full ${mineRt ? 'bg-rompi' : 'bg-plang'}`}
+                          initial={{ scaleX: 0 }}
+                          animate={{ scaleX: r.points / rtMax }}
                           transition={{ type: 'spring', stiffness: 60, damping: 16, delay: 0.2 + i * 0.08 }}
                         />
                       </div>

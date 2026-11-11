@@ -101,7 +101,7 @@ export function Territory() {
                 ['Titik sudut', String(ring.length)],
               ].map(([k, v]) => (
                 <div key={k}>
-                  <dt className="eyebrow">{k}</dt>
+                  <dt className="meta-label">{k}</dt>
                   <dd className="font-display wd-wide text-[1.05rem] font-bold">{v}</dd>
                 </div>
               ))}

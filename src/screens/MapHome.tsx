@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
-import { ArrowRight, Box, Eye, LocateFixed, MapPinned, MousePointerClick, Navigation, Square, Users } from 'lucide-react'
+import { AnimatePresence, motion, useDragControls } from 'motion/react'
+import { Box, ChevronDown, ChevronUp, Clock3, Eye, Search, X, MapPin as PinIcon, MapPinned, Navigation, Square, Users, Plus, Minus } from 'lucide-react'
+import type { Map as MLMap } from 'maplibre-gl'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Map3D, type MapPin, type Neighbor } from '../components/Map3D'
-import { Avatar, CatTile, Coin } from '../components/art'
-import { Button, CountUp, Points, Segmented, toast, useIsWide } from '../components/ui'
+import { Avatar, CatTile } from '../components/art'
+import { Button, Points, Segmented, toast, useIsWide } from '../components/ui'
 import { CATS } from '../lib/catalog'
 import { DEFAULT_HOME, distM, fmtDist, ringCenter } from '../lib/geo'
-import { useMyPos } from '../lib/location'
+import { useGeo, useMyPos } from '../lib/location'
 import { useOpenReports, useQuestViews, type QuestView } from '../lib/quests'
 import { activeSubOf, personById, useIsRT, useMe, useMyGroup, usePoints, useStore } from '../lib/store'
 import { fmtAgo, fmtWindow, phaseLabel, useNow } from '../lib/time'
-import type { Post } from '../lib/types'
+import { useWalkingRoute } from '../lib/routing'
+import { WalkingNavigation } from '../components/WalkingNavigation'
+import type { Category, Post } from '../lib/types'
+import '../components/map-redesign.css'
 
 /* kamera & animasi pembuka diingat selama aplikasi terbuka */
 let introDone = false
@@ -34,16 +38,31 @@ export function MapHome() {
   const testMode = useStore((s) => s.testMode)
   const setSimPos = useStore((s) => s.setSimPos)
   const toggleWitness = useStore((s) => s.toggleWitness)
-  const { pos, status, retry } = useMyPos()
+  const { pos, acc, status, retry } = useMyPos()
+  const gpsTimestamp = useGeo((s) => s.at)
+  const mapApi = useRef<MLMap | null>(null)
+  const [mapReady, setMapReady] = useState(false)
+  const [following, setFollowing] = useState(false)
   const points = usePoints(me?.id)
   const views = useQuestViews(now)
   const reports = useOpenReports()
 
-  const [tab, setTab] = useState<'misi' | 'laporan'>('misi')
+  const [params, setParams] = useSearchParams()
+  const initialView = params.get('view')
+  const [tab, setTab] = useState<'misi' | 'laporan'>(initialView === 'laporan' ? 'laporan' : 'misi')
+  const [query, setQuery] = useState(() => params.get('q') ?? '')
+  const [category, setCategory] = useState<Category | 'all'>(() => {
+    const value = params.get('category')
+    return value && Object.hasOwn(CATS, value) ? value as Category : 'all'
+  })
+  const [queryScope, setQueryScope] = useState<'all' | 'misi' | 'laporan'>(initialView === 'misi' || initialView === 'laporan' ? initialView : 'all')
+  const normalizedQuery = query.trim().toLocaleLowerCase('id-ID')
+  const filteredViews = useMemo(() => views.filter(({ misi: q }) => (category === 'all' || q.category === category) && [q.title, q.desc, q.place, CATS[q.category].label].some((value) => value.toLocaleLowerCase('id-ID').includes(normalizedQuery))), [views, category, normalizedQuery])
+  const filteredReports = useMemo(() => reports.filter((p) => (category === 'all' || (p.category ?? (p.kind === 'tolong' ? 'bantu' : 'sampah')) === category) && [p.text, p.place ?? '', personById(users, p.authorId)?.name ?? '', CATS[p.category ?? (p.kind === 'tolong' ? 'bantu' : 'sampah')].label].some((value) => value.toLocaleLowerCase('id-ID').includes(normalizedQuery))), [reports, users, category, normalizedQuery])
   const [threeD, setThreeD] = useState(tilt)
   const [selected, setSelected] = useState<string | null>(null)
   const [focus, setFocus] = useState<{ lat: number; lng: number; key: number } | null>(null)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(Boolean(params.get('q')?.trim()))
   const fk = useRef(0)
   const [intro] = useState(() => !introDone)
   useEffect(() => {
@@ -54,14 +73,14 @@ export function MapHome() {
   }, [threeD])
 
   const items: Item[] = useMemo(() => {
-    const q: Item[] = views.map((v) => ({ key: `q:${v.misi.id}`, type: 'misi', view: v }))
-    const r: Item[] = reports
+    const q: Item[] = filteredViews.map((v) => ({ key: `q:${v.misi.id}`, type: 'misi', view: v }))
+    const r: Item[] = filteredReports
       .map((p) => ({ key: `p:${p.id}`, type: 'post' as const, post: p, dist: pos && p.lat !== undefined ? distM(pos, { lat: p.lat, lng: p.lng! }) : null }))
       .sort((a, b) => (a.dist ?? 1e9) - (b.dist ?? 1e9))
     return tab === 'misi' ? [...q, ...r] : [...r, ...q]
-  }, [views, reports, pos, tab])
+  }, [filteredViews, filteredReports, pos, tab])
 
-  const listed = items.filter((i) => (tab === 'misi' ? i.type === 'misi' : i.type === 'post'))
+  const listed = items.filter((i) => normalizedQuery ? queryScope === 'all' || (queryScope === 'misi' ? i.type === 'misi' : i.type === 'post') : (tab === 'misi' ? i.type === 'misi' : i.type === 'post'))
 
   useEffect(() => {
     if (!selected || !items.some((i) => i.key === selected)) setSelected(listed[0]?.key ?? items[0]?.key ?? null)
@@ -69,7 +88,7 @@ export function MapHome() {
 
   const pins: MapPin[] = useMemo(
     () => [
-      ...views.map((v) => ({
+      ...filteredViews.map((v) => ({
         id: `q:${v.misi.id}`,
         lat: v.misi.lat,
         lng: v.misi.lng,
@@ -78,7 +97,7 @@ export function MapHome() {
         label: v.mySub?.status === 'approved' || v.mySub?.status === 'pending' ? '✓' : `+${v.misi.points}`,
         state: v.mySub && (v.mySub.status === 'approved' || v.mySub.status === 'pending') ? ('done' as const) : v.phase === 'live' ? ('live' as const) : ('off' as const),
       })),
-      ...reports.map((p) => ({
+      ...filteredReports.map((p) => ({
         id: `p:${p.id}`,
         lat: p.lat!,
         lng: p.lng!,
@@ -87,7 +106,7 @@ export function MapHome() {
         state: 'live' as const,
       })),
     ],
-    [views, reports],
+    [filteredViews, filteredReports],
   )
 
   const neighbors: Neighbor[] = useMemo(
@@ -109,12 +128,24 @@ export function MapHome() {
     if (collapse) setExpanded(false)
   }
 
+  // Filters replace this map history entry, so opening a mission and going back
+  // restores the same search without adding a history entry per keystroke.
+  useEffect(() => {
+    const next = new URLSearchParams(params)
+    if (normalizedQuery) next.set('q', query.trim()); else next.delete('q')
+    if (category !== 'all') next.set('category', category); else next.delete('category')
+    const view = normalizedQuery ? queryScope : tab
+    if (view !== 'all' && (normalizedQuery || view !== 'misi')) next.set('view', view); else next.delete('view')
+    if (next.toString() !== params.toString()) setParams(next, { replace: true })
+  }, [query, normalizedQuery, category, tab, queryScope, params, setParams])
+
   // tautan dari Pos Ronda: /?pilih=p:<id>
-  const [params, setParams] = useSearchParams()
   useEffect(() => {
     const p = params.get('pilih')
     if (!p) return
-    setParams({}, { replace: true })
+    const next = new URLSearchParams(params)
+    next.delete('pilih')
+    setParams(next, { replace: true })
     const t = setTimeout(() => pick(p), 400)
     return () => clearTimeout(t)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -123,6 +154,20 @@ export function MapHome() {
   const active = me ? activeSubOf(subs, me.id) : undefined
   const activeQuest = active && quests.find((q) => q.id === active.questId)
   const selQuest = sel?.type === 'misi' ? sel.view.misi : null
+  const navigationTarget = useMemo(() => selQuest ? { id: selQuest.id, title: selQuest.title, lat: selQuest.lat, lng: selQuest.lng, radius: selQuest.radius } : null, [selQuest?.id, selQuest?.title, selQuest?.lat, selQuest?.lng, selQuest?.radius])
+  const walking = useWalkingRoute(navigationTarget, pos, { accuracyM: acc, simulated: testMode, at: gpsTimestamp })
+  useEffect(() => { if (!walking.active) setFollowing(false) }, [walking.active])
+  const recenter = () => {
+    if (pos && !rt) {
+      setFollowing(walking.active)
+      fly(pos.lat, pos.lng)
+    } else fly(center.lat, center.lng)
+  }
+  const startDirections = () => {
+    setExpanded(false)
+    setFollowing(true)
+    if (!walking.active) void walking.start()
+  }
   const center = useMemo(() => (group?.territory.length ? ringCenter(group.territory) : home), [group?.territory, home])
 
   const onMapClick = (p: { lat: number; lng: number }) => {
@@ -135,7 +180,7 @@ export function MapHome() {
     <AnimatePresence mode="wait" initial={false}>
       <motion.div key={sel.key} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
         {sel.type === 'misi' ? (
-          <QuestFocus v={sel.view} now={now} rt={rt} onOpen={() => nav(`/misi/${sel.view.misi.id}`)} />
+          <QuestFocus v={sel.view} now={now} rt={rt} onOpen={() => nav(`/misi/${sel.view.misi.id}`)} onDirections={startDirections} />
         ) : (
           <ReportFocus
             post={sel.post}
@@ -156,65 +201,61 @@ export function MapHome() {
   )
 
   const list = (
-    <div className="flex flex-col">
+    <div className="map-mission-list">
       {listed.length === 0 && (
-        <p className="px-1 py-6 text-center text-[0.9rem] text-ink-2">
-          {tab === 'misi' ? 'Belum ada misi berlangsung.' : 'Tidak ada laporan yang menunggu. Lingkunganmu sedang rapi.'}
-        </p>
+        <div className="map-list-empty">
+          <MapPinned size={32} aria-hidden="true" />
+          <h2>{normalizedQuery || category !== 'all' ? 'Belum ketemu.' : tab === 'misi' ? 'Gangmu sedang tenang.' : 'Belum ada laporan.'}</h2>
+          <p>{normalizedQuery || category !== 'all' ? 'Coba kata lain atau tampilkan semua kategori.' : tab === 'misi' ? 'Misi baru dari RT akan muncul di sini.' : 'Ada yang perlu dibantu? Mulai dari tombol Lapor.'}</p>
+          {(normalizedQuery || category !== 'all') && <Button tone="soft" className="mt-4" onClick={() => { setQuery(''); setCategory('all'); setQueryScope('all') }}>Tampilkan semua</Button>}
+        </div>
       )}
-      {listed.map((it, i) => {
+      {listed.map((it) => {
         const on = it.key === selected
         return (
-          <motion.button
+          <button
             key={it.key}
             type="button"
-            layout="position"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(i, 8) * 0.03 }}
             onClick={() => pick(it.key)}
-            className={`flex items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition-colors ${on ? 'bg-paper' : 'hover:bg-paper/60'}`}
+            aria-pressed={on}
+            className={`map-mission-row ${on ? 'is-selected' : ''}`}
           >
             {it.type === 'misi' ? (
               <>
-                <CatTile cat={it.view.misi.category} size={40} muted={it.view.phase !== 'live'} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold leading-tight">{it.view.misi.title}</span>
-                  <span className="block truncate text-[0.86rem] text-ink-2">
-                    {phaseLabel(it.view.misi, now)}
-                    {it.view.dist !== null && ` · ${fmtDist(it.view.dist)}`} · {it.view.taken}/{it.view.misi.slots} orang
+                <CatTile cat={it.view.misi.category} size={42} muted={it.view.phase !== 'live'} />
+                <span className="map-row-copy">
+                  <span className="map-row-title">{it.view.misi.title}</span>
+                  <span className="map-row-meta">
+                    <span>{it.view.dist !== null ? fmtDist(it.view.dist) : phaseLabel(it.view.misi, now)}</span>
+                    <span>{it.view.taken}/{it.view.misi.slots} orang</span>
                   </span>
                 </span>
                 <Points value={it.view.misi.points} plus />
               </>
             ) : (
               <>
-                <span className="relative flex-none">
-                  {it.post.photo ? (
-                    <img src={it.post.photo.img} alt="" className="h-10 w-10 rounded-[12px] object-cover" />
-                  ) : (
-                    <CatTile cat={it.post.category ?? 'sampah'} size={40} />
-                  )}
-                  <span className={`absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full ring-2 ring-white ${it.post.kind === 'tolong' ? 'bg-[#C6466E]' : 'bg-rompi'}`} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold leading-tight">{it.post.text}</span>
-                  <span className="block truncate text-[0.86rem] text-ink-2">
-                    {it.post.kind === 'tolong' ? 'Minta tolong' : 'Laporan'} · {personById(users, it.post.authorId)?.name} · {fmtAgo(it.post.at, now)}
+                {it.post.photo ? (
+                  <img src={it.post.photo.img} alt="" width={42} height={42} className="map-row-photo" />
+                ) : <CatTile cat={it.post.category ?? 'sampah'} size={42} />}
+                <span className="map-row-copy">
+                  <span className="map-row-title">{it.post.text}</span>
+                  <span className="map-row-meta">
+                    <span>{it.post.kind === 'tolong' ? 'Minta tolong' : 'Laporan'}</span>
+                    <span>{personById(users, it.post.authorId)?.name}</span>
                   </span>
                 </span>
-                <span className="mono flex flex-none items-center gap-1 text-[0.8rem] text-ink-2">
-                  <Eye size={13} /> {it.post.witnesses?.length ?? 0}
-                </span>
+                <span className="map-witness-count"><Eye size={16} aria-hidden="true" /> {it.post.witnesses?.length ?? 0}</span>
               </>
             )}
-          </motion.button>
+          </button>
         )
       })}
     </div>
   )
 
-  const tabs = (
+  const tabs = normalizedQuery ? (
+    <Segmented id="mapsearchtab" value={queryScope} onChange={setQueryScope} className="w-full" options={[{ value: 'all', label: `Semua (${items.length})` }, { value: 'misi', label: `Misi (${filteredViews.length})` }, { value: 'laporan', label: `Laporan (${filteredReports.length})` }]} />
+  ) : (
     <Segmented
       id="maptab"
       value={tab}
@@ -224,26 +265,58 @@ export function MapHome() {
         if (first) pick(first.key, false)
       }}
       options={[
-        { value: 'misi', label: `Misi · ${views.length}` },
-        { value: 'laporan', label: `Laporan · ${reports.length}` },
+        { value: 'misi', label: `Misi (${filteredViews.length})` },
+        { value: 'laporan', label: `Laporan (${filteredReports.length})` },
       ]}
       className="w-full"
     />
   )
 
-  /* ───── tinggi lembar bawah (ponsel) ───── */
+  const avatarMenu = me && (
+    <details className="map-avatar-menu">
+      <summary aria-label="Poin dan profil"><Avatar index={me.avatar} size={32} /></summary>
+      <div className="map-avatar-content">
+        <strong>{me.name}</strong>
+        <p>{rt ? 'Ketua RT' : `${points.total} poin`}</p>
+        <button type="button" onClick={() => nav('/aku')}>Profil dan pengaturan</button>
+        <button type="button" onClick={() => nav('/grup')}>{group?.name}, {group?.rw}</button>
+        {testMode && !rt && <p>Mode uji. Ketuk peta untuk memindahkan posisi. Bukti tetap ditandai sebagai percobaan.</p>}
+        {activeQuest && !rt && <button type="button" onClick={() => nav(`/misi/${activeQuest.id}`)}>Lanjutkan: {activeQuest.title}</button>}
+        {!testMode && !rt && status !== 'ok' && <button type="button" onClick={retry}>{status === 'locating' ? 'Mencari GPS…' : 'Coba lokasi lagi'}</button>}
+      </div>
+    </details>
+  )
+  const navigationCard = walking.active && selQuest ? <WalkingNavigation navigation={walking} targetTitle={selQuest.title} onRecenter={recenter} positionAccuracyM={acc} simulated={testMode} onOpenMission={() => nav(`/misi/${selQuest.id}`)} /> : null
+
+  const searchControl = (
+    <div className="map-search-shell">
+      <Search size={22} aria-hidden="true" />
+      <input type="search" aria-label="Cari misi atau laporan" placeholder="Cari misi atau laporan" value={query} onChange={(e) => { setQuery(e.target.value); setQueryScope('all'); if (e.target.value.trim()) setExpanded(true) }} autoComplete="off" />
+      {query && <button type="button" onClick={() => { setQuery(''); setQueryScope('all') }} aria-label="Hapus pencarian"><X size={20} aria-hidden="true" /></button>}
+      {!wide && avatarMenu}
+    </div>
+  )
+  const categoryControl = (
+    <div className="map-category-strip no-scrollbar" role="group" aria-label="Kategori di peta">
+      <button type="button" className="map-category-chip" aria-pressed={category === 'all'} onClick={() => setCategory('all')}>Semua</button>
+      {Object.values(CATS).map((cat) => <button type="button" key={cat.id} className="map-category-chip" aria-pressed={category === cat.id} onClick={() => setCategory(cat.id)}>{cat.label}</button>)}
+    </div>
+  )
+
   const [vh, setVh] = useState(() => window.innerHeight)
+  const dragControls = useDragControls()
+  const skipHandleClick = useRef(false)
   useEffect(() => {
     const on = () => setVh(window.innerHeight)
     window.addEventListener('resize', on)
     return () => window.removeEventListener('resize', on)
   }, [])
-  const sheetH = Math.round(vh * 0.72)
-  const peek = 232
+  const sheetH = Math.round(vh * 0.75)
+  const peek = walking.active ? 224 : 180
   const collapsedY = Math.max(0, sheetH - peek)
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#E6E9E2]">
+    <div className="neighborhood-map" data-navigating={walking.active}>
       <Map3D
         center={center}
         zoom={16.4}
@@ -254,257 +327,149 @@ export function MapHome() {
         meAvatar={me?.avatar ?? 0}
         territory={group?.territory}
         neighbors={neighbors}
-        circle={selQuest ? { lat: selQuest.lat, lng: selQuest.lng, radius: selQuest.radius } : null}
+        circle={selQuest && !walking.active ? { lat: selQuest.lat, lng: selQuest.lng, radius: selQuest.radius } : null}
+        walkingRoute={walking.route?.geometry ?? null}
+        walkingTarget={navigationTarget}
+        followMe={following && walking.active}
+        onFollowChange={setFollowing}
+        onReady={(map) => { mapApi.current = map; setMapReady(true) }}
         onMapClick={onMapClick}
         threeD={threeD}
         focus={focus}
-        padding={wide ? { left: 400, top: 40, bottom: 40 } : { top: 120, bottom: peek + 80 }}
+        padding={wide ? { left: 388, top: 64, bottom: 40 } : { top: 132, bottom: peek + 76 }}
         intro={intro}
       />
 
-      {/* ───── kepala mengambang ───── */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-[500] px-3 lg:left-[400px] lg:px-5"
-        style={{ paddingTop: 'calc(var(--safe-t) + 10px)' }}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <button type="button" onClick={() => nav('/grup')} className="plang pointer-events-auto text-[0.92rem] lg:hidden">
-            {group?.name} · {group?.rw}
-            <Users size={14} strokeWidth={2.6} />
-          </button>
-          <span className="hidden lg:block" />
-          {me && !rt && (
-            <button
-              type="button"
-              onClick={() => nav('/aku')}
-              className="pointer-events-auto flex items-center gap-2 rounded-full bg-white py-1 pl-1 pr-3 shadow-float"
-              aria-label="Poin dan profil"
-            >
-              <Avatar index={me.avatar} size={30} />
-              <Coin size={15} />
-              <CountUp value={points.total} className="font-display wd-wide text-[1rem] font-bold" />
-            </button>
-          )}
-          {rt && <span className="plang pointer-events-auto !bg-ink text-[0.86rem]" style={{ boxShadow: 'inset 0 0 0 2px #0F1F19, inset 0 0 0 3.5px #FF5A1F' }}>MODE KETUA RT</span>}
-        </div>
+      <div className="map-floating-header" style={{ paddingTop: 'calc(var(--safe-t) + 16px)' }}>
+        {!wide && <>{searchControl}{categoryControl}</>}
+        {wide && <div className="map-desktop-avatar">{avatarMenu}</div>}
 
-        <AnimatePresence>
-          {activeQuest && !rt && (
-            <motion.button
-              type="button"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              onClick={() => nav(`/misi/${activeQuest.id}`)}
-              className="pointer-events-auto mt-2.5 flex w-full max-w-[420px] items-center gap-2.5 overflow-hidden rounded-2xl bg-ink py-2 pl-2 pr-3 text-left text-white shadow-lift"
-            >
-              <span className="reflect-stripes h-9 w-2 flex-none rounded-full" style={{ animation: 'kp-sweep 2s linear infinite' }} />
-              <span className="min-w-0 flex-1">
-                <span className="mono block text-[0.8rem] text-rompi">Misi aktif</span>
-                <span className="block truncate text-[0.9rem] font-semibold">{activeQuest.title}</span>
-              </span>
-              <ArrowRight size={18} className="flex-none" />
-            </motion.button>
-          )}
-        </AnimatePresence>
-
-        {testMode && !rt && (
-          <div className="pointer-events-auto mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#2E2452]/90 px-3 py-1.5 text-[0.86rem] font-semibold text-white backdrop-blur-sm">
-            <MousePointerClick size={14} /> Mode uji · ketuk peta untuk pindah posisi
-          </div>
-        )}
-        {!testMode && !rt && (status === 'denied' || status === 'unavailable' || status === 'locating') && (
-          <div className="pointer-events-auto mt-2.5 flex max-w-[420px] items-center gap-2 rounded-2xl bg-white px-3 py-2 text-[0.86rem] shadow-float">
-            <LocateFixed size={16} className={status === 'locating' ? 'animate-pulse text-rompi' : 'text-bad'} />
-            <span className="min-w-0 flex-1 font-medium">
-              {status === 'locating' ? 'Mencari sinyal GPS…' : status === 'denied' ? 'Izin lokasi ditolak. Misi butuh lokasi untuk check-in.' : 'GPS belum dapat sinyal.'}
-            </span>
-            {status !== 'locating' && (
-              <button type="button" onClick={retry} className="font-semibold text-rompi">
-                Coba lagi
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* ───── kendali peta ───── */}
-      <div
-        className="absolute right-3 z-[500] flex flex-col gap-2 lg:right-5"
-        style={{ top: wide ? 72 : 'calc(var(--safe-t) + 64px)' }}
-      >
+      <div className="map-tools" role="group" aria-label="Kendali peta" style={{ bottom: wide ? 32 : `calc(var(--nav-h) + var(--safe-b) + ${peek + 16}px)` }}>
         <motion.button
           type="button"
           onClick={() => setThreeD((t) => !t)}
-          whileTap={{ scale: 0.9 }}
-          className="btn btn--white btn--icon flex-col !gap-0"
+          whileTap={{ scale: 0.94 }}
+          className="map-tool"
           aria-label={threeD ? 'Lihat peta 2D' : 'Lihat peta 3D'}
           aria-pressed={threeD}
         >
-          {threeD ? <Box size={18} strokeWidth={2.2} /> : <Square size={17} strokeWidth={2.2} />}
-          <span className="mono text-[0.8rem] font-semibold">{threeD ? '3D' : '2D'}</span>
+          {threeD ? <Box size={20} aria-hidden="true" /> : <Square size={19} aria-hidden="true" />}
+          <span>{threeD ? '3D' : '2D'}</span>
         </motion.button>
         <motion.button
           type="button"
-          whileTap={{ scale: 0.9 }}
-          onClick={() => {
-            if (pos && !rt) fly(pos.lat, pos.lng)
-            else fly(center.lat, center.lng)
-          }}
-          className="btn btn--white btn--icon"
+          whileTap={{ scale: 0.94 }}
+          onClick={recenter}
+          className="map-tool"
           aria-label={rt ? 'Ke tengah wilayah' : 'Ke posisiku'}
-        >
-          <Navigation size={18} strokeWidth={2.2} />
-        </motion.button>
-        {rt && (
-          <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={() => nav('/rt/wilayah')} className="btn btn--white btn--icon" aria-label="Atur wilayah RT">
-            <MapPinned size={18} strokeWidth={2.2} />
-          </motion.button>
-        )}
+        ><Navigation size={21} aria-hidden="true" /></motion.button>
+        <button type="button" className="map-tool" aria-label="Perbesar peta" disabled={!mapReady} onClick={() => mapApi.current?.zoomIn({ duration: 180 })}><Plus size={20} aria-hidden="true" /></button>
+        <button type="button" className="map-tool" aria-label="Perkecil peta" disabled={!mapReady} onClick={() => mapApi.current?.zoomOut({ duration: 180 })}><Minus size={20} aria-hidden="true" /></button>
+        {rt && <motion.button type="button" whileTap={{ scale: 0.94 }} onClick={() => nav('/rt/wilayah')} className="map-tool" aria-label="Atur wilayah RT"><MapPinned size={21} aria-hidden="true" /></motion.button>}
       </div>
 
-      {/* ───── panel ───── */}
       {wide ? (
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-[600] flex w-[400px] p-4">
-          <div className="panel pointer-events-auto flex min-h-0 w-full flex-col overflow-hidden !shadow-lift">
-            <div className="border-b border-line p-4">
-              <p className="eyebrow">{group?.name} · {group?.rw}</p>
-              <h1 className="mt-1 text-[1.6rem]">Di sekitarmu</h1>
-            </div>
-            <div className="border-b border-line p-4">{focusCard ?? <p className="text-ink-2">Pilih penanda di peta.</p>}</div>
-            <div className="p-3 pb-2">{tabs}</div>
-            <div className="scroll-y min-h-0 flex-1 px-2 pb-3">{list}</div>
-          </div>
-        </div>
+        <section className="map-desktop-panel" aria-label="Misi di sekitarmu">
+          <div className="map-panel-heading">{searchControl}{categoryControl}<h1>{normalizedQuery ? 'Hasil pencarian' : 'Di sekitarmu'}</h1><p role="status">{normalizedQuery ? `${listed.length} hasil di lingkunganmu` : `${group?.name ?? 'Wilayahmu'}, ${group?.rw ?? ''}`}</p></div>
+          <div className="map-focus-wrap">{navigationCard ?? focusCard ?? <p className="text-ink-2">Pilih penanda di peta.</p>}</div>
+          <div className="map-panel-tabs">{tabs}</div>
+          <div className="scroll-y map-panel-list">{list}</div>
+        </section>
       ) : (
-        <motion.div
-          className="absolute inset-x-0 z-[600] flex flex-col rounded-t-[26px] bg-white shadow-lift"
+        <motion.section
+          aria-label="Misi di sekitarmu"
+          className="map-mobile-sheet"
+          data-expanded={expanded}
           style={{ height: sheetH, bottom: 'calc(var(--nav-h) + var(--safe-b))' }}
-          initial={{ y: sheetH }}
+          initial={false}
           animate={{ y: expanded ? 0 : collapsedY }}
           transition={{ type: 'spring', stiffness: 360, damping: 38 }}
           drag="y"
+          dragControls={dragControls}
+          dragListener={false}
           dragConstraints={{ top: 0, bottom: collapsedY }}
-          dragElastic={0.06}
+          dragElastic={0.04}
           dragMomentum={false}
           onDragEnd={(_, i) => {
+            if (Math.abs(i.offset.y) > 8) skipHandleClick.current = true
             if (i.velocity.y < -300 || i.offset.y < -60) setExpanded(true)
             else if (i.velocity.y > 300 || i.offset.y > 60) setExpanded(false)
           }}
         >
           <button
             type="button"
-            className="flex w-full flex-none justify-center pb-1.5 pt-2.5"
-            onClick={() => setExpanded((e) => !e)}
+            className="map-sheet-handle"
+            onPointerDown={(e) => { skipHandleClick.current = false; dragControls.start(e) }}
+            onClick={() => { if (skipHandleClick.current) { skipHandleClick.current = false; return }; setExpanded((e) => !e) }}
             aria-label={expanded ? 'Kecilkan daftar' : 'Lihat semua'}
+            aria-expanded={expanded}
+            aria-controls="map-mobile-missions"
           >
-            <span className="h-1.5 w-10 rounded-full bg-[#D3DAD3]" />
+            <span className="map-handle-line" aria-hidden="true" />
+            <span>{expanded ? 'Kembali ke peta' : walking.active ? 'Navigasi jalan kaki' : 'Detail misi'}</span>
+            {expanded ? <ChevronDown size={17} aria-hidden="true" /> : <ChevronUp size={17} aria-hidden="true" />}
           </button>
-          <div className="flex-none px-4">{focusCard}</div>
-          <div className="mt-3 flex-none px-4">{tabs}</div>
-          <div className="scroll-y min-h-0 flex-1 px-2 pb-10 pt-1" onPointerDownCapture={(e) => expanded && e.stopPropagation()}>
-            {list}
-          </div>
-        </motion.div>
+          <div className="map-focus-wrap">{navigationCard ?? focusCard ?? <p className="map-selection-empty">{normalizedQuery || category !== 'all' ? 'Belum ada yang cocok. Coba kata atau kategori lain.' : 'Pilih misi atau laporan di peta.'}</p>}{walking.active && expanded && focusCard}</div>
+          <div className="map-panel-tabs">{tabs}</div>
+          <div id="map-mobile-missions" className="scroll-y map-panel-list">{list}</div>
+        </motion.section>
       )}
     </div>
   )
 }
 
-/* ───────────── Kartu fokus ───────────── */
-
-function QuestFocus({ v, now, rt, onOpen }: { v: QuestView; now: number; rt: boolean; onOpen: () => void }) {
+function QuestFocus({ v, now, rt, onOpen, onDirections }: { v: QuestView; now: number; rt: boolean; onOpen: () => void; onDirections: () => void }) {
   const q = v.misi
   const s = v.mySub?.status
   const cta =
     rt ? 'Lihat peserta'
-    : s === 'approved' ? 'Selesai · lihat'
-    : s === 'pending' ? 'Menunggu dicek RT'
-    : s === 'checked_in' ? 'Lanjutkan misi'
+    : s === 'approved' ? 'Misi selesai'
+    : s === 'pending' ? 'Menunggu RT'
+    : s === 'checked_in' ? 'Lanjutkan'
     : s === 'rejected' ? 'Perlu diulang'
-    : v.own ? 'Laporanmu · lihat'
+    : v.own ? 'Lihat laporan'
     : v.phase === 'upcoming' ? 'Lihat jadwal'
-    : v.inRange ? 'Kamu di lokasi · mulai'
+    : v.inRange ? 'Mulai misi'
     : 'Buka misi'
   return (
-    <div>
-      <div className="flex items-start gap-3">
-        <CatTile cat={q.category} size={48} muted={v.phase !== 'live'} />
-        <div className="min-w-0 flex-1">
-          <p className="eyebrow truncate" style={{ color: CATS[q.category].color }}>
-            {q.source === 'rt' ? 'Misi RT' : q.source === 'laporan' ? 'Dari laporan warga' : 'Permintaan tolong'}
-          </p>
-          <h2 className="mt-0.5 line-clamp-2 text-[1.2rem]">{q.title}</h2>
-          <p className="mt-0.5 truncate text-[0.8rem] text-ink-2">
-            {v.phase === 'live' ? phaseLabel(q, now) : fmtWindow(q.startAt, q.endAt, now)}
-            {v.dist !== null && ` · ${fmtDist(v.dist)}`} · {v.taken}/{q.slots} orang
-          </p>
+    <article className="mission-ticket">
+      <div className="mission-ticket-main">
+        <div className="mission-ticket-copy">
+          <h2>{q.title}</h2>
+          <div className="mission-category"><CatTile cat={q.category} size={26} /><span>{CATS[q.category].label}</span></div>
         </div>
-        <div className="flex flex-none flex-col items-end">
-          <span className="font-display wd-wide text-[1.5rem] font-bold leading-none text-rompi">+{q.points}</span>
-          <span className="mono text-[0.6rem] text-ink-3">POIN</span>
-        </div>
+        <div className="mission-reward" aria-label={`${q.points} poin`}><strong>+{q.points}</strong><span>poin</span></div>
       </div>
-      <Button full className="mt-3" tone={v.inRange && v.phase === 'live' && !s && !v.own && !rt ? 'primary' : 'dark'} onClick={onOpen}>
-        {cta} <ArrowRight size={17} />
-      </Button>
-    </div>
+      <div className="mission-compact-meta"><span>{v.dist !== null ? fmtDist(v.dist) : 'Di wilayahmu'}</span><span>{q.minMinutes} menit kerja</span></div>
+      <div className="mission-ticket-meta">
+        <span><PinIcon size={15} aria-hidden="true" /> {v.dist !== null ? fmtDist(v.dist) : 'Di wilayahmu'}</span>
+        <span><Users size={15} aria-hidden="true" /> {v.taken}/{q.slots} orang</span>
+        <span><Clock3 size={15} aria-hidden="true" /> {q.minMinutes} menit</span>
+      </div>
+      <p className="mission-window">{v.phase === 'live' ? phaseLabel(q, now) : fmtWindow(q.startAt, q.endAt, now)}<span>{q.source === 'rt' ? 'Misi RT' : q.source === 'laporan' ? 'Dari laporan warga' : 'Permintaan tolong'}</span></p>
+      <div className="mission-actions"><Button className="mission-directions-action" tone="dark" onClick={onDirections}><Navigation size={16} aria-hidden="true" />Mulai navigasi</Button><Button className="mission-ticket-action" tone="white" onClick={onOpen}>{cta}</Button></div>
+    </article>
   )
 }
 
-function ReportFocus({
-  post,
-  dist,
-  now,
-  meId,
-  rt,
-  author,
-  onWitness,
-  onOpen,
-}: {
-  post: Post
-  dist: number | null
-  now: number
-  meId?: string
-  rt: boolean
-  author: string
-  onWitness: () => void
-  onOpen: () => void
+function ReportFocus({ post, dist, now, meId, rt, author, onWitness, onOpen }: {
+  post: Post; dist: number | null; now: number; meId?: string; rt: boolean; author: string; onWitness: () => void; onOpen: () => void
 }) {
   const mine = post.authorId === meId
   const seen = !!meId && (post.witnesses ?? []).includes(meId)
   return (
-    <div>
-      <div className="flex items-start gap-3">
-        {post.photo && <img src={post.photo.img} alt="Foto laporan" className="h-[52px] w-[52px] flex-none rounded-[14px] object-cover" />}
-        <div className="min-w-0 flex-1">
-          <p className="eyebrow" style={{ color: post.kind === 'tolong' ? '#C6466E' : '#FF5A1F' }}>
-            {post.kind === 'tolong' ? 'Minta tolong' : 'Laporan'} · menunggu RT
-          </p>
-          <p className="mt-0.5 line-clamp-2 font-semibold leading-snug">{post.text}</p>
-          <p className="mt-0.5 truncate text-[0.8rem] text-ink-2">
-            {mine ? 'Kamu' : author} · {fmtAgo(post.at, now)}
-            {dist !== null && ` · ${fmtDist(dist)}`}
-          </p>
-        </div>
+    <article className="mission-ticket report-ticket">
+      <div className="mission-ticket-main">
+        {post.photo && <img src={post.photo.img} alt="Foto laporan" width={56} height={56} className="map-report-photo" />}
+        <div className="mission-ticket-copy"><h2>{post.text}</h2><p className="report-state">{post.kind === 'tolong' ? 'Minta tolong' : 'Laporan'} menunggu RT</p></div>
       </div>
-      <div className="mt-3 flex gap-2">
-        {!rt && !mine && (
-          <Button
-            tone={seen ? 'plang' : 'soft'}
-            className="flex-1"
-            onClick={() => {
-              onWitness()
-              if (!seen) toast('Terima kasih, kesaksianmu membantu RT memprioritaskan.')
-            }}
-          >
-            <Eye size={17} /> {seen ? 'Kamu juga lihat' : 'Saya juga lihat'} · {post.witnesses?.length ?? 0}
-          </Button>
-        )}
-        <Button tone="dark" className="flex-1" onClick={onOpen}>
-          {rt ? 'Tinjau laporan' : 'Buka di grup'} <ArrowRight size={17} />
-        </Button>
+      <div className="mission-ticket-meta"><span>{mine ? 'Kamu' : author}</span><span>{fmtAgo(post.at, now)}</span>{dist !== null && <span>{fmtDist(dist)}</span>}</div>
+      <div className="map-report-actions">
+        {!rt && !mine && <Button tone={seen ? 'plang' : 'soft'} className="flex-1" onClick={() => { onWitness(); if (!seen) toast('Terima kasih, kesaksianmu membantu RT memprioritaskan.') }}><Eye size={17} aria-hidden="true" />{seen ? 'Ikut melihat' : 'Saya juga lihat'} ({post.witnesses?.length ?? 0})</Button>}
+        <Button tone="dark" className="flex-1" onClick={onOpen}>{rt ? 'Tinjau laporan' : 'Buka di grup'}</Button>
       </div>
-    </div>
+    </article>
   )
 }

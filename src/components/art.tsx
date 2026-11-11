@@ -2,21 +2,21 @@ import type { CSSProperties } from 'react'
 import { CATS } from '../lib/catalog'
 import type { Category } from '../lib/types'
 
-const INK = '#0F1F19'
+const INK = 'var(--color-ink)'
 
 /* ───────────── Ikon kategori (viewBox 24) ───────────── */
 
 const CAT_PATHS: Record<Category, string> = {
   // karung sampah terikat
-  sampah: `<path d="M8.2 7.6c-2.6 2.2-3.8 5-3.8 8.1 0 3 2.8 4.8 7.6 4.8s7.6-1.8 7.6-4.8c0-3.1-1.2-5.9-3.8-8.1" fill="#fff"/><path d="M8.2 7.6h7.6M9 7.4 7.4 3.6M15 7.4l1.6-3.8M12 7.5V4.2"/><path d="M9.5 13.5l1.6 1.6 3.4-3.4"/>`,
+  sampah: `<path d="M8.2 7.6c-2.6 2.2-3.8 5-3.8 8.1 0 3 2.8 4.8 7.6 4.8s7.6-1.8 7.6-4.8c0-3.1-1.2-5.9-3.8-8.1" fill="var(--color-inverse)"/><path d="M8.2 7.6h7.6M9 7.4 7.4 3.6M15 7.4l1.6-3.8M12 7.5V4.2"/><path d="M9.5 13.5l1.6 1.6 3.4-3.4"/>`,
   // tetes & gelombang air selokan
-  got: `<path d="M12 2.8c2.3 2.9 3.4 4.7 3.4 6.3a3.4 3.4 0 0 1-6.8 0c0-1.6 1.1-3.4 3.4-6.3z" fill="#fff"/><path d="M2.8 16.4c1.5-1.6 3-1.6 4.6 0s3 1.6 4.6 0 3-1.6 4.6 0 3 1.6 4.6 0M2.8 20.4c1.5-1.6 3-1.6 4.6 0s3 1.6 4.6 0 3-1.6 4.6 0 3 1.6 4.6 0"/>`,
+  got: `<path d="M12 2.8c2.3 2.9 3.4 4.7 3.4 6.3a3.4 3.4 0 0 1-6.8 0c0-1.6 1.1-3.4 3.4-6.3z" fill="var(--color-inverse)"/><path d="M2.8 16.4c1.5-1.6 3-1.6 4.6 0s3 1.6 4.6 0 3-1.6 4.6 0 3 1.6 4.6 0M2.8 20.4c1.5-1.6 3-1.6 4.6 0s3 1.6 4.6 0 3-1.6 4.6 0 3 1.6 4.6 0"/>`,
   // kunci pas
-  rusak: `<path d="M14.6 3.4a5 5 0 0 0-5.3 6.7L3.7 15.7a2 2 0 0 0 2.8 2.8l5.6-5.6a5 5 0 0 0 6.7-5.3l-2.9 2.9-2.6-.4-.4-2.6z" fill="#fff"/>`,
+  rusak: `<path d="M14.6 3.4a5 5 0 0 0-5.3 6.7L3.7 15.7a2 2 0 0 0 2.8 2.8l5.6-5.6a5 5 0 0 0 6.7-5.3l-2.9 2.9-2.6-.4-.4-2.6z" fill="var(--color-inverse)"/>`,
   // tunas
-  taman: `<path d="M12 21v-9"/><path d="M12 13.4C7.3 13.7 4.8 11 4.6 6.6c4.7-.3 7.2 2.4 7.4 6.8z" fill="#fff"/><path d="M12 11c.2-3.9 2.5-6.4 7.2-6.4-.2 4.1-2.6 6.4-7.2 6.4z" fill="#fff"/><path d="M7.5 21h9"/>`,
+  taman: `<path d="M12 21v-9"/><path d="M12 13.4C7.3 13.7 4.8 11 4.6 6.6c4.7-.3 7.2 2.4 7.4 6.8z" fill="var(--color-inverse)"/><path d="M12 11c.2-3.9 2.5-6.4 7.2-6.4-.2 4.1-2.6 6.4-7.2 6.4z" fill="var(--color-inverse)"/><path d="M7.5 21h9"/>`,
   // tangan menopang hati
-  bantu: `<path d="M12 11.2c-2-2.4-5.6-1.2-4.4 1.6.6 1.4 2.4 2.7 4.4 4 2-1.3 3.8-2.6 4.4-4 1.2-2.8-2.4-4-4.4-1.6z" fill="#fff"/><path d="M2.8 15.6l3.4 3.8c.8.9 1.9 1.4 3.1 1.4h5.8c1.1 0 2.2-.4 3-1.2l3.1-3"/><path d="M12 6.2V3.4M8.6 7.2 7.4 5M15.4 7.2 16.6 5"/>`,
+  bantu: `<path d="M12 11.2c-2-2.4-5.6-1.2-4.4 1.6.6 1.4 2.4 2.7 4.4 4 2-1.3 3.8-2.6 4.4-4 1.2-2.8-2.4-4-4.4-1.6z" fill="var(--color-inverse)"/><path d="M2.8 15.6l3.4 3.8c.8.9 1.9 1.4 3.1 1.4h5.8c1.1 0 2.2-.4 3-1.2l3.1-3"/><path d="M12 6.2V3.4M8.6 7.2 7.4 5M15.4 7.2 16.6 5"/>`,
 }
 
 export function catIconSvg(cat: Category, size = 24, stroke = INK): string {
@@ -38,13 +38,13 @@ export function CatIcon({ cat, size = 24, className }: { cat: Category; size?: n
 export function CatTile({ cat, size = 44, muted, className = '' }: { cat: Category; size?: number; muted?: boolean; className?: string }) {
   return (
     <span
-      className={`grid flex-none place-items-center ${className}`}
+      className={`category-symbol grid flex-none place-items-center ${className}`}
       style={{
         width: size,
         height: size,
         borderRadius: size * 0.3,
-        background: muted ? '#DDE2DC' : CATS[cat].color,
-        boxShadow: 'inset 0 0 0 2px rgb(255 255 255 / .55)',
+        background: muted ? 'var(--color-surface)' : 'var(--color-accent-soft)',
+        color: CATS[cat].color,
       }}
     >
       <CatIcon cat={cat} size={size * 0.56} />
@@ -63,14 +63,14 @@ interface AvatarDef {
 }
 
 const AVATARS: AvatarDef[] = [
-  { bg: '#F2C14E', skin: '#E9B98F', shirt: '#2F86A6', hair: '#20231F', style: 'pendek' },
-  { bg: '#E9A6B8', skin: '#F2CBA5', shirt: '#3E8F4F', hair: '#5A3626', style: 'panjang' },
-  { bg: '#8FCB9B', skin: '#E9B98F', shirt: '#F2C14E', hair: '#0D5E3F', style: 'hijab' },
-  { bg: '#8CC5DB', skin: '#C98F62', shirt: '#FF5A1F', hair: '#20231F', style: 'topi' },
-  { bg: '#F0A36F', skin: '#B97B4E', shirt: '#0D5E3F', hair: '#20231F', style: 'keriting' },
-  { bg: '#B5C7E8', skin: '#F2CBA5', shirt: '#C6466E', hair: '#20231F', style: 'kuncir' },
-  { bg: '#F08A6C', skin: '#E9B98F', shirt: '#2F86A6', hair: '#3B2A1F', style: 'jabrik' },
-  { bg: '#C9B6E4', skin: '#C98F62', shirt: '#E39B2D', hair: '#B9533A', style: 'hijab' },
+  { bg: 'var(--color-avatar-light)', skin: 'var(--color-avatar-mid)', shirt: 'var(--color-ink-2)', hair: 'var(--color-ink)', style: 'pendek' },
+  { bg: 'var(--color-avatar-light)', skin: 'var(--color-avatar-mid)', shirt: 'var(--color-ink-2)', hair: 'var(--color-ink)', style: 'panjang' },
+  { bg: 'var(--color-avatar-light)', skin: 'var(--color-avatar-mid)', shirt: 'var(--color-ink-2)', hair: 'var(--color-ink)', style: 'hijab' },
+  { bg: 'var(--color-avatar-light)', skin: 'var(--color-avatar-deep)', shirt: 'var(--color-ink-2)', hair: 'var(--color-ink)', style: 'topi' },
+  { bg: 'var(--color-avatar-light)', skin: 'var(--color-avatar-deep)', shirt: 'var(--color-ink-2)', hair: 'var(--color-ink)', style: 'keriting' },
+  { bg: 'var(--color-avatar-light)', skin: 'var(--color-avatar-mid)', shirt: 'var(--color-ink-2)', hair: 'var(--color-ink)', style: 'kuncir' },
+  { bg: 'var(--color-avatar-light)', skin: 'var(--color-avatar-mid)', shirt: 'var(--color-ink-2)', hair: 'var(--color-ink)', style: 'jabrik' },
+  { bg: 'var(--color-avatar-light)', skin: 'var(--color-avatar-deep)', shirt: 'var(--color-ink-2)', hair: 'var(--color-ink)', style: 'hijab' },
 ]
 
 export const AVATAR_COUNT = AVATARS.length
@@ -93,7 +93,7 @@ function hairSvg(a: AvatarDef): { back: string; front: string } {
     case 'topi':
       return {
         back: '',
-        front: `<path d="M13.4 19.6c.6-6.4 5-10.2 10.6-10.2s10 3.8 10.6 10.2z" fill="#FF5A1F" ${s}/><path d="M32.5 19.6h8.3" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`,
+        front: `<path d="M13.4 19.6c.6-6.4 5-10.2 10.6-10.2s10 3.8 10.6 10.2z" fill="var(--color-rompi)" ${s}/><path d="M32.5 19.6h8.3" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`,
       }
     case 'keriting':
       return {
@@ -152,14 +152,13 @@ export function Logo({ size = 28, light, className = '' }: { size?: number; ligh
       style={{
         fontSize: size,
         lineHeight: 1,
-        fontWeight: 900,
-        fontVariationSettings: "'wdth' 112",
-        letterSpacing: '-0.035em',
-        color: light ? '#fff' : INK,
+        fontWeight: 750,
+        letterSpacing: '-0.05em',
+        color: light ? 'var(--color-inverse)' : INK,
       }}
     >
       kompack
-      <span style={{ color: '#FF5A1F' }}>!</span>
+      <span style={{ color: 'var(--color-rompi)' }}>!</span>
     </span>
   )
 }
@@ -169,9 +168,9 @@ export function Logo({ size = 28, light, className = '' }: { size?: number; ligh
 export function Coin({ size = 16, className = '' }: { size?: number; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} className={`flex-none ${className}`} aria-hidden="true">
-      <circle cx="12" cy="12" r="10.5" fill="#FF5A1F" />
-      <circle cx="12" cy="12" r="7.6" fill="none" stroke="#FFD2BF" strokeWidth="1.4" />
-      <path d="M9.4 7.6v8.8M9.6 12.2l4.6-4.6M11.4 10.6l3.2 5.8" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="10.5" fill="var(--color-rompi)" />
+      <circle cx="12" cy="12" r="7.6" fill="none" stroke="var(--color-inverse)" strokeWidth="1.4" />
+      <path d="M9.4 7.6v8.8M9.6 12.2l4.6-4.6M11.4 10.6l3.2 5.8" stroke="var(--color-inverse)" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }

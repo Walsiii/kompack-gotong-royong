@@ -1,0 +1,72 @@
+/* Hallmark · theme: custom (by request) · surface: absolute · scope: app */
+:root {
+  color-scheme: light;
+  --theme-ink: #171717;
+  --theme-ink-2: #454545;
+  --theme-ink-3: #646464;
+  --theme-paper: #f5f5f5;
+  --theme-card: #ffffff;
+  --theme-line: #d6d6d6;
+  --theme-surface: #ededed;
+  --theme-accent: #171717;
+  --theme-accent-hover: #333333;
+  --theme-accent-soft: #e8e8e8;
+  --theme-inverse: #ffffff;
+  --theme-ok: #343434;
+  --theme-warn: #484848;
+  --theme-bad: #171717;
+  --theme-overlay: rgb(0 0 0 / 0.48);
+  --theme-evidence-band: rgb(0 0 0 / 0.82);
+  --theme-shadow: rgb(0 0 0 / 0.09);
+  --theme-map-land: #eaeaea;
+  --theme-map-road: #ffffff;
+  --theme-map-building: #d5d5d5;
+  --theme-map-water: #d2d2d2;
+  --theme-map-green: #e1e1e1;
+  --theme-avatar-light: #ededed;
+  --theme-avatar-mid: #c3c3c3;
+  --theme-avatar-deep: #929292;
+  --theme-forest-swatch: #224e3a;
+  --theme-sunset-swatch: #963a24;
+  --font-body: 'Public Sans Variable', sans-serif;
+  --font-display: 'Public Sans Variable', sans-serif;
+  --font-mono: 'Public Sans Variable', sans-serif;
+  --color-surface: var(--theme-surface);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-accent-ink: var(--theme-inverse);
+  --color-inverse: var(--theme-inverse);
+  --color-focus: var(--theme-ink);
+  --color-overlay: var(--theme-overlay);
+  --color-evidence-band: var(--theme-evidence-band);
+  --color-shadow: var(--theme-shadow);
+  --color-avatar-light: var(--theme-avatar-light);
+  --color-avatar-mid: var(--theme-avatar-mid);
+  --color-avatar-deep: var(--theme-avatar-deep);
+  --color-map-land: var(--theme-map-land);
+  --color-map-road: var(--theme-map-road);
+  --color-map-building: var(--theme-map-building);
+  --color-map-water: var(--theme-map-water);
+  --color-map-green: var(--theme-map-green);
+  --color-forest-swatch: var(--theme-forest-swatch);
+  --color-sunset-swatch: var(--theme-sunset-swatch);
+  --radius-panel: 20px;
+  --radius-control: 12px;
+  --radius-inset: 8px;
+  --dur-micro: 140ms;
+  --dur-short: 220ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-theme='forest'] {
+  --theme-accent: #224e3a;
+  --theme-accent-hover: #163a29;
+  --theme-accent-soft: #e7efe9;
+  --theme-ok: #224e3a;
+}
+
+:root[data-theme='sunset'] {
+  --theme-accent: #963a24;
+  --theme-accent-hover: #762915;
+  --theme-accent-soft: #f5e8e1;
+  --theme-ok: #963a24;
+}

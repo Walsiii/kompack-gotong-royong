@@ -1,0 +1,40 @@
+{
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "theme": "custom: Kampung dalam tinta",
+  "genre": "playful",
+  "material": [
+    "existing working Kompack app",
+    "owner's UI screenshots",
+    "local demo missions and evidence",
+    "geographic vector map integration (live tiles blocked in cloud)"
+  ],
+  "preserve": [
+    "all routes",
+    "local IndexedDB persistence",
+    "mission and integrity rules",
+    "consent",
+    "all existing actions"
+  ],
+  "introduce": [
+    "monochrome token system",
+    "optional persisted accents",
+    "mission tickets",
+    "visual evidence summary",
+    "responsive interaction motion",
+    "explicit pedestrian navigation",
+    "generated fictional demo photographs"
+  ],
+  "references": [
+    "src/styles.css:9 existing theme",
+    "src/screens/MapHome.tsx:246 map workflow",
+    "src/screens/rt/ReviewSub.tsx:127 evidence checklist",
+    "src/main.tsx:4 bundled accessible font"
+  ],
+  "absent": [
+    "new testimonials",
+    "new real-world metrics",
+    "resident-supplied photography"
+  ]
+}

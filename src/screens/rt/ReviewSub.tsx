@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Check, MessageSquareText, ShieldCheck, X } from 'lucide-react'
+import { Check, MessageSquareText, TriangleAlert, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Compare } from '../../components/Compare'
+import { EvidenceSummary } from '../../components/EvidenceSummary'
 import { Avatar } from '../../components/art'
-import { Button, CheckList, Empty, Note, Page, Section, Sheet, TopBar, toast } from '../../components/ui'
+import { Button, Empty, Note, Page, Section, Sheet, TopBar, toast } from '../../components/ui'
 import { REJECT_REASONS } from '../../lib/catalog'
+import { fmtDist } from '../../lib/geo'
 import { assessSubmission, riskOf, type EvidenceRef } from '../../lib/integrity'
 import { personById, useMe, useStore } from '../../lib/store'
 import type { Check as CheckT } from '../../lib/types'
@@ -82,59 +84,59 @@ export function ReviewSub() {
 
   return (
     <Page bare>
-      <TopBar back="/rt/periksa" title="Periksa setoran" sub={misi.title} />
-      <Section className="grid gap-5 lg:grid-cols-[1.1fr_1fr] lg:items-start">
-        <div className="relative">
-          <Compare before={sub.before.img} after={sub.after.img} />
-          <p className="mt-2 text-center text-[0.8rem] text-ink-3">Geser pegangan untuk membandingkan sebelum dan sesudah.</p>
-          <AnimatePresence>
-            {verdict && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bottom-7 grid place-items-center rounded-[20px] bg-white/70">
-                <motion.div
-                  initial={{ scale: 2.4, rotate: -16, opacity: 0 }}
-                  animate={{ scale: 1, rotate: -6, opacity: 1 }}
-                  transition={{ type: 'spring', stiffness: 520, damping: 18 }}
-                  className={`plang !px-5 !py-3 text-[1.8rem] ${verdict === 'no' ? '!bg-bad' : ''}`}
-                  style={verdict === 'no' ? { boxShadow: 'inset 0 0 0 2px #D23A2A, inset 0 0 0 3.5px #fff' } : undefined}
-                >
-                  {verdict === 'ok' ? 'DISETUJUI' : 'DITOLAK'}
+      <TopBar back="/rt/periksa" title="Periksa setoran" />
+      <Section className="review-workspace">
+        <div className="review-visual">
+          <h2 className="review-mission-title">{misi.title}</h2>
+          <div className="review-compare-wrap">
+            <Compare before={sub.before.img} after={sub.after.img} />
+            <AnimatePresence>
+              {verdict && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="review-verdict" role="status">
+                  <motion.span initial={{ scale: 1.2, rotate: -10, opacity: 0 }} animate={{ scale: 1, rotate: -4, opacity: 1 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
+                    {verdict === 'ok' ? <Check size={28} aria-hidden="true" /> : <X size={28} aria-hidden="true" />}
+                    {verdict === 'ok' ? 'Disetujui!' : 'Minta ulang'}
+                  </motion.span>
                 </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              )}
+            </AnimatePresence>
+          </div>
+          <p className="review-compare-caption"><span>Geser untuk membandingkan.</span>{(sub.before.sample || sub.after.sample) && <span className="review-example-label">Gambar simulasi</span>}</p>
+          <div className="review-mission-facts">
+            <p>{misi.place}</p>
+            <dl>
+              <div><dt>Jarak check-in</dt><dd>{fmtDist(sub.checkin.dist)} <span>/ radius {misi.radius} m</span></dd></div>
+              <div><dt>Waktu di foto</dt><dd>{Math.max(0, Math.round((sub.after.at - sub.before.at) / 60000))} menit <span>/ min. {misi.minMinutes} menit</span></dd></div>
+            </dl>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <Avatar index={who.avatar} size={48} />
-            <div className="min-w-0 flex-1">
-              <p className="font-display text-[1.25rem] font-bold leading-tight">{who.name}</p>
-              <p className="text-[0.86rem] text-ink-2">{new Date().getFullYear() - who.birthYear} tahun · kepercayaan {who.trust}/100</p>
+        <div className="review-decision">
+          <div className="review-person">
+            <Avatar index={who.avatar} size={36} />
+            <div className="review-person-info">
+              <p>{who.name}</p>
+              <p>Kepercayaan {who.trust}/100</p>
             </div>
-            {risk && <span className={`rounded-full px-3 py-1.5 text-[0.86rem] font-semibold ${risk.cls}`}>{risk.text}</span>}
+            {risk && <span className={`review-risk ${risk.cls}`}>{riskOf(checks!) !== 'rendah' && <TriangleAlert size={13} aria-hidden="true" />}{risk.text}</span>}
           </div>
 
           {sub.note && (
-            <p className="flex items-start gap-2 rounded-xl bg-white p-3 text-[0.9rem] italic shadow-float">
-              <MessageSquareText size={16} className="mt-0.5 flex-none text-ink-3" /> “{sub.note}”
+            <p className="review-note">
+              <MessageSquareText size={16} aria-hidden="true" /> <span>“{sub.note}”</span>
             </p>
           )}
 
-          <div className="panel p-4">
-            <p className="flex items-center gap-1.5 font-semibold">
-              <ShieldCheck size={17} className="text-plang" /> Pemeriksaan anti-curang
-            </p>
-            <div className="mt-3">{checks ? <CheckList checks={checks} /> : <p className="text-ink-2">Memeriksa bukti…</p>}</div>
-          </div>
+          <EvidenceSummary checks={checks} simulated={sub.checkin.simulated} />
 
           {self ? (
             <Note tone="warn">Ini setoranmu sendiri. Kamu tidak bisa memeriksanya.</Note>
           ) : open ? (
-            <div className="flex gap-3">
+            <div className="review-actions">
               <Button tone="soft" className="flex-1" onClick={() => setRejecting(true)}>
                 <X size={18} /> Tolak
               </Button>
-              <Button tone="plang" className="flex-[1.6]" onClick={() => decide(true)}>
+              <Button tone="primary" className="flex-[1.6]" disabled={!checks} onClick={() => decide(true)}>
                 <Check size={18} strokeWidth={2.6} /> Setujui +{misi.points}
               </Button>
             </div>

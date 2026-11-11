@@ -1,0 +1,242 @@
+/* Hallmark · theme: custom · idea: a neighbourhood that greets you back · shape: app screen · scope: app · redesign: full · genre: playful */
+/* Critique: a living pos ronda replaces the warning-heavy signup; facts and consent stay available, and motion answers an action. */
+/* Hallmark · waive 28b · The Camera video is a live device stream with a visible starting state · Kamera aktif shows the current camera view and cannot have a prerecorded poster. */
+/* Hallmark · waive 80 · Owner explicitly requested an original playful character · This companion responds to signup progress and never substitutes for real evidence. */
+.welcome {
+  height: 100%;
+  color: var(--color-ink);
+  background: var(--color-card);
+}
+.welcome-wrap {
+  max-width: 1120px;
+  min-height: 100%;
+  margin-inline: auto;
+  padding: calc(var(--safe-t) + 28px) 40px calc(var(--safe-b) + 20px);
+  display: flex;
+  flex-direction: column;
+}
+.welcome-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.welcome-step-label,
+.welcome-footer {
+  font-size: 15px;
+  color: var(--color-ink-2);
+}
+.welcome-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 64px;
+  flex: 1;
+  padding-block: 44px;
+}
+.welcome-companion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-width: 0;
+  background: transparent;
+  border-right: 1px solid var(--color-line);
+  padding: 40px 20px;
+}
+.kampung-buddy {
+  display: block;
+  width: 100%;
+  max-width: 250px;
+  overflow: visible;
+}
+.welcome-buddy-button {
+  display: block;
+  width: 100%;
+  max-width: 250px;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  color: var(--color-ink);
+}
+.welcome-buddy-button:active { transform: translateY(2px); }
+.welcome-buddy-button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 8px; }
+.welcome-bubble {
+  margin-top: 28px;
+  min-height: 1.5em;
+  font-size: 16px;
+  text-align: center;
+  font-weight: 500;
+}
+.welcome-progress {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  color: var(--color-ink-2);
+}
+.welcome-progress-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.welcome-progress-item > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-line);
+  border-radius: 50%;
+  font-size: 13px;
+}
+.welcome-progress-item.is-complete > span:first-child { background: var(--color-ink); color: var(--color-inverse); border-color: var(--color-ink); }
+.welcome-progress-name { display: none; }
+.welcome-progress-item[aria-current='step'] .welcome-progress-name { display: inline; }
+.welcome-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 4px;
+  margin: -12px 0 12px;
+  color: var(--color-ink-2);
+  background: transparent;
+  border-radius: 8px;
+}
+.welcome-back:hover { color: var(--color-ink); }
+.welcome-step { min-width: 0; }
+.welcome-title {
+  text-wrap: balance;
+  margin: 0;
+  font-size: 42px;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  font-weight: 650;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.welcome-title--form { font-size: 38px; }
+.welcome-intro {
+  margin-top: 20px;
+  max-width: 35ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-ink-2);
+}
+.welcome-playbook {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 32px;
+  padding-block: 24px;
+  border-block: 1px solid var(--color-line);
+}
+.welcome-playbook > span { display: flex; flex-direction: column; gap: 8px; font-size: 16px; font-weight: 600; }
+.welcome-details { margin-block: 16px; color: var(--color-ink-2); font-size: 16px; }
+.welcome-details summary { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; border-radius: 8px; }
+.welcome-details summary::after { content: '+'; font-size: 24px; color: var(--color-ink); }
+.welcome-details[open] summary::after { content: '−'; }
+.welcome-details summary::-webkit-details-marker { display: none; }
+.welcome-details summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.welcome-details ol,
+.welcome-details ul { display: flex; flex-direction: column; gap: 16px; padding-block: 8px 16px; }
+.welcome-details li { padding-left: 12px; border-left: 2px solid var(--color-line); }
+.welcome-details strong { color: var(--color-ink); }
+.welcome-details p { margin-top: 4px; }
+.welcome .btn, .earned-celebration .btn { min-height: 52px; font-weight: 600; }
+.welcome-primary { margin-top: 12px; }
+.welcome-form { margin-top: 24px; }
+.welcome :disabled { cursor: not-allowed; opacity: 0.55; transform: none; }
+.welcome-form .field { background: var(--color-surface); }
+.welcome-avatars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.welcome-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 66px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+.welcome-avatar.is-selected { border-color: var(--color-ink); background: var(--color-card); }
+.welcome-avatar:hover { background: var(--color-accent-soft); }
+.welcome-avatar:active { transform: scale(0.96); }
+.welcome-avatar-check { position: absolute; right: 4px; bottom: 4px; display: grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: var(--color-ink); color: var(--color-inverse); }
+.welcome-consent { display: flex; align-items: flex-start; gap: 12px; margin-top: 16px; font-size: 16px; }
+.welcome-consent input { width: 22px; height: 22px; margin-top: 0px; flex: none; accent-color: var(--color-ink); }
+.welcome-helper { min-height: 1.5em; margin-top: 12px; color: var(--color-ink-2); font-size: 16px; line-height: 1.5; }
+.welcome-fair-play { display: flex; align-items: center; gap: 16px; margin-top: 28px; padding-block: 20px; border-block: 1px solid var(--color-line); }
+.welcome-fair-play > svg { flex: none; }
+.welcome-fair-play p { font-size: 16px; line-height: 1.6; color: var(--color-ink-2); }
+.welcome-fair-play strong { color: var(--color-ink); }
+.welcome-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+.welcome-actions .btn { white-space: nowrap; }
+.welcome-footer { margin-top: auto; padding-top: 12px; text-align: center; }
+
+.earned-celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: calc(var(--safe-t) + 24px) 24px calc(var(--safe-b) + 24px);
+  background: var(--color-card);
+  color: var(--color-ink);
+  text-align: center;
+}
+.earned-content { position: relative; width: 100%; max-width: 460px; padding-block: 8px; }
+.earned-content .kampung-buddy { max-width: 160px; margin: 0 auto 8px; }
+.earned-content h2 { text-wrap: balance; margin: 0; font-size: 34px; line-height: 1.15; font-weight: 650; letter-spacing: -0.025em; }
+.earned-mission { margin-top: 16px; font-size: 17px; color: var(--color-ink-2); }
+.earned-points { margin-top: 24px; font-size: 80px; font-weight: 650; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+.earned-unit { margin-top: 4px; font-size: 18px; }
+.earned-approval { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; font-size: 16px; color: var(--color-ink-2); }
+.earned-rank { margin-top: 24px; padding: 16px; border-block: 1px solid var(--color-line); }
+.earned-rank p { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-ink-2); font-size: 16px; }
+.earned-rank strong { display: block; margin-top: 4px; font-size: 24px; }
+.earned-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 32px; }
+.earned-close { min-height: 48px; border-radius: 16px; color: var(--color-ink-2); }
+.earned-close:hover { background: var(--color-surface); color: var(--color-ink); }
+.earned-rays { position: absolute; inset: 0; pointer-events: none; }
+.earned-rays > span { position: absolute; left: 50%; top: 38%; width: 6px; height: 15px; background: var(--color-ink); border-radius: 3px; }
+
+@media (max-width: 959px) {
+  .welcome-wrap { max-width: 520px; padding: calc(var(--safe-t) + 20px) 24px calc(var(--safe-b) + 16px); }
+  .welcome-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 20px; align-content: start; }
+  .welcome-companion { background: transparent; padding: 0; border: 0; }
+  .welcome-buddy-button { max-width: 155px; }
+  .welcome-bubble { margin-top: 0px; font-size: 16px; }
+  .welcome-content { min-width: 0; }
+  .welcome-progress { justify-content: center; margin-bottom: 20px; }
+  .welcome-title { font-size: 32px; }
+  .welcome-title--form { font-size: 30px; }
+  .welcome-intro { margin-top: 16px; font-size: 16px; }
+  .welcome-playbook { margin-top: 24px; padding-block: 16px; gap: 8px; }
+  .welcome-playbook > span { font-size: 15px; gap: 8px; }
+  .welcome-details { margin-block: 8px; }
+  .welcome-primary { margin-top: 8px; }
+  .welcome-companion--step-1, .welcome-companion--step-2 { flex-direction: row; justify-content: flex-start; gap: 12px; }
+  .welcome-companion--step-1 .welcome-buddy-button,
+  .welcome-companion--step-2 .welcome-buddy-button { width: 64px; flex: none; }
+  .welcome-companion--step-1 .welcome-bubble,
+  .welcome-companion--step-2 .welcome-bubble { margin-top: 0px; text-align: left; font-size: 15px; }
+  .welcome-footer { font-size: 14px; }
+  .welcome-form { margin-top: 20px; }
+  .welcome-avatar { min-height: 58px; }
+  .welcome-actions { margin-top: 24px; }
+  .earned-content .kampung-buddy { max-width: 136px; }
+  .earned-content h2 { font-size: 28px; }
+  .earned-points { font-size: 72px; }
+}
+@media (max-width: 359px) {
+  .welcome-wrap { padding-inline: 16px; }
+  .welcome-title { font-size: 30px; }
+  .welcome-title--form { font-size: 28px; }
+  .welcome-actions .btn { font-size: 15px; padding-inline: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome *, .earned-celebration *, .kampung-buddy { animation: none !important; transition: none !important; }
+}

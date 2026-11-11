@@ -1,17 +1,19 @@
 # Kompack! — Gotong Royong Acknowledgment
 
-Kerja bakti jadi misi di peta 3D RT-mu. Purwarupa hackathon tim **Batak Intelligence** (Case 2: Stronger Communities and Everyday Services).
+Kerja bakti jadi misi di peta lingkunganmu. Purwarupa hackathon tim **Batak Intelligence** (Case 2: Stronger Communities and Everyday Services).
 
-| Peta (2D, bisa 3D) | Pos Ronda | Anti-curang | Wilayah RT |
-|---|---|---|---|
-| ![](docs/peta.png) | ![](docs/pos-ronda.png) | ![](docs/anti-curang.png) | ![](docs/wilayah.png) |
+| Mulai | Peta ringkas | Periksa bukti |
+|---|---|---|
+| ![](docs/ui-welcome.png) | ![](docs/ui-map.png) | ![](docs/ui-review.png) |
+
+Tampilan bawaan hitam-putih dengan Public Sans; aksen Hutan/Senja bisa dipilih di **Aku → Pengaturan**. Screenshot peta di atas diambil saat server ubin terblokir oleh jaringan cloud, sehingga jalan belum terlihat. Aplikasi memakai data geografis OpenFreeMap/OpenStreetMap.
 
 ## Cara mencoba
 
 | Platform | Cara |
 |---|---|
-| **Android** | Pasang `release/kompack.apk` (APK debug, izinkan "sumber tidak dikenal"). |
-| **Web / PC** | `npm install` lalu `npm run dev` → buka http://localhost:5173 |
+| **Android** | Unduh artifact `kompack-apk` dari workflow Build terbaru, atau jalankan `npm run android:apk`. APK dalam `release/` adalah build sebelumnya. |
+| **Web / PC** | Node ≥22.12; `npm ci` lalu `npm run dev` → buka http://localhost:5173 |
 | **Desktop (Rust/Tauri)** | `npm run desktop:dev` atau `npm run desktop:build` (butuh Rust; di Linux juga `libwebkit2gtk-4.1-dev`) |
 
 Di PC pilih **"Coba di PC (mode uji)"** saat pendaftaran: posisi dipindah dengan mengetuk peta, foto contoh boleh dipakai bila tak ada webcam, dan waktu tunggu bisa dilewati. Semua setoran mode uji ditandai untuk Ketua RT.
@@ -19,6 +21,16 @@ Di PC pilih **"Coba di PC (mode uji)"** saat pendaftaran: posisi dipindah dengan
 Untuk mencoba sisi Ketua RT: **Aku → Masuk sebagai Ketua RT** (akun demo Pak Hendra). Buka dua jendela browser untuk melihat warga dan RT berjalan bersamaan.
 
 Kamera dan GPS browser butuh `localhost` atau HTTPS.
+
+Foto contoh baru adalah gambar simulasi yang dibuat untuk demo, ditandai di luar foto. Bukti yang sudah tersimpan tetap dipertahankan. Untuk mencoba data contoh baru pada instalasi lama, gunakan profil browser baru; **Aku → Hapus data** juga tersedia jika seluruh data lokal memang ingin dihapus.
+
+## Peta dan navigasi
+
+Cari misi/laporan, pilih kategori atau penanda, lalu tekan **Mulai navigasi**. Jalur jalan kaki mengikuti respons Valhalla, dengan petunjuk belokan, estimasi waktu, posisi GPS, dan pencarian ulang saat keluar jalur. Menekan atau menggeser peta tidak otomatis meminta rute. Tersedia tautan arah jalan kaki di Google Maps saat layanan rute tidak terhubung.
+
+Izinkan HTTPS ke `tiles.openfreemap.org`, `tile.openstreetmap.org`, dan `valhalla1.openstreetmap.de`. Lokasi awal dan tujuan dikirim ke layanan rute hanya setelah navigasi dimulai. GPS simulasi, tidak akurat, atau kedaluwarsa tidak mengonfirmasi kedatangan. Sampai di tujuan tetap harus dilanjutkan dengan check-in misi.
+
+Validasi: `npm run test:routing` menguji parser rute, pembatalan/timeout, dan kualitas GPS dengan respons fixture; `npm run build` memeriksa TypeScript dan menghasilkan web/PWA. Tes fixture tidak membuktikan konektivitas layanan langsung. Pada lingkungan cloud saat revisi ini dibuat, ketiga host peta/rute masih ditolak proxy; draft allowlist perlu disimpan dan diterapkan sebelum pengujian langsung.
 
 ## Alur
 

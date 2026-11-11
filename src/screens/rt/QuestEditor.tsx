@@ -18,7 +18,7 @@ function Stepper({ value, set, min, max, step, label, unit }: { value: number; s
   return (
     <div>
       <span className="label">{label}</span>
-      <div className="flex items-center gap-2 rounded-[13px] bg-[#F3F5F2] p-1">
+      <div className="flex items-center gap-2 rounded-[13px] bg-surface p-1">
         <button type="button" aria-label={`Kurangi ${label}`} disabled={value <= min} onClick={() => set(Math.max(min, value - step))} className="btn btn--white btn--icon !h-10 !min-h-10 !w-10">
           <Minus size={17} />
         </button>
@@ -108,8 +108,8 @@ export function QuestEditor() {
             <Map3D center={start0} zoom={17.2} threeD={false} territory={group.territory} circle={{ ...pin, radius, bad: !!areaProblem }} onReady={onReady} />
             <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-full" aria-hidden="true">
               <svg width="38" height="48" viewBox="0 0 38 48">
-                <path d="M19 2C9.6 2 3 9 3 17.6 3 28.6 19 46 19 46s16-17.4 16-28.4C35 9 28.4 2 19 2z" fill={areaProblem ? '#D23A2A' : '#FF5A1F'} stroke="#fff" strokeWidth="2.5" />
-                <circle cx="19" cy="17.5" r="5.5" fill="#fff" />
+                <path d="M19 2C9.6 2 3 9 3 17.6 3 28.6 19 46 19 46s16-17.4 16-28.4C35 9 28.4 2 19 2z" fill={areaProblem ? 'var(--color-ink)' : 'var(--color-ink-3)'} stroke="var(--color-card)" strokeWidth="2.5" />
+                <circle cx="19" cy="17.5" r="5.5" fill="var(--color-card)" />
               </svg>
             </div>
             <p className="mono absolute left-2.5 top-2.5 z-10 rounded-lg bg-ink/75 px-2 py-1 text-[0.8rem] text-white">Geser peta untuk memindahkan titik</p>
@@ -121,7 +121,7 @@ export function QuestEditor() {
               </label>
               <span className="font-display wd-wide tnum font-bold">{radius} m</span>
             </div>
-            <input id="q-radius" type="range" min={20} max={150} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="mt-2 w-full accent-[#FF5A1F]" />
+            <input id="q-radius" type="range" min={20} max={150} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-ink-3)]" />
             <p className={`mt-1 text-[0.8rem] ${areaProblem ? 'font-semibold text-bad' : 'text-ink-3'}`}>
               {areaProblem ?? `Jarak ke batas ${group.name}: ${room} m. Area check-in tidak boleh keluar dari wilayah RT.`}
             </p>

@@ -17,7 +17,7 @@ export const CATS: Record<Category, CatInfo> = {
   sampah: {
     id: 'sampah',
     label: 'Sampah',
-    color: '#E39B2D',
+    color: 'var(--color-ink)',
     title: 'Angkut sampah liar',
     desc: 'Kumpulkan sampah yang menumpuk ke karung, pisahkan plastik, lalu bawa ke titik kumpul.',
     points: 50,
@@ -26,7 +26,7 @@ export const CATS: Record<Category, CatInfo> = {
   got: {
     id: 'got',
     label: 'Selokan',
-    color: '#2F86A6',
+    color: 'var(--color-ink)',
     title: 'Bersihkan selokan',
     desc: 'Angkat sampah dan lumpur dari selokan supaya air mengalir. Pakai sarung tangan.',
     points: 70,
@@ -35,7 +35,7 @@ export const CATS: Record<Category, CatInfo> = {
   rusak: {
     id: 'rusak',
     label: 'Fasilitas rusak',
-    color: '#B9533A',
+    color: 'var(--color-ink)',
     title: 'Perbaiki fasilitas',
     desc: 'Bantu perbaiki fasilitas umum yang rusak bersama pengurus RT. Alat disediakan.',
     points: 80,
@@ -44,7 +44,7 @@ export const CATS: Record<Category, CatInfo> = {
   taman: {
     id: 'taman',
     label: 'Taman',
-    color: '#3E8F4F',
+    color: 'var(--color-ink)',
     title: 'Rawat taman warga',
     desc: 'Siram tanaman, cabut rumput liar, dan rapikan pot di taman RT.',
     points: 45,
@@ -53,7 +53,7 @@ export const CATS: Record<Category, CatInfo> = {
   bantu: {
     id: 'bantu',
     label: 'Bantu warga',
-    color: '#C6466E',
+    color: 'var(--color-ink)',
     title: 'Bantu tetangga',
     desc: 'Bantu warga yang butuh tenaga, misalnya lansia yang tidak kuat mengangkat barang.',
     points: 60,

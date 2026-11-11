@@ -32,16 +32,16 @@ function Track({ steps, at }: { steps: string[]; at: number }) {
       {steps.map((s, i) => (
         <li key={s} className="flex min-w-0 flex-1 flex-col items-center">
           <div className="flex w-full items-center">
-            <span className={`h-[2px] flex-1 ${i === 0 ? 'opacity-0' : i <= at ? 'bg-plang' : 'bg-[#DDE3DC]'}`} />
+            <span className={`h-[2px] flex-1 ${i === 0 ? 'opacity-0' : i <= at ? 'bg-plang' : 'bg-surface'}`} />
             <motion.span
               initial={false}
               animate={i === at ? { scale: [1, 1.35, 1] } : { scale: 1 }}
               transition={{ repeat: i === at ? Infinity : 0, duration: 1.8 }}
-              className={`grid h-4 w-4 flex-none place-items-center rounded-full ${i < at ? 'bg-plang' : i === at ? 'bg-rompi' : 'bg-[#DDE3DC]'}`}
+              className={`grid h-4 w-4 flex-none place-items-center rounded-full ${i < at ? 'bg-plang' : i === at ? 'bg-rompi' : 'bg-surface'}`}
             >
-              {i < at && <Check size={10} strokeWidth={4} color="#fff" />}
+              {i < at && <Check size={10} strokeWidth={4} color="var(--color-card)" />}
             </motion.span>
-            <span className={`h-[2px] flex-1 ${i === steps.length - 1 ? 'opacity-0' : i < at ? 'bg-plang' : 'bg-[#DDE3DC]'}`} />
+            <span className={`h-[2px] flex-1 ${i === steps.length - 1 ? 'opacity-0' : i < at ? 'bg-plang' : 'bg-surface'}`} />
           </div>
           <span className={`mono mt-1 px-0.5 text-center text-[0.8rem] leading-tight ${i === at ? 'font-semibold text-ink' : 'text-ink-3'}`}>{s}</span>
         </li>
@@ -127,7 +127,7 @@ export function Group() {
     <Page>
       <TopBar
         title="Pos Ronda"
-        sub={group?.kind === 'rw' ? `Antar-RT se-${group.name}` : `${group?.name} · ${memberList.length} warga`}
+        sub={group?.kind === 'rw' ? `Antar-RT se-${group.name}` : `${group?.name} / ${memberList.length} warga`}
         right={
           <button type="button" onClick={() => setMembers(true)} className="btn btn--white btn--icon !h-10 !min-h-10 !w-10" aria-label="Lihat warga">
             <Users size={18} />
@@ -140,7 +140,7 @@ export function Group() {
           {groups.map((g) => (
             <button key={g.id} type="button" onClick={() => pickGroup(g)} className={`chip flex-none ${g.id === groupId ? 'is-on' : ''} ${g.member ? '' : 'opacity-55'}`}>
               {!g.member && <Lock size={12} />}
-              {g.kind === 'rw' ? `${g.name} · antar-RT` : g.name}
+              {g.kind === 'rw' ? `${g.name} / antar-RT` : g.name}
             </button>
           ))}
         </div>
@@ -152,14 +152,14 @@ export function Group() {
               <span key={i} className="absolute left-0 top-0 h-20 w-20 rounded-full border border-rompi/60" style={{ animation: 'kp-pulse 3s ease-out infinite', animationDelay: `${i}s` }} />
             ))}
           </div>
-          <p className="mono flex items-center gap-1.5 text-[0.8rem] text-rompi">
+          <p className="mono flex items-center gap-1.5 text-[0.8rem] text-inverse">
             <BellRing size={13} /> Kentongan {group?.name}
           </p>
           {call ? (
             <>
               <p className="mt-2 max-w-[52ch] text-[1.02rem] font-medium leading-snug">{call.text}</p>
               <p className="mt-1 text-[0.86rem] text-white/60">
-                {personById(users, call.authorId)?.name} · {fmtAgo(call.at, now)}
+                {personById(users, call.authorId)?.name} / {fmtAgo(call.at, now)}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 {me && !rt && (
@@ -194,8 +194,8 @@ export function Group() {
               onChange={setLane}
               className="w-full max-w-[460px]"
               options={[
-                { value: 'regu', label: `Butuh regu · ${questPosts.length}` },
-                { value: 'laporan', label: `Laporan${waiting ? ` · ${waiting}` : ''}` },
+                { value: 'regu', label: `Butuh regu / ${questPosts.length}` },
+                { value: 'laporan', label: `Laporan${waiting ? ` / ${waiting}` : ''}` },
                 { value: 'kabar', label: 'Kabar' },
               ]}
             />
@@ -217,7 +217,7 @@ export function Group() {
                           <div className="min-w-0 flex-1">
                             <h3 className="text-[1.12rem]">{q.title}</h3>
                             <p className="mt-0.5 truncate text-[0.8rem] text-ink-2">
-                              {phaseLabel(q, now)} · {q.place}
+                              {phaseLabel(q, now)} / {q.place}
                             </p>
                           </div>
                           <Points value={q.points} plus />
@@ -226,7 +226,7 @@ export function Group() {
                         <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2">
                           <Faces people={regu} />
                           <span className="min-w-[120px] flex-1 text-[0.86rem] text-ink-2">
-                            {regu.length ? `${regu.length} sanggup datang` : 'Belum ada regu'} · {done}/{q.slots} sudah check-in
+                            {regu.length ? `${regu.length} sanggup datang` : 'Belum ada regu'} / {done}/{q.slots} sudah check-in
                           </span>
                           {me && !rt && !own && (
                             <motion.button type="button" whileTap={{ scale: 0.92 }} onClick={() => toggleReaction(p.id, 'ikut', me.id)} className={`btn btn--sm ${joined ? 'btn--plang' : 'btn--soft'}`}>
@@ -236,7 +236,7 @@ export function Group() {
                         </div>
 
                         <div className="mt-3 border-t border-line pt-3">
-                          <p className="eyebrow mb-2">Siapa bawa apa</p>
+                          <p className="meta-label mb-2">Siapa bawa apa</p>
                           <div className="flex flex-wrap gap-1.5">
                             {TOOLS.map((t) => {
                               const ids = p.reactions?.[t.key] ?? []
@@ -248,7 +248,7 @@ export function Group() {
                                   disabled={!me || rt || own}
                                   aria-pressed={on}
                                   onClick={() => me && toggleReaction(p.id, t.key, me.id)}
-                                  className={`chip !text-[0.86rem] ${ids.length && !on ? '!bg-[#E1EEE6] !text-plang-2 !shadow-none' : ''}`}
+                                  className={`chip !text-[0.86rem] ${ids.length && !on ? '!bg-surface !text-plang-2 !shadow-none' : ''}`}
                                 >
                                   {ids.length > 0 && <Check size={12} strokeWidth={3} />}
                                   {t.label}
@@ -260,7 +260,7 @@ export function Group() {
                         </div>
 
                         <Button tone="dark" small full className="mt-3.5" onClick={() => nav(`/misi/${q.id}`)}>
-                          {rt ? 'Lihat peserta' : own ? 'Dari laporanmu · lihat' : 'Buka misi'} <ArrowRight size={15} />
+                          {rt ? 'Lihat peserta' : own ? 'Dari laporanmu / lihat' : 'Buka misi'} <ArrowRight size={15} />
                         </Button>
                       </motion.article>
                     )
@@ -281,22 +281,22 @@ export function Group() {
                         key={p.id}
                         data-post={p.id}
                         initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0, boxShadow: focusPost === p.id ? '0 0 0 3px #FF5A1F' : '0 0 0 0px #FF5A1F' }}
+                        animate={{ opacity: 1, y: 0, boxShadow: focusPost === p.id ? '0 0 0 3px var(--color-ink-3)' : '0 0 0 0px var(--color-ink-3)' }}
                         transition={{ delay: i * 0.05 }}
                         className="panel overflow-hidden"
                       >
                         <div className="flex gap-3 p-4 pb-3">
                           {p.photo && <img src={p.photo.img} alt="Foto laporan" className="h-[84px] w-[84px] flex-none rounded-2xl object-cover" />}
                           <div className="min-w-0 flex-1">
-                            <p className="eyebrow" style={{ color: p.kind === 'tolong' ? '#C6466E' : '#E2470F' }}>
+                            <p className="meta-label" style={{ color: p.kind === 'tolong' ? 'var(--color-ink-3)' : 'var(--color-ink-3)' }}>
                               {p.kind === 'tolong' ? 'Minta tolong' : `Laporan ${CATS[p.category ?? 'sampah'].label.toLowerCase()}`}
                             </p>
                             <p className="mt-0.5 line-clamp-3 font-medium leading-snug">{p.text}</p>
                             <p className="mt-1 flex items-center gap-1 truncate text-[0.86rem] text-ink-3">
-                              {mineP ? 'Kamu' : a?.name} · {fmtAgo(p.at, now)}
+                              {mineP ? 'Kamu' : a?.name} / {fmtAgo(p.at, now)}
                               {p.place && (
                                 <>
-                                  {' · '}
+                                  {' / '}
                                   <MapPin size={11} className="flex-none" /> <span className="truncate">{p.place}</span>
                                 </>
                               )}
@@ -305,7 +305,7 @@ export function Group() {
                         </div>
                         <div className="px-3">
                           {p.status === 'ditolak' ? (
-                            <p className="rounded-xl bg-[#F6E0DC] px-3 py-2 text-[0.86rem] font-medium text-bad">Ditolak RT: {p.statusNote}</p>
+                            <p className="rounded-xl bg-surface px-3 py-2 text-[0.86rem] font-medium text-bad">Ditolak RT: {p.statusNote}</p>
                           ) : (
                             <Track steps={['Dilaporkan', 'Dicek RT', 'Jadi misi', 'Beres']} at={at} />
                           )}
@@ -344,7 +344,7 @@ export function Group() {
                   {news.length === 0 && <li className="p-4 text-ink-2">Belum ada kabar.</li>}
                   {news.map((p) => (
                     <li key={p.id} className="flex items-center gap-3 p-3.5">
-                      <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-[#E1EEE6]">
+                      <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-surface">
                         <Check size={14} strokeWidth={3} className="text-ok" />
                       </span>
                       <span className="min-w-0 flex-1 text-[0.9rem]">{p.text}</span>
@@ -363,7 +363,7 @@ export function Group() {
               <li key={c.id} className="p-3.5">
                 <p className="text-[0.92rem]">{c.text}</p>
                 <p className="mt-0.5 text-[0.8rem] text-ink-3">
-                  {personById(users, c.authorId)?.name} · {fmtAgo(c.at, now)}
+                  {personById(users, c.authorId)?.name} / {fmtAgo(c.at, now)}
                 </p>
               </li>
             ))}

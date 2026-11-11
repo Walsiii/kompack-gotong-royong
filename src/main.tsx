@@ -1,9 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Capacitor } from '@capacitor/core'
-import '@fontsource-variable/atkinson-hyperlegible-next/index.css'
+import '@fontsource-variable/public-sans/index.css'
 import './styles.css'
 import App from './App'
+import './lib/theme'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

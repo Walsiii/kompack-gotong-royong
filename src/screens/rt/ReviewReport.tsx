@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Eye, MapPin, Sparkles, X } from 'lucide-react'
+import { Camera, Eye, MapPin, Plus, TriangleAlert, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Map3D } from '../../components/Map3D'
 import { Avatar, CatTile } from '../../components/art'
@@ -8,6 +8,7 @@ import { CATS, DISMISS_REASONS, RULES } from '../../lib/catalog'
 import { fmtCoord, pointInRing } from '../../lib/geo'
 import { personById, useMe, useMyGroup, useStore } from '../../lib/store'
 import { fmtDateTime } from '../../lib/time'
+import '../../components/evidence.css'
 
 export function ReviewReport() {
   const { id } = useParams()
@@ -36,39 +37,40 @@ export function ReviewReport() {
 
   return (
     <Page bare>
-      <TopBar back="/rt/periksa" title={post.kind === 'tolong' ? 'Permintaan tolong' : 'Laporan warga'} sub={`${who.name} · ${fmtDateTime(post.at)}`} />
-      <Section className="grid gap-5 lg:grid-cols-2 lg:items-start">
-        <div className="flex flex-col gap-3">
-          {post.photo && <img src={post.photo.img} alt="Foto laporan" className="aspect-[4/3] w-full rounded-[20px] object-cover" />}
-          <div className="relative h-[200px] overflow-hidden rounded-[20px]">
+      <TopBar back="/rt/periksa" title={post.kind === 'tolong' ? 'Permintaan tolong' : 'Laporan warga'} />
+      <Section className="review-workspace">
+        <div className="review-visual">
+          <h2 className="review-mission-title">{post.place || CATS[cat].label}</h2>
+          {post.photo && <img src={post.photo.img} alt="Foto laporan" width={800} height={600} className="report-photo" />}
+          {post.photo?.sample && <p className="review-compare-caption"><span className="review-example-label">Gambar simulasi</span></p>}
+          <div className="report-map">
             <Map3D center={loc} zoom={17.2} territory={group.territory} interactive={false} pins={[{ id: post.id, lat: loc.lat, lng: loc.lng, kind: post.kind === 'tolong' ? 'tolong' : 'laporan', category: cat, state: 'live' }]} />
           </div>
         </div>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <Avatar index={who.avatar} size={46} />
-            <div className="min-w-0">
-              <p className="font-display text-[1.2rem] font-bold leading-tight">{who.name}</p>
-              <p className="text-[0.86rem] text-ink-2">{new Date().getFullYear() - who.birthYear} tahun · kepercayaan {who.trust}/100</p>
+        <div className="review-decision">
+          <div className="review-person">
+            <Avatar index={who.avatar} size={36} />
+            <div className="review-person-info">
+              <p>{who.name}</p>
+              <p>{new Date().getFullYear() - who.birthYear} tahun / kepercayaan {who.trust}/100</p>
             </div>
           </div>
-          <p className="text-[1.05rem] leading-snug">“{post.text}”</p>
-          <ul className="panel flex flex-col gap-2.5 p-4 text-[0.9rem]">
-            <li className="flex items-center gap-2.5">
-              <CatTile cat={cat} size={24} /> <b>{CATS[cat].label}</b> {post.place && <span className="text-ink-2">· {post.place}</span>}
+          <p className="report-copy">“{post.text}”</p>
+          <p className="review-action-caption">Dikirim {fmtDateTime(post.at)}</p>
+          <ul className="report-facts">
+            <li>
+              <CatTile cat={cat} size={24} /> <div><p><strong>{CATS[cat].label}</strong></p>{post.place && <small>{post.place}</small>}</div>
             </li>
-            <li className="flex items-center gap-2.5">
-              <MapPin size={17} className={inside ? 'text-ok' : 'text-bad'} />
-              <span>
-                {inside ? `Di dalam wilayah ${group.name}` : `Di luar wilayah ${group.name}`} <span className="mono text-[0.8rem] text-ink-3">{fmtCoord(loc)}</span>
-              </span>
+            <li>
+              {inside ? <MapPin size={21} aria-hidden="true" /> : <TriangleAlert size={21} aria-hidden="true" />}
+              <div><p>{inside ? `Di dalam wilayah ${group.name}` : `Di luar wilayah ${group.name}`}</p><small>{fmtCoord(loc)}</small></div>
             </li>
-            <li className="flex items-center gap-2.5">
-              <Check size={17} className="text-ok" /> Foto diambil dari kamera aplikasi{post.photo?.sample ? ' (foto contoh, mode uji)' : ''}
+            <li>
+              <Camera size={21} aria-hidden="true" /><div><p>{post.photo?.sample ? 'Foto contoh, mode uji' : post.photo ? 'Foto dari kamera aplikasi' : 'Belum ada foto'}</p><small>{post.photo?.sample ? 'Foto ini bukan bukti kamera di lokasi.' : 'Lihat kondisi yang dilaporkan di foto.'}</small></div>
             </li>
-            <li className="flex items-center gap-2.5">
-              <Eye size={17} className="text-ink-2" />
-              {witnesses.length ? `${witnesses.length} warga juga lihat: ${witnesses.map((w) => w!.name).join(', ')}` : 'Belum ada warga lain yang menyaksikan'}
+            <li>
+              <Eye size={21} aria-hidden="true" />
+              <div><p>{witnesses.length ? `${witnesses.length} warga juga lihat` : 'Belum ada saksi lain'}</p>{witnesses.length > 0 && <div className="report-witnesses"><span className="report-witness-stack">{witnesses.slice(0, 4).map((w) => <Avatar key={w!.id} index={w!.avatar} size={27} />)}</span><small>{witnesses.map((w) => w!.name).join(', ')}</small></div>}</div>
             </li>
           </ul>
           {post.status === 'menunggu' ? (
@@ -76,12 +78,12 @@ export function ReviewReport() {
               <Note tone="info">
                 Kalau dijadikan misi, {who.name} dapat +{RULES.reporterBonus} poin pelapor dan tidak bisa mengerjakannya sendiri.
               </Note>
-              <div className="flex gap-3">
+              <div className="review-actions">
                 <Button tone="soft" className="flex-1" onClick={() => setAsk(true)}>
                   <X size={18} /> Tolak
                 </Button>
                 <Button className="flex-[1.6]" disabled={!inside} onClick={() => nav(`/rt/misi-baru?dari=${post.id}`)}>
-                  <Sparkles size={18} /> Jadikan misi
+                  <Plus size={18} /> Jadikan misi
                 </Button>
               </div>
             </>
@@ -97,7 +99,7 @@ export function ReviewReport() {
             <button
               key={r}
               type="button"
-              className="rounded-xl bg-paper px-3.5 py-3 text-left font-medium hover:bg-[#E3E8E2]"
+              className="rounded-xl bg-paper px-3.5 py-3 text-left font-medium hover:bg-surface"
               onClick={() => {
                 const res = dismiss(post.id, me.id, r)
                 setAsk(false)

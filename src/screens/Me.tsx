@@ -10,6 +10,7 @@ import { isNative } from '../lib/location'
 import { groupPoints, personById, useIsRT, useMe, useMyGroup, usePoints, useSession, useSnap, useStore } from '../lib/store'
 import { fmtDateTime, useNow } from '../lib/time'
 import type { Redemption, Reward } from '../lib/types'
+import { THEMES, useTheme } from '../lib/theme'
 
 function Switch({ on, onChange, id, label }: { on: boolean; onChange: (v: boolean) => void; id: string; label: string }) {
   return (
@@ -20,9 +21,11 @@ function Switch({ on, onChange, id, label }: { on: boolean; onChange: (v: boolea
       aria-checked={on}
       aria-label={label}
       onClick={() => onChange(!on)}
-      className={`relative h-7 w-12 flex-none rounded-full transition-colors ${on ? 'bg-rompi' : 'bg-[#CFD6CF]'}`}
+      className="flex h-11 w-14 flex-none items-center justify-center rounded-xl"
     >
-      <motion.span layout className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow ${on ? 'right-1' : 'left-1'}`} transition={{ type: 'spring', stiffness: 600, damping: 34 }} />
+      <span className={`relative h-7 w-12 rounded-full transition-colors ${on ? 'bg-rompi' : 'bg-line'}`}>
+        <motion.span layout className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow ${on ? 'right-1' : 'left-1'}`} transition={{ type: 'spring', stiffness: 600, damping: 34 }} />
+      </span>
     </button>
   )
 }
@@ -45,6 +48,7 @@ export function Me() {
   const [confirm, setConfirm] = useState<Reward | null>(null)
   const [ticket, setTicket] = useState<Redemption | null>(null)
   const [askReset, setAskReset] = useState(false)
+  const { theme, setTheme } = useTheme()
 
   const mySubs = useMemo(
     () =>
@@ -71,15 +75,15 @@ export function Me() {
 
   return (
     <Page>
-      <TopBar title={rt ? 'Akun Ketua RT' : 'Aku'} sub={rt ? `${group?.name} · ${group?.rw}` : undefined} />
+      <TopBar title={rt ? 'Akun Ketua RT' : 'Aku'} sub={rt ? `${group?.name} / ${group?.rw}` : undefined} />
       <Section className="flex flex-col gap-5">
         {/* profil */}
         <div className="flex items-center gap-4">
           <Avatar index={me.avatar} size={68} />
           <div className="min-w-0">
             <h2 className="truncate text-[1.7rem]">{me.name}</h2>
-            <p className="text-[0.88rem] text-ink-2">{me.title ?? `${age} tahun · ${group?.name}`}</p>
-            {!rt && <span className="plang mt-1.5 text-[0.86rem]">LV {rank.level} · {rank.name.toUpperCase()}</span>}
+            <p className="text-[0.88rem] text-ink-2">{me.title ?? `${age} tahun / ${group?.name}`}</p>
+            {!rt && <span className="plang mt-1.5 text-[0.86rem]">LV {rank.level} / {rank.name.toUpperCase()}</span>}
           </div>
         </div>
 
@@ -88,7 +92,7 @@ export function Me() {
             <div className="panel p-4">
               <div className="flex items-end justify-between gap-3">
                 <div>
-                  <p className="eyebrow">Total poin</p>
+                  <p className="meta-label">Total poin</p>
                   <p className="font-display wd-wide flex items-center gap-1.5 text-[2.4rem] font-bold leading-none">
                     <CountUp value={pts.total} />
                   </p>
@@ -139,12 +143,12 @@ export function Me() {
                     <span
                       className={`rounded-full px-2.5 py-1 text-[0.8rem] font-semibold ${
                         s.status === 'approved'
-                          ? 'bg-[#E1EEE6] text-plang-2'
+                          ? 'bg-surface text-plang-2'
                           : s.status === 'pending'
-                            ? 'bg-[#E6EEF3] text-[#22566B]'
+                            ? 'bg-surface text-ink'
                             : s.status === 'rejected'
-                              ? 'bg-[#F1E3E1] text-bad'
-                              : 'bg-[#FDECDD] text-[#8A3A0E]'
+                              ? 'bg-surface text-bad'
+                              : 'bg-surface text-ink'
                       }`}
                     >
                       {s.status === 'approved' ? `+${s.awarded}` : s.status === 'pending' ? 'Dicek RT' : s.status === 'rejected' ? 'Ditolak' : 'Lanjutkan'}
@@ -199,7 +203,7 @@ export function Me() {
                         <span className="block truncate font-semibold">{REWARDS.find((x) => x.id === red.rewardId)?.title}</span>
                         <span className="mono block text-[0.8rem] text-ink-3">{red.code}</span>
                       </span>
-                      <span className={`rounded-full px-2.5 py-1 text-[0.8rem] font-semibold ${red.fulfilledAt ? 'bg-[#E1EEE6] text-plang-2' : 'bg-[#FDECDD] text-[#8A3A0E]'}`}>
+                      <span className={`rounded-full px-2.5 py-1 text-[0.8rem] font-semibold ${red.fulfilledAt ? 'bg-surface text-plang-2' : 'bg-surface text-ink'}`}>
                         {red.fulfilledAt ? 'Sudah diambil' : 'Siap ditukar'}
                       </span>
                     </button>
@@ -214,13 +218,13 @@ export function Me() {
           <>
             <section className="panel p-4">
               <div className="flex items-start gap-3">
-                <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-[#FFF1EA] text-rompi">
+                <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-surface text-rompi">
                   <MapPinned size={20} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-[1.15rem]">Wilayah {group.name}</h3>
                   <p className="mono text-[0.86rem] text-ink-2">
-                    {group.territory.length} titik sudut · luas {fmtArea(ringArea(group.territory))}
+                    {group.territory.length} titik sudut / luas {fmtArea(ringArea(group.territory))}
                   </p>
                 </div>
               </div>
@@ -244,7 +248,7 @@ export function Me() {
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-semibold">{REWARDS.find((x) => x.id === red.rewardId)?.title}</span>
                           <span className="mono block text-[0.8rem] text-ink-3">
-                            {w?.name} · {red.code}
+                            {w?.name} / {red.code}
                           </span>
                         </span>
                         {red.fulfilledAt ? (
@@ -267,10 +271,23 @@ export function Me() {
         {/* pengaturan */}
         <section>
           <h3 className="mb-2 text-[1.2rem]">Pengaturan</h3>
+          <fieldset className="appearance-picker mb-5">
+            <legend className="font-semibold">Warna pilihanmu</legend>
+            <p className="mt-1 mb-4 text-ink-2">Mulai dengan tinta. Ganti suasana kapan saja.</p>
+            <div className="grid grid-cols-3 gap-2" role="group" aria-label="Tema tampilan">
+              {THEMES.map((option) => (
+                <button key={option.id} type="button" aria-pressed={theme === option.id} onClick={() => setTheme(option.id)} className={`theme-choice theme-choice--${option.id}`}>
+                  <span className="theme-swatch" aria-hidden="true">{theme === option.id && <Check size={18} strokeWidth={3} />}</span>
+                  <span className="font-semibold">{option.label}</span>
+                  <span className="theme-description">{option.description}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
           <div className="panel divide-y divide-line">
             {!rt && (
               <div className="flex items-start gap-3 p-4">
-                <FlaskConical size={20} className="mt-0.5 flex-none text-[#5B4A9E]" />
+                <FlaskConical size={20} className="mt-0.5 flex-none text-ink" />
                 <div className="min-w-0 flex-1">
                   <label htmlFor="sw-test" className="block font-semibold">
                     Mode uji (coba di PC)
@@ -316,7 +333,7 @@ export function Me() {
             </div>
           </div>
           <p className="mt-3 px-1 text-[0.8rem] text-ink-3">
-            Kompack! 2.0 · {isNative ? 'Android' : 'Web'} · purwarupa tim Batak Intelligence. Data tersimpan di perangkat ini.
+            Kompack! 2.0 / {isNative ? 'Android' : 'Web'} / purwarupa tim Batak Intelligence. Data tersimpan di perangkat ini.
           </p>
         </section>
       </Section>

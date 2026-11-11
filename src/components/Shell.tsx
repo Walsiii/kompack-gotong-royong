@@ -56,56 +56,55 @@ export function Shell({ children }: { children: ReactNode }) {
   const half = Math.ceil(items.length / 2)
 
   const tab = (it: Item) => (
-    <NavLink key={it.to} to={it.to} end={it.end} className="relative flex min-w-0 flex-1 flex-col items-center gap-0.5 pb-1 pt-2">
+    <NavLink key={it.to} to={it.to} end={it.end} className="dock-tab relative flex min-w-0 flex-1 flex-col items-center gap-1 pb-1 pt-2">
       {({ isActive }) => (
         <>
           {isActive && (
-            <motion.span layoutId="tab-ind" className="reflect-stripes absolute top-0 h-[3px] w-8 rounded-full" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
+            <motion.span layoutId="tab-ind" className="absolute top-1.5 h-8 w-11 rounded-xl bg-surface" transition={{ duration: 0.18 }} />
           )}
           <span className="relative">
-            <it.icon size={22} strokeWidth={isActive ? 2.4 : 1.9} className={isActive ? 'text-ink' : 'text-ink-3'} />
+            <it.icon size={21} strokeWidth={isActive ? 2.2 : 1.7} className={isActive ? 'text-ink' : 'text-ink-3'} />
             {!!it.badge && (
               <span className="mono tnum absolute -right-2.5 -top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-rompi px-1 text-[0.8rem] font-semibold leading-none text-white ring-2 ring-white">
                 {it.badge}
               </span>
             )}
           </span>
-          <span className={`text-[0.8rem] leading-tight ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-3'}`}>{it.label}</span>
+          <span className={`relative mt-1 text-[0.8rem] leading-tight ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-3'}`}>{it.label}</span>
         </>
       )}
     </NavLink>
   )
 
   return (
-    <div className="flex h-full w-full bg-paper">
+    <div className="app-frame flex h-full w-full bg-paper">
       {/* rel kiri — layar lebar */}
-      <aside className="hidden w-[228px] flex-none flex-col border-r border-line bg-white lg:flex">
-        <div className="px-5 pb-4 pt-6">
-          <Logo size={26} />
+      <aside className="app-rail hidden w-[208px] flex-none flex-col bg-card lg:flex">
+        <div className="px-6 pb-6 pt-8">
+          <button type="button" aria-label="Kompack, ke peta" onClick={() => nav('/')}><Logo size={31} /></button>
           <div className="mt-4">
-            <span className="plang text-[0.86rem]">
-              {group?.name ?? 'RT'} · {group?.rw}
+            <span className="text-[0.9rem] text-ink-3">
+              {group?.name ?? 'RT'}, {group?.rw}
             </span>
           </div>
         </div>
         <button
           type="button"
           onClick={() => nav(action.to)}
-          className="btn btn--primary mx-4 mb-3"
+          className="btn btn--primary mx-4 mb-6"
         >
-          <Plus size={18} strokeWidth={2.6} /> {rt ? 'Buat misi' : 'Lapor / minta tolong'}
+          <Plus size={18} strokeWidth={2.2} /> {rt ? 'Buat misi' : 'Buat laporan'}
         </button>
         <nav className="flex flex-1 flex-col gap-0.5 px-3" aria-label="Navigasi utama">
           {items.map((it) => (
-            <NavLink key={it.to} to={it.to} end={it.end} className="relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] font-semibold">
+            <NavLink key={it.to} to={it.to} end={it.end} className="rail-link relative flex items-center gap-3 rounded-2xl px-4 py-3.5 text-[1rem] font-semibold">
               {({ isActive }) => (
                 <>
-                  {isActive && <motion.span layoutId="rail-ind" className="absolute inset-0 rounded-xl bg-paper" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
-                  {isActive && <span className="reflect-stripes absolute left-0 top-2 bottom-2 w-[3px] rounded-full" />}
-                  <it.icon size={20} strokeWidth={isActive ? 2.4 : 1.9} className={`relative ${isActive ? 'text-ink' : 'text-ink-3'}`} />
-                  <span className={`relative flex-1 ${isActive ? 'text-ink' : 'text-ink-2'}`}>{it.label}</span>
+                  {isActive && <motion.span layoutId="rail-ind" className="absolute inset-0 rounded-2xl bg-ink" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
+                  <it.icon size={21} strokeWidth={isActive ? 2.4 : 1.9} className={`relative ${isActive ? 'text-inverse' : 'text-ink-3'}`} />
+                  <span className={`relative flex-1 ${isActive ? 'text-inverse' : 'text-ink-2'}`}>{it.label}</span>
                   {!!it.badge && (
-                    <span className="mono tnum relative grid h-5 min-w-5 place-items-center rounded-full bg-rompi px-1.5 text-[0.8rem] font-semibold text-white">{it.badge}</span>
+                    <span className={`tnum relative grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-[0.8rem] font-semibold ${isActive ? 'bg-inverse text-ink' : 'bg-surface text-ink'}`}>{it.badge}</span>
                   )}
                 </>
               )}
@@ -130,17 +129,17 @@ export function Shell({ children }: { children: ReactNode }) {
         {!hideBar && (
           <nav
             aria-label="Navigasi utama"
-            className="absolute inset-x-0 bottom-0 z-[900] border-t border-line bg-white/95 backdrop-blur-md lg:hidden"
+            className="app-dock absolute inset-x-0 bottom-0 z-[900] bg-card lg:hidden"
             style={{ paddingBottom: 'var(--safe-b)' }}
           >
             <div className="mx-auto flex h-[var(--nav-h)] max-w-[520px] items-stretch px-2">
               {items.slice(0, half).map(tab)}
-              <div className="flex flex-1 items-start justify-center">
+              <div className="flex flex-1 items-center justify-center">
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.9 }}
                   onClick={() => nav(action.to)}
-                  className="btn btn--primary -mt-5 !h-[58px] !min-h-[58px] !w-[58px] flex-col !gap-0 !rounded-[18px] !p-0"
+                  className="btn btn--primary !h-[48px] !min-h-[48px] !w-[48px] flex-col !gap-0 !rounded-[14px] !p-0"
                   aria-label={rt ? 'Buat misi' : 'Lapor atau minta tolong'}
                 >
                   <Plus size={22} strokeWidth={2.8} />

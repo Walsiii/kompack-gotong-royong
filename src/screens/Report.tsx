@@ -84,7 +84,7 @@ export function Report() {
               <div className="flex flex-wrap gap-2">
                 {REPORT_CATS.map((c) => (
                   <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className="chip !py-2">
-                    <span className="grid h-5 w-5 place-items-center rounded-md" style={{ background: CATS[c].color }}>
+                    <span className="grid h-5 w-5 place-items-center rounded-md" style={{ background: 'var(--color-accent-soft)' }}>
                       <CatIcon cat={c} size={14} />
                     </span>
                     {CATS[c].label}
@@ -109,20 +109,22 @@ export function Report() {
                   </button>
                 </div>
                 <p className="absolute left-2 top-2 flex items-center gap-1 rounded-lg bg-ink/70 px-2 py-1 text-[0.8rem] font-semibold text-white">
-                  <ShieldCheck size={13} className="text-[#6BE3A4]" /> Disegel
+                  <ShieldCheck size={13} className="text-ink-2" /> Disegel
                 </p>
               </motion.div>
             ) : (
               <button
                 type="button"
+                aria-label="Buka kamera"
+                aria-describedby="report-camera-help"
                 onClick={() => setCam(true)}
-                className="group flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#C9D1C9] bg-white text-ink-2 transition-colors hover:border-rompi"
+                className="group flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-surface bg-white text-ink-2 transition-colors hover:border-rompi"
               >
                 <span className="grid h-16 w-16 place-items-center rounded-full bg-rompi text-white shadow-float transition-transform group-active:scale-90">
                   <CamIcon size={26} />
                 </span>
                 <span className="font-semibold text-ink">Buka kamera</span>
-                <span className="max-w-[28ch] text-center text-[0.8rem]">Foto langsung di tempat. Galeri tidak bisa dipakai supaya laporan tidak dipalsukan.</span>
+                <span id="report-camera-help" className="max-w-[28ch] text-center text-[0.9rem]">Foto langsung di tempat. Galeri tidak bisa dipakai supaya laporan tidak dipalsukan.</span>
               </button>
             )}
           </div>

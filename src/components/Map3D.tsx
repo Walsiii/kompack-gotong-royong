@@ -1,11 +1,12 @@
 import type {} from 'geojson'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { WifiOff } from 'lucide-react'
 import maplibregl, { type GeoJSONSource, type Map as MLMap } from 'maplibre-gl'
 import { CATS } from '../lib/catalog'
 import { circleRing, ringCenter } from '../lib/geo'
 import type { Category, LatLng, Ring } from '../lib/types'
 import { avatarSvg, catIconSvg } from './art'
-import { RASTER_TILES, kompackStyle } from './mapStyle'
+import { RASTER_TILES, kompackStyle, mapPalette } from './mapStyle'
 
 export interface MapPin {
   id: string
@@ -47,6 +48,10 @@ interface Props {
   intro?: boolean
   /** kamera berputar pelan mengelilingi titik tengah */
   orbit?: boolean
+  walkingRoute?: GeoJSON.LineString | null
+  walkingTarget?: LatLng | null
+  followMe?: boolean
+  onFollowChange?: (following: boolean) => void
   onReady?: (map: MLMap) => void
   className?: string
 }
@@ -96,23 +101,24 @@ function maskFC(ring: Ring | null | undefined): GeoJSON.FeatureCollection {
 /* ───────────── Elemen penanda ───────────── */
 
 function pinElement(p: MapPin, index: number): HTMLElement {
-  const el = document.createElement('div')
-  const color = CATS[p.category].color
+  const el = document.createElement('button')
+  el.type = 'button'
+  const color = 'var(--color-ink)'
   if (p.kind === 'misi') {
     el.className = `bk is-${p.state}`
     el.style.setProperty('--c', color)
     el.style.setProperty('--d', `${Math.min(index, 8) * 80}ms`)
     el.innerHTML = `<div class="bk-in"><div class="bk-ring"></div><div class="bk-base"></div><div class="bk-stem"></div><div class="bk-head">${catIconSvg(p.category)}${
       p.label ? `<span class="bk-pts">${p.label}</span>` : ''
-    }</div></div>`
+    }</div><span class="bk-label">${CATS[p.category].label}</span></div>`
   } else {
     el.className = 'rp'
-    el.style.setProperty('--c', p.kind === 'tolong' ? CATS.bantu.color : '#FF5A1F')
+    el.style.setProperty('--c', color)
     el.style.setProperty('--d', `${Math.min(index, 8) * 80 + 200}ms`)
     el.innerHTML = `<div class="rp-head">${
       p.kind === 'tolong'
         ? catIconSvg('bantu', 17)
-        : `<svg viewBox="0 0 24 24" width="17" height="17"><path d="M12 3.5 2.8 19.5h18.4z" fill="#FF5A1F"/><path d="M12 9.5v4.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1.3" fill="#fff"/></svg>`
+        : `<svg viewBox="0 0 24 24" width="17" height="17"><path d="M12 3.5 2.8 19.5h18.4z" fill="var(--color-ink)"/><path d="M12 9.5v4.6" stroke="var(--color-inverse)" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1.3" fill="var(--color-inverse)"/></svg>`
     }</div>`
   }
   el.setAttribute('role', 'button')
@@ -151,38 +157,47 @@ export function Map3D({
   interactive = true,
   intro,
   orbit,
+  walkingRoute,
+  walkingTarget,
+  followMe = false,
+  onFollowChange,
   onReady,
   className = '',
 }: Props) {
   const el = useRef<HTMLDivElement>(null)
+  const [mapUnavailable, setMapUnavailable] = useState(false)
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const mapRef = useRef<MLMap | null>(null)
   const loaded = useRef(false)
   const markers = useRef(new Map<string, { m: maplibregl.Marker; sig: string }>())
   const nbMarkers = useRef<maplibregl.Marker[]>([])
   const meMk = useRef<maplibregl.Marker | null>(null)
   const meAnim = useRef<number | null>(null)
-  const cb = useRef({ onSelect, onMapClick, onReady })
-  cb.current = { onSelect, onMapClick, onReady }
-  const latest = useRef({ territory, neighbors, circle, threeD, padding })
-  latest.current = { territory, neighbors, circle, threeD, padding }
+  const cb = useRef({ onSelect, onMapClick, onReady, onFollowChange })
+  cb.current = { onSelect, onMapClick, onReady, onFollowChange }
+  const latest = useRef({ territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget })
+  latest.current = { territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget }
 
   /* buat peta sekali */
   useEffect(() => {
     if (!el.current) return
+    const reduce = reducedMotion()
+    const c = mapPalette()
     const map = new maplibregl.Map({
       container: el.current,
       style: kompackStyle(),
       center: [center.lng, center.lat],
-      zoom: intro ? zoom - 1.6 : zoom,
-      pitch: intro ? 0 : threeD ? PITCH : 0,
-      bearing: threeD && !intro ? BEARING : 0,
+      zoom: intro && !reduce ? zoom - 0.6 : zoom,
+      pitch: intro && !reduce ? 0 : threeD ? PITCH : 0,
+      bearing: threeD && (!intro || reduce) ? BEARING : 0,
       maxPitch: 70,
       minZoom: 12,
       maxZoom: 19.5,
       interactive,
       attributionControl: { compact: true },
-      fadeDuration: 150,
+      fadeDuration: reduce ? 0 : 150,
     })
+    map.setPadding({ top: padding?.top ?? 0, bottom: padding?.bottom ?? 0, left: padding?.left ?? 0, right: padding?.right ?? 0 })
     mapRef.current = map
     map.touchZoomRotate.disableRotation()
     if (!interactive) map.getCanvas().style.cursor = 'default'
@@ -194,15 +209,19 @@ export function Map3D({
       if (fallback || !map.getStyle()) return
       fallback = true
       map.addSource('osm-raster', { type: 'raster', tiles: [RASTER_TILES], tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap' })
-      map.addLayer({ id: 'osm-raster', type: 'raster', source: 'osm-raster', paint: { 'raster-saturation': -0.55, 'raster-brightness-min': 0.08 } }, 'landuse')
+      map.addLayer({ id: 'osm-raster', type: 'raster', source: 'osm-raster', paint: { 'raster-saturation': -1, 'raster-brightness-min': 0.08 } }, 'landuse')
     }
     map.on('error', (e) => {
       const msg = String((e as { error?: { message?: string } }).error?.message ?? '')
       const src = (e as { sourceId?: string }).sourceId
+      if (src === 'osm-raster') setMapUnavailable(true)
       if (!vectorOk && (src === 'ofm' || (msg.includes('openfreemap') && !msg.includes('/fonts/')))) useFallback()
     })
     map.on('sourcedata', (e) => {
-      if (e.sourceId === 'ofm' && e.tile) vectorOk = true
+      if (e.tile && (e.tile as { state?: string }).state === 'loaded') {
+        if (e.sourceId === 'ofm') vectorOk = true
+        if (e.sourceId === 'ofm' || e.sourceId === 'osm-raster') setMapUnavailable(false)
+      }
     })
     const fbTimer = window.setTimeout(() => !vectorOk && useFallback(), 7000)
 
@@ -215,51 +234,82 @@ export function Map3D({
       map.addSource('territory', { type: 'geojson', data: EMPTY })
       map.addSource('neighbors', { type: 'geojson', data: EMPTY })
       map.addSource('circle', { type: 'geojson', data: EMPTY })
-      map.addLayer({ id: 'nb-fill', type: 'fill', source: 'neighbors', paint: { 'fill-color': '#0F1F19', 'fill-opacity': 0.05 } }, beforeLabels)
-      map.addLayer({ id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': '#0F1F19', 'fill-opacity': 0.2 } })
+      map.addLayer({ id: 'nb-fill', type: 'fill', source: 'neighbors', paint: { 'fill-color': c.ink, 'fill-opacity': 0.05 } }, beforeLabels)
+      map.addLayer({ id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': c.ink, 'fill-opacity': 0.06 } })
       map.addLayer({
         id: 'nb-line',
         type: 'line',
         source: 'neighbors',
-        paint: { 'line-color': '#55655D', 'line-width': 1.6, 'line-dasharray': [3, 2], 'line-opacity': 0.8 },
+        paint: { 'line-color': c.muted, 'line-width': 1.6, 'line-dasharray': [3, 2], 'line-opacity': 0.8 },
       })
       map.addLayer({
         id: 'terr-line',
         type: 'line',
         source: 'territory',
         layout: { 'line-join': 'round' },
-        paint: { 'line-color': '#FF5A1F', 'line-width': 2.6, 'line-dasharray': [2.2, 1.4] },
+        paint: { 'line-color': c.accent, 'line-width': 1.4, 'line-opacity': 0.55, 'line-dasharray': [2.2, 1.4] },
       })
       map.addLayer({
         id: 'circle-fill',
         type: 'fill',
         source: 'circle',
-        paint: { 'fill-color': ['case', ['get', 'bad'], '#D23A2A', '#FF5A1F'], 'fill-opacity': 0.14 },
+        paint: { 'fill-color': ['case', ['get', 'bad'], c.bad, c.accent], 'fill-opacity': 0.06 },
       })
       map.addLayer({
         id: 'circle-line',
         type: 'line',
         source: 'circle',
-        paint: { 'line-color': ['case', ['get', 'bad'], '#D23A2A', '#FF5A1F'], 'line-width': 2, 'line-dasharray': [1.5, 1.5] },
+        paint: { 'line-color': ['case', ['get', 'bad'], c.bad, c.accent], 'line-width': 2, 'line-dasharray': [1.5, 1.5] },
       })
+      map.addSource('walking-route', { type: 'geojson', data: EMPTY })
+      map.addLayer({ id: 'walking-route-halo', type: 'line', source: 'walking-route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': c.light, 'line-width': 9, 'line-opacity': 0.95 } }, beforeLabels)
+      map.addLayer({ id: 'walking-route-line', type: 'line', source: 'walking-route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': c.accent, 'line-width': 5 } }, beforeLabels)
+      map.addSource('walking-destination', { type: 'geojson', data: EMPTY })
+      map.addLayer({ id: 'walking-destination-point', type: 'circle', source: 'walking-destination', paint: { 'circle-radius': 7, 'circle-color': c.accent, 'circle-stroke-color': c.light, 'circle-stroke-width': 3 } })
       applyAreas()
-      if (intro) {
+      applyWalkingRoute()
+      updateTheme()
+      if (intro && !reduce) {
         const { threeD: td } = latest.current
-        map.flyTo({ center: [center.lng, center.lat], zoom, pitch: td ? PITCH : 0, bearing: td ? BEARING : 0, duration: 2200, curve: 1.2, essential: true })
+        map.flyTo({ center: [center.lng, center.lat], zoom, pitch: td ? PITCH : 0, bearing: td ? BEARING : 0, duration: 1500, curve: 1.2, essential: false })
       }
       cb.current.onReady?.(map)
     })
 
+    map.on('dragstart', () => cb.current.onFollowChange?.(false))
     map.on('click', (e) => cb.current.onMapClick?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }))
 
-    /* kamera berputar pelan sampai pengguna menyentuh peta */
+    // Theme changes update paint in place, preserving sources and map interaction state.
+    const updateTheme = () => {
+      const palette = mapPalette()
+      for (const layer of kompackStyle().layers) {
+        if (!map.getLayer(layer.id) || !layer.paint) continue
+        for (const [name, value] of Object.entries(layer.paint)) map.setPaintProperty(layer.id, name, value)
+      }
+      const paints: [string, string, unknown][] = [
+        ['nb-fill', 'fill-color', palette.ink], ['mask', 'fill-color', palette.ink],
+        ['nb-line', 'line-color', palette.muted], ['terr-line', 'line-color', palette.accent],
+        ['circle-fill', 'fill-color', ['case', ['get', 'bad'], palette.bad, palette.accent]],
+        ['circle-line', 'line-color', ['case', ['get', 'bad'], palette.bad, palette.accent]],
+        ['walking-route-halo', 'line-color', palette.light], ['walking-route-line', 'line-color', palette.accent],
+        ['walking-destination-point', 'circle-color', palette.accent], ['walking-destination-point', 'circle-stroke-color', palette.light],
+      ]
+      for (const [id, name, value] of paints) if (map.getLayer(id)) map.setPaintProperty(id, name, value)
+    }
+    const themeObserver = new MutationObserver(() => { if (loaded.current) updateTheme() })
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+
+    /* An opening orbit stops after five seconds or the first interaction. */
     let orbitRaf: number | null = null
     let stopOrbit = false
-    if (orbit) {
+    const orbitStopTimer = window.setTimeout(() => (stopOrbit = true), 5000)
+    if (orbit && !reduce) {
       const canvas = map.getCanvasContainer()
       const halt = () => (stopOrbit = true)
       canvas.addEventListener('pointerdown', halt, { once: true })
       canvas.addEventListener('wheel', halt, { once: true })
+      canvas.addEventListener('pointerenter', halt, { once: true })
+      canvas.addEventListener('focusin', halt, { once: true })
       const spin = () => {
         if (stopOrbit) return
         if (!map.isMoving()) map.setBearing(map.getBearing() + 0.06)
@@ -271,6 +321,8 @@ export function Map3D({
     const store = markers.current
     return () => {
       window.clearTimeout(fbTimer)
+      window.clearTimeout(orbitStopTimer)
+      themeObserver.disconnect()
       if (orbitRaf) cancelAnimationFrame(orbitRaf)
       if (meAnim.current) cancelAnimationFrame(meAnim.current)
       map.remove()
@@ -282,6 +334,31 @@ export function Map3D({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const applyWalkingRoute = () => {
+    const map = mapRef.current
+    if (!map || !loaded.current) return
+    const route = latest.current.walkingRoute
+    const target = latest.current.walkingTarget
+    const data: GeoJSON.FeatureCollection = route ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: route }] } : EMPTY
+    const destination: GeoJSON.FeatureCollection = route && target ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [target.lng, target.lat] } }] } : EMPTY
+    ;(map.getSource('walking-route') as GeoJSONSource | undefined)?.setData(data)
+    ;(map.getSource('walking-destination') as GeoJSONSource | undefined)?.setData(destination)
+    if (route && route.coordinates.length > 1) {
+      const bounds = new maplibregl.LngLatBounds()
+      for (const [lng, lat] of route.coordinates) bounds.extend([lng, lat])
+      const p = latest.current.padding
+      map.fitBounds(bounds, { padding: { top: (p?.top ?? 0) + 32, bottom: (p?.bottom ?? 0) + 32, left: (p?.left ?? 0) + 32, right: (p?.right ?? 0) + 32 }, duration: reducedMotion() ? 0 : 450, maxZoom: 18 })
+    }
+  }
+  useEffect(applyWalkingRoute, [walkingRoute, walkingTarget?.lat, walkingTarget?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !followMe || !me) return
+    const p = latest.current.padding
+    map.easeTo({ center: [me.lng, me.lat], padding: { top: p?.top ?? 0, bottom: p?.bottom ?? 0, left: p?.left ?? 0, right: p?.right ?? 0 }, duration: reducedMotion() ? 0 : 400, essential: false })
+  }, [followMe, me?.lat, me?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* wilayah, tetangga, lingkaran */
   const applyAreas = () => {
@@ -316,7 +393,8 @@ export function Map3D({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loaded.current) return
-    const c = territoryBad ? '#D23A2A' : '#FF5A1F'
+    const palette = mapPalette()
+    const c = territoryBad ? palette.bad : palette.accent
     map.setPaintProperty('terr-line', 'line-color', c)
   }, [territoryBad])
 
@@ -354,6 +432,7 @@ export function Map3D({
     for (const [id, v] of markers.current) {
       const e = v.m.getElement()
       e.classList.toggle('is-sel', id === selectedId)
+      e.setAttribute('aria-pressed', String(id === selectedId))
       e.style.zIndex = id === selectedId ? '5' : ''
     }
   }, [selectedId, pins])
@@ -376,6 +455,7 @@ export function Map3D({
     const to = { lng: me.lng, lat: me.lat }
     if (Math.abs(from.lng - to.lng) < 1e-9 && Math.abs(from.lat - to.lat) < 1e-9) return
     if (meAnim.current) cancelAnimationFrame(meAnim.current)
+    if (reducedMotion()) { mk.setLngLat([to.lng, to.lat]); return }
     const t0 = performance.now()
     const step = (t: number) => {
       const k = Math.min(1, (t - t0) / 700)
@@ -400,7 +480,7 @@ export function Map3D({
       firstTilt.current = false
       return
     }
-    mapRef.current?.easeTo({ pitch: threeD ? PITCH : 0, bearing: threeD ? BEARING : 0, duration: 1100, easing: (t) => 1 - Math.pow(1 - t, 4) })
+    mapRef.current?.easeTo({ pitch: threeD ? PITCH : 0, bearing: threeD ? BEARING : 0, duration: reducedMotion() ? 0 : 650, easing: (t) => 1 - Math.pow(1 - t, 4) })
   }, [threeD])
 
   /* fokus ke titik */
@@ -412,11 +492,16 @@ export function Map3D({
       center: [focus.lng, focus.lat],
       zoom: Math.max(map.getZoom(), focus.zoom ?? 16.8),
       padding: { top: p?.top ?? 0, bottom: p?.bottom ?? 0, left: p?.left ?? 0, right: p?.right ?? 0 },
-      duration: 1000,
+      duration: reducedMotion() ? 0 : 650,
       easing: (t) => 1 - Math.pow(1 - t, 4),
-      essential: true,
+      essential: false,
     })
   }, [focus?.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={el} className={`h-full w-full ${className}`} />
+  return (
+    <div className={`relative h-full w-full ${className}`}>
+      <div ref={el} className="h-full w-full" />
+      {mapUnavailable && <details className="map-availability"><summary aria-label="Status peta"><WifiOff size={16} aria-hidden="true" /><span>Peta</span></summary><p role="status">Ubin peta belum terhubung. Lokasi dan daftar misi tetap bisa dipakai. Periksa jaringan atau buka arah di Google Maps.</p></details>}
+    </div>
+  )
 }

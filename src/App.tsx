@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Celebration } from './components/Celebration'
 import { Shell } from './components/Shell'
@@ -26,7 +26,7 @@ function Splash() {
       <motion.div initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 18 }}>
         <Logo size={48} light />
       </motion.div>
-      <div className="reflect-stripes mt-5 h-2 w-32 rounded-full" style={{ animation: 'kp-sweep 1.2s linear infinite' }} />
+      <motion.div className="mt-6 h-1 w-12 rounded-full bg-inverse" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.7 }} />
     </motion.div>
   )
 }
@@ -76,10 +76,10 @@ export default function App() {
 
   const ready = hydrated && minTime
   return (
-    <HashRouter>
+    <MotionConfig reducedMotion="user"><HashRouter>
       {ready && (registered ? <Screens /> : <Onboarding />)}
       <AnimatePresence>{!ready && <Splash key="splash" />}</AnimatePresence>
       <ToastHost />
-    </HashRouter>
+    </HashRouter></MotionConfig>
   )
 }

@@ -70,6 +70,7 @@ export function HoldButton({
       }}
       onPointerUp={() => stop()}
       onPointerCancel={() => stop()}
+      onBlur={() => stop()}
       onKeyDown={(e) => {
         if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
           e.preventDefault()
@@ -79,12 +80,12 @@ export function HoldButton({
       onKeyUp={(e) => (e.key === ' ' || e.key === 'Enter') && stop()}
       onContextMenu={(e) => e.preventDefault()}
       animate={done ? { scale: [1, 1.04, 1] } : { scale: 1 - p * 0.03 }}
-      className="btn relative w-full select-none overflow-hidden !bg-ink text-white disabled:!bg-[#E4E8E3]"
+      className="btn relative w-full select-none overflow-hidden !bg-ink text-white disabled:!bg-surface"
       style={{ minHeight: 58, touchAction: 'none' }}
     >
       <span
-        className="reflect-stripes absolute inset-y-0 left-0"
-        style={{ width: `${(done ? 1 : p) * 100}%`, animation: 'kp-sweep 1.2s linear infinite' }}
+        className="hold-progress absolute inset-0 origin-left"
+        style={{ transform: `scaleX(${done ? 1 : p})` }}
         aria-hidden="true"
       />
       <span className="relative flex items-center gap-2">{done && doneLabel ? doneLabel : children}</span>

@@ -26,12 +26,12 @@ function Step({ n, title, state, children, summary }: { n: number; title: string
         <motion.span
           animate={state === 'active' ? { scale: [1, 1.12, 1] } : { scale: 1 }}
           className={`mono grid h-8 w-8 flex-none place-items-center rounded-full text-[0.8rem] font-semibold ${
-            state === 'done' ? 'bg-plang text-white' : state === 'active' ? 'bg-rompi text-white' : 'bg-[#E3E8E2] text-ink-3'
+            state === 'done' ? 'bg-plang text-white' : state === 'active' ? 'bg-rompi text-white' : 'bg-surface text-ink-3'
           }`}
         >
           {state === 'done' ? <Check size={16} strokeWidth={3} /> : n}
         </motion.span>
-        <span className={`mt-1 w-[2px] flex-1 rounded-full ${state === 'done' ? 'bg-plang' : 'bg-[#E3E8E2]'}`} />
+        <span className={`mt-1 w-[2px] flex-1 rounded-full ${state === 'done' ? 'bg-plang' : 'bg-surface'}`} />
       </div>
       <div className="min-w-0 flex-1 pb-4">
         <h3 className={`pt-1 text-[1.08rem] ${state === 'todo' ? 'text-ink-3' : ''}`}>{title}</h3>
@@ -201,7 +201,7 @@ export function QuestFlow() {
                   <span className="absolute inset-0 rounded-full border-2 border-white/60" />
                   <span
                     className="absolute inset-0 rounded-full"
-                    style={{ background: 'conic-gradient(from 0deg, transparent 0deg, rgba(255,90,31,.85) 70deg, transparent 72deg)', animation: 'kp-spin 0.9s linear infinite' }}
+                    style={{ background: 'conic-gradient(from 0deg, transparent 0deg, var(--color-inverse) 70deg, transparent 72deg)', animation: 'kp-spin 0.9s linear infinite' }}
                   />
                   <LocateFixed size={30} className="relative text-white" />
                 </div>
@@ -226,7 +226,7 @@ export function QuestFlow() {
           <div className="flex items-start gap-3">
             <CatTile cat={q.category} size={50} muted={view.phase !== 'live'} />
             <div className="min-w-0 flex-1">
-              <p className="eyebrow" style={{ color: cat.color }}>
+              <p className="meta-label" style={{ color: cat.color }}>
                 {q.source === 'rt' ? 'Misi dari RT' : q.source === 'laporan' ? 'Dari laporan warga' : 'Permintaan tolong'}
               </p>
               <h1 className="mt-0.5 text-[1.6rem]">{q.title}</h1>
@@ -252,7 +252,7 @@ export function QuestFlow() {
           </dl>
 
           <p className="mt-4 flex items-center gap-1.5 text-[0.86rem] font-medium">
-            <Clock size={15} className="flex-none text-ink-3" /> {fmtWindow(q.startAt, q.endAt, now)} · <span className="text-ink-2">{phaseLabel(q, now)}</span>
+            <Clock size={15} className="flex-none text-ink-3" /> {fmtWindow(q.startAt, q.endAt, now)} / <span className="text-ink-2">{phaseLabel(q, now)}</span>
           </p>
           <p className="mt-2 leading-relaxed text-ink-2">{q.desc}</p>
 
@@ -265,7 +265,7 @@ export function QuestFlow() {
               {fromPost.photo && <img src={fromPost.photo.img} alt="" className="h-12 w-12 flex-none rounded-xl object-cover" />}
               <span className="min-w-0 flex-1">
                 <span className="block text-[0.8rem] text-ink-2">
-                  {fromPost.kind === 'tolong' ? 'Diminta oleh' : 'Dilaporkan oleh'} <b className="text-ink">{requester.name}</b> · {fmtAgo(fromPost.at, now)}
+                  {fromPost.kind === 'tolong' ? 'Diminta oleh' : 'Dilaporkan oleh'} <b className="text-ink">{requester.name}</b> / {fmtAgo(fromPost.at, now)}
                 </span>
                 <span className="block truncate text-[0.88rem] font-medium">“{fromPost.text}”</span>
               </span>
@@ -319,7 +319,7 @@ export function QuestFlow() {
                 </Note>
               )}
               <ol>
-                <Step n={1} title="Datang & check-in" state={st(0)} summary={sub && `${fmtDateTime(sub.checkin.at, now)} · ${fmtDist(sub.checkin.dist)} dari titik`}>
+                <Step n={1} title="Datang & check-in" state={st(0)} summary={sub && `${fmtDateTime(sub.checkin.at, now)} / ${fmtDist(sub.checkin.dist)} dari titik`}>
                   {view.phase === 'upcoming' ? (
                     <p className="text-ink-2">
                       Check-in dibuka <b className="text-ink">{fmtDateTime(q.startAt - EARLY_MS, now)}</b>.
@@ -330,7 +330,7 @@ export function QuestFlow() {
                     <p className="text-ink-2">Kuota peserta sudah penuh.</p>
                   ) : (
                     <>
-                      <div className={`mb-3 flex items-center gap-2.5 rounded-xl px-3 py-2.5 ${view.inRange ? 'bg-[#E1EEE6]' : 'bg-paper'}`} aria-live="polite">
+                      <div className={`mb-3 flex items-center gap-2.5 rounded-xl px-3 py-2.5 ${view.inRange ? 'bg-surface' : 'bg-paper'}`} aria-live="polite">
                         <LocateFixed size={18} className={view.inRange ? 'text-ok' : 'text-ink-3'} />
                         <span className="text-[0.88rem] font-medium">
                           {view.dist === null
@@ -365,7 +365,7 @@ export function QuestFlow() {
 
                 <Step n={3} title="Kerjakan" state={st(2)} summary={sub?.before && `Minimal ${q.minMinutes} menit kerja`}>
                   <div className="rounded-2xl bg-ink p-4 text-white">
-                    <p className="mono flex items-center gap-1.5 text-[0.8rem] text-rompi">
+                    <p className="mono flex items-center gap-1.5 text-[0.8rem] text-inverse">
                       <Timer size={13} /> Foto sesudah terbuka dalam
                     </p>
                     <p className="font-display wd-wide mt-1 text-[2.6rem] font-bold leading-none tnum">{fmtCountdown(workLeft)}</p>
@@ -473,7 +473,7 @@ export function QuestFlow() {
           tag={cam === 'after' ? 'SESUDAH' : 'SEBELUM'}
           userId={me.id}
           refId={q.id}
-          caption={`${group?.name ?? ''} · ${q.code}`}
+          caption={`${group?.name ?? ''} / ${q.code}`}
           ghost={cam === 'after' ? sub.before?.img : undefined}
           validate={validatePhoto(cam ?? 'before')}
           sample={testMode ? () => demoPhoto(cam === 'after' ? 'after' : 'before', q.category, Math.floor(Math.random() * 7)) : undefined}

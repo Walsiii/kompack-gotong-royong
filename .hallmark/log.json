@@ -1,0 +1,63 @@
+[
+  {
+    "theme": "custom: Kampung dalam tinta",
+    "shape": "app screen",
+    "axes": [
+      "light",
+      "neutral",
+      "Public Sans"
+    ],
+    "signature": "compact neighbourhood mission selection and direct photographic evidence review",
+    "hero": "onboarding companion",
+    "nav": "desktop rail and mobile dock",
+    "footer": "app navigation",
+    "imagery": "fictional generated demo before/after, with sample flags; resident evidence preserved",
+    "sections": [
+      "onboarding",
+      "map and walking directions",
+      "missions",
+      "community",
+      "evidence review",
+      "profile and appearance"
+    ],
+    "prompt": "Owner requests familiar Google Maps conventions, compact black-white UI, simpler type, coherent mascot hands, photo-led evidence, optional themes and real pedestrian navigation.",
+    "sweep": {
+      "floor_fail": 0,
+      "reflex_unresolved": 0,
+      "warnings": 2,
+      "rendered_viewports": [
+        375,
+        1280,
+        1440,
+        1920
+      ],
+      "kept": "5/5 links; 130/136 handler expressions with 6 rewrites recorded; existing actions retained"
+    },
+    "waived": {
+      "7b": "Owner requests white surfaces.",
+      "12": "Short interaction springs, reduced-motion fallback.",
+      "28b": "Live camera stream uses live loading/error states.",
+      "80": "Owner requests a playful neighbourhood character."
+    },
+    "finish_review": "Earlier fresh-context review identified map notice overlap, onboarding focus and CountUp reduced-motion issues; all resolved. Final compact revision checked with browser screenshots and interaction assertions by primary agent.",
+    "warnings_answered": {
+      "49": "Report camera has concise aria-label and explanatory aria-describedby; helper copy intentionally wraps.",
+      "F4": "Legacy button tone aliases retained across routes; dark primary and quiet secondary actions visually differentiated."
+    },
+    "validation": [
+      "production TypeScript/Vite/PWA build",
+      "9 deterministic routing tests",
+      "real report camera/seal flow, approval and rejection",
+      "theme persistence and dialog keyboard trap",
+      "responsive map at 320/390/1440px",
+      "mocked route displayed via actual MapLibre source and cleared on cancellation",
+      "injected GPS arrival, stale GPS withdrawal, no automatic check-in",
+      "production browser smoke with no uncaught errors"
+    ],
+    "limitations": [
+      "live tile and route service blocked by cloud egress proxy",
+      "Android/Windows packaging not executed locally",
+      "simulated images shared across demo categories; existing stored evidence not migrated"
+    ]
+  }
+]

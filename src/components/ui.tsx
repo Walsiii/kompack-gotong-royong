@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
-import { AnimatePresence, animate, motion } from 'motion/react'
+import { AnimatePresence, animate, motion, useDragControls, useReducedMotion } from 'motion/react'
 import { AlertTriangle, ArrowLeft, Check, FlaskConical, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { create } from 'zustand'
@@ -38,7 +38,7 @@ export function IconButton({ label, children, className = '', ...rest }: ButtonH
 export function TopBar({ title, sub, back, right }: { title: ReactNode; sub?: ReactNode; back?: string | true; right?: ReactNode }) {
   const nav = useNavigate()
   return (
-    <header className="sticky top-0 z-20 bg-paper/90 backdrop-blur-md" style={{ paddingTop: 'var(--safe-t)' }}>
+    <header className="page-heading sticky top-0 z-20 bg-paper" style={{ paddingTop: 'var(--safe-t)' }}>
       <div className="mx-auto flex w-full max-w-[960px] items-center gap-3 px-4 py-3 lg:px-8">
         {back && (
           <button
@@ -94,18 +94,19 @@ export function Points({ value, plus, className = '' }: { value: number; plus?: 
 export function CountUp({ value, className, duration = 0.9 }: { value: number; className?: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null)
   const prev = useRef(value)
+  const reduced = useReducedMotion()
   useEffect(() => {
     const el = ref.current
     if (!el) return
     const from = prev.current
     prev.current = value
-    if (from === value) {
+    if (from === value || reduced) {
       el.textContent = String(value)
       return
     }
     const c = animate(from, value, { duration, ease: [0.2, 0.8, 0.2, 1], onUpdate: (v) => (el.textContent = String(Math.round(v))) })
     return () => c.stop()
-  }, [value, duration])
+  }, [value, duration, reduced])
   return (
     <span ref={ref} className={`tnum ${className ?? ''}`}>
       {value}
@@ -116,7 +117,7 @@ export function CountUp({ value, className, duration = 0.9 }: { value: number; c
 export function Bar({ value, className = '', tone = 'rompi', height = 8 }: { value: number; className?: string; tone?: 'rompi' | 'plang'; height?: number }) {
   return (
     <div
-      className={`overflow-hidden rounded-full bg-[#E3E8E2] ${className}`}
+      className={`overflow-hidden rounded-full bg-surface ${className}`}
       style={{ height }}
       role="progressbar"
       aria-valuenow={Math.round(value * 100)}
@@ -124,9 +125,9 @@ export function Bar({ value, className = '', tone = 'rompi', height = 8 }: { val
       aria-valuemax={100}
     >
       <motion.div
-        className={`h-full rounded-full ${tone === 'rompi' ? 'bg-rompi' : 'bg-plang'}`}
-        initial={{ width: 0 }}
-        animate={{ width: `${Math.max(value > 0 ? 3 : 0, value * 100)}%` }}
+        className={`h-full w-full origin-left rounded-full ${tone === 'rompi' ? 'bg-rompi' : 'bg-plang'}`}
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: Math.max(0, Math.min(1, value)) }}
         transition={{ type: 'spring', stiffness: 80, damping: 18, delay: 0.1 }}
       />
     </div>
@@ -139,7 +140,7 @@ export function StatusDot({ status }: { status: CheckT['status'] }) {
   const cls = status === 'ok' ? 'bg-ok' : status === 'warn' ? 'bg-warn' : 'bg-bad'
   return (
     <span className={`grid h-5 w-5 flex-none place-items-center rounded-full ${cls}`}>
-      {status === 'ok' ? <Check size={12} strokeWidth={3.5} color="#fff" /> : status === 'warn' ? <span className="text-[11px] font-bold leading-none text-white">!</span> : <X size={12} strokeWidth={3.5} color="#fff" />}
+      {status === 'ok' ? <Check size={12} strokeWidth={3.5} color="var(--color-card)" /> : status === 'warn' ? <span className="text-[11px] font-bold leading-none text-white">!</span> : <X size={12} strokeWidth={3.5} color="var(--color-card)" />}
     </span>
   )
 }
@@ -170,9 +171,9 @@ export function CheckList({ checks, compact }: { checks: CheckT[]; compact?: boo
 
 export function Note({ children, tone = 'test', className = '' }: { children: ReactNode; tone?: 'test' | 'warn' | 'info'; className?: string }) {
   const map = {
-    test: { cls: 'bg-[#E9E4F6] text-[#3C2F6B]', icon: <FlaskConical size={15} strokeWidth={2.4} /> },
-    warn: { cls: 'bg-[#FDECDD] text-[#7A3410]', icon: <AlertTriangle size={15} strokeWidth={2.4} /> },
-    info: { cls: 'bg-[#E1EEE6] text-plang-2', icon: <Check size={15} strokeWidth={2.6} /> },
+    test: { cls: 'bg-surface text-ink', icon: <FlaskConical size={15} strokeWidth={2.4} /> },
+    warn: { cls: 'bg-surface text-ink', icon: <AlertTriangle size={15} strokeWidth={2.4} /> },
+    info: { cls: 'bg-surface text-plang-2', icon: <Check size={15} strokeWidth={2.6} /> },
   }[tone]
   return (
     <div className={`flex items-start gap-2 rounded-xl px-3 py-2.5 text-[0.86rem] font-medium leading-snug ${map.cls} ${className}`}>
@@ -196,12 +197,26 @@ export function Empty({ title, text, action }: { title: string; text: string; ac
 /* ───────────── Lembar dialog ───────────── */
 
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  const dragControls = useDragControls()
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const previous = document.activeElement as HTMLElement | null
+    const frame = requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLElement>('button, input, select, textarea, [tabindex="0"]')?.focus())
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); closeRef.current() }
+      if (e.key !== 'Tab') return
+      const items = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex="0"]') ?? [])
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (e.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) { e.preventDefault(); last?.focus() }
+      else if (!e.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) { e.preventDefault(); first?.focus() }
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('keydown', onKey); if (previous?.isConnected) previous.focus() }
+  }, [open])
 
   return (
     <AnimatePresence>
@@ -214,14 +229,18 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
           onClick={onClose}
         >
           <motion.div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
+            aria-label={typeof title === 'string' ? title : 'Pilihan'}
             onClick={(e) => e.stopPropagation()}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 380, damping: 36 }}
             drag="y"
+            dragListener={false}
+            dragControls={dragControls}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={(_, i) => (i.offset.y > 110 || i.velocity.y > 600) && onClose()}
@@ -229,10 +248,10 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
             style={{ paddingBottom: 'calc(var(--safe-b) + 20px)' }}
           >
             <div className="sticky top-0 z-10 bg-white px-5 pb-2 pt-2.5">
-              <div className="mx-auto mb-2.5 h-1.5 w-10 rounded-full bg-[#D5DBD5] lg:hidden" />
+              <div className="flex h-5 touch-none items-center justify-center lg:hidden" onPointerDown={(e) => dragControls.start(e)}><span className="h-1 w-10 rounded-full bg-line" /></div>
               <div className="flex items-center gap-3">
                 <h2 className="min-w-0 flex-1 text-[1.3rem]">{title}</h2>
-                <button type="button" aria-label="Tutup" onClick={onClose} className="btn btn--soft btn--icon !h-9 !min-h-9 !w-9 flex-none">
+                <button type="button" aria-label="Tutup" onClick={onClose} className="btn btn--soft btn--icon !h-11 !min-h-11 !w-11 flex-none">
                   <X size={17} strokeWidth={2.6} />
                 </button>
               </div>
@@ -286,7 +305,7 @@ export function ToastHost() {
             transition={{ type: 'spring', stiffness: 500, damping: 32 }}
             className={`flex max-w-[440px] items-start gap-2.5 rounded-2xl px-4 py-3 text-[0.92rem] font-semibold text-white shadow-lift ${tone === 'ok' ? 'bg-plang' : 'bg-ink'}`}
           >
-            {tone === 'ok' ? <Check size={18} strokeWidth={3} className="mt-px flex-none" /> : <AlertTriangle size={18} strokeWidth={2.4} className="mt-px flex-none text-rompi" />}
+            {tone === 'ok' ? <Check size={18} strokeWidth={3} className="mt-px flex-none" /> : <AlertTriangle size={18} strokeWidth={2.4} className="mt-px flex-none text-inverse" />}
             <span>{msg}</span>
           </motion.div>
         )}
@@ -311,15 +330,24 @@ export function Segmented<T extends string>({
   className?: string
 }) {
   return (
-    <div className={`inline-flex rounded-[13px] bg-[#E3E8E2] p-1 ${className}`} role="tablist">
+    <div className={`inline-flex rounded-[13px] bg-surface p-1 ${className}`} role="tablist" aria-label={id}>
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           role="tab"
           aria-selected={value === o.value}
+          tabIndex={value === o.value ? 0 : -1}
           onClick={() => onChange(o.value)}
-          className="relative flex-1 whitespace-nowrap rounded-[10px] px-3.5 py-1.5 text-[0.86rem] font-semibold"
+          onKeyDown={(e) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+            e.preventDefault()
+            const index = options.findIndex((option) => option.value === value)
+            const next = e.key === 'Home' ? 0 : e.key === 'End' ? options.length - 1 : (index + (e.key === 'ArrowRight' ? 1 : -1) + options.length) % options.length
+            onChange(options[next].value)
+            e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus()
+          }}
+          className="relative min-h-11 flex-1 whitespace-nowrap rounded-[10px] px-3.5 py-1.5 text-[0.94rem] font-semibold"
         >
           {value === o.value && (
             <motion.span layoutId={`seg-${id}`} className="absolute inset-0 rounded-[10px] bg-white shadow-float" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />

@@ -23,20 +23,39 @@ const byClass = (major: [number, number], mid: [number, number], minor: [number,
   ['match', ['get', 'class'], MAJOR, major[1], MID, mid[1], minor[1]],
 ]
 
-/**
- * Gaya peta Kompack!: tanah abu kehijauan, jalan putih bersih, gedung 3D berwarna genteng pucat,
- * label dipangkas supaya penanda misi jadi pusat perhatian.
- */
+/** MapLibre needs resolved colours, rather than CSS var() expressions. */
+export function mapPalette() {
+  const css = getComputedStyle(document.documentElement)
+  const read = (name: string, fallback: string) => css.getPropertyValue(`--color-${name}`).trim() || css.getPropertyValue(`--color-${fallback}`).trim()
+  return {
+    ground: read('map-land', 'paper'),
+    land: read('paper', 'paper'),
+    light: read('card', 'paper'),
+    edge: read('line', 'ink-3'),
+    building: read('map-building', 'line'),
+    water: read('map-water', 'line'),
+    green: read('map-green', 'paper'),
+    muted: read('ink-3', 'ink'),
+    ink: read('ink', 'ink'),
+    text: read('ink-2', 'ink'),
+    accent: read('rompi', 'ink'),
+    soft: read('accent-soft', 'paper'),
+    bad: read('bad', 'ink'),
+  }
+}
+
+/** Neutral streets let category symbols and the selected mission lead. */
 export function kompackStyle(): StyleSpecification {
+  const c = mapPalette()
   const style = {
     version: 8,
     glyphs: GLYPHS,
     sources: {
       ofm: { type: 'vector', url: VECTOR_URL, attribution: '© OpenStreetMap · OpenFreeMap' },
     },
-    light: { anchor: 'viewport', color: '#ffffff', intensity: 0.32, position: [1.4, 200, 40] },
+    light: { anchor: 'viewport', color: c.light, intensity: 0.32, position: [1.4, 200, 40] },
     layers: [
-      { id: 'bg', type: 'background', paint: { 'background-color': '#E6E9E2' } },
+      { id: 'bg', type: 'background', paint: { 'background-color': c.ground } },
       {
         id: 'landuse',
         type: 'fill',
@@ -47,12 +66,12 @@ export function kompackStyle(): StyleSpecification {
             'match',
             ['get', 'class'],
             ['residential', 'suburb', 'neighbourhood'],
-            '#E0E3DA',
+            c.land,
             ['school', 'university', 'college', 'hospital'],
-            '#E6E0D3',
+            c.ground,
             ['cemetery'],
-            '#D6E0CF',
-            '#E3E6DE',
+            c.soft,
+            c.land,
           ],
         },
       },
@@ -62,16 +81,16 @@ export function kompackStyle(): StyleSpecification {
         source: 'ofm',
         'source-layer': 'landcover',
         filter: ['in', ['get', 'class'], ['literal', ['grass', 'wood', 'farmland', 'wetland']]],
-        paint: { 'fill-color': '#CADDC1', 'fill-opacity': 0.85 },
+        paint: { 'fill-color': c.green, 'fill-opacity': 0.85 },
       },
-      { id: 'park', type: 'fill', source: 'ofm', 'source-layer': 'park', paint: { 'fill-color': '#C6DBBE' } },
-      { id: 'water', type: 'fill', source: 'ofm', 'source-layer': 'water', paint: { 'fill-color': '#AFCFD8' } },
+      { id: 'park', type: 'fill', source: 'ofm', 'source-layer': 'park', paint: { 'fill-color': c.green } },
+      { id: 'water', type: 'fill', source: 'ofm', 'source-layer': 'water', paint: { 'fill-color': c.water } },
       {
         id: 'waterway',
         type: 'line',
         source: 'ofm',
         'source-layer': 'waterway',
-        paint: { 'line-color': '#A3C6D0', 'line-width': w(0.8, 4) },
+        paint: { 'line-color': c.muted, 'line-width': w(0.8, 4) },
       },
       {
         id: 'path',
@@ -80,7 +99,7 @@ export function kompackStyle(): StyleSpecification {
         'source-layer': 'transportation',
         minzoom: 15,
         filter: ['==', ['get', 'class'], 'path'],
-        paint: { 'line-color': '#C3CBC2', 'line-width': w(0.6, 2), 'line-dasharray': [2, 1.5] },
+        paint: { 'line-color': c.edge, 'line-width': w(0.6, 2), 'line-dasharray': [2, 1.5] },
       },
       {
         id: 'road-case',
@@ -90,7 +109,7 @@ export function kompackStyle(): StyleSpecification {
         filter: ['in', ['get', 'class'], ['literal', [...MINOR, ...MID, ...MAJOR]]],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': '#CDD3CB',
+          'line-color': c.edge,
           'line-width': byClass([5, 30], [4, 24], [2.4, 15]),
         },
       },
@@ -102,7 +121,7 @@ export function kompackStyle(): StyleSpecification {
         filter: ['in', ['get', 'class'], ['literal', [...MINOR, ...MID, ...MAJOR]]],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': ['match', ['get', 'class'], MAJOR, '#FFF4E3', '#FFFFFF'],
+          'line-color': ['match', ['get', 'class'], MAJOR, c.light, c.light],
           'line-width': byClass([3.6, 26], [2.8, 20], [1.4, 12]),
         },
       },
@@ -118,11 +137,11 @@ export function kompackStyle(): StyleSpecification {
             ['linear'],
             ['coalesce', ['get', 'render_height'], 6],
             0,
-            '#ECDCD2',
+            c.building,
             10,
-            '#E6CDBE',
+            c.building,
             30,
-            '#DCC3B5',
+            c.muted,
           ],
           'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.2, ['coalesce', ['get', 'render_height'], 6]],
           'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
@@ -143,7 +162,7 @@ export function kompackStyle(): StyleSpecification {
           'text-size': ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 13],
           'text-max-angle': 30,
         },
-        paint: { 'text-color': '#5E6C64', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1.6 },
+        paint: { 'text-color': c.text, 'text-halo-color': c.light, 'text-halo-width': 1.6 },
       },
       {
         id: 'poi',
@@ -158,7 +177,7 @@ export function kompackStyle(): StyleSpecification {
           'text-size': 10.5,
           'text-max-width': 8,
         },
-        paint: { 'text-color': '#7A877F', 'text-halo-color': '#FFFFFF', 'text-halo-width': 1.4 },
+        paint: { 'text-color': c.text, 'text-halo-color': c.light, 'text-halo-width': 1.4 },
       },
       {
         id: 'place',
@@ -167,12 +186,12 @@ export function kompackStyle(): StyleSpecification {
         'source-layer': 'place',
         filter: ['in', ['get', 'class'], ['literal', ['suburb', 'quarter', 'neighbourhood', 'village', 'hamlet']]],
         layout: {
-          'text-field': ['upcase', ['coalesce', ['get', 'name:latin'], ['get', 'name']]],
+          'text-field': ['coalesce', ['get', 'name:latin'], ['get', 'name']],
           'text-font': ['Noto Sans Bold'],
           'text-size': 11,
-          'text-letter-spacing': 0.12,
+          'text-letter-spacing': 0,
         },
-        paint: { 'text-color': '#8E9A93', 'text-halo-color': '#F3F5F1', 'text-halo-width': 1.4 },
+        paint: { 'text-color': c.muted, 'text-halo-color': c.light, 'text-halo-width': 1.4 },
       },
     ],
   }

@@ -1,0 +1,37 @@
+/* Hallmark · theme: custom · scope: app · material: pedestrian directions with honest GPS progress. */
+.walking-navigation { position: relative; min-width: 0; padding-block: 0 4px; color: var(--color-ink); }
+.walking-navigation-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.walking-navigation-top > span { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
+.walking-close { display: grid; flex: none; place-items: center; width: 44px; min-height: 44px; border-radius: 50%; }
+.walking-close:hover { background: var(--color-surface); }
+.walking-close:active { transform: scale(.96); }
+.walking-status { min-height: 22px; font-size: 14px; line-height: 1.4; }
+.walking-estimate { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.walking-estimate strong { font-size: 20px; font-weight: 800; letter-spacing: -.04em; }
+.walking-estimate > span { color: var(--color-ink-2); font-size: 14px; font-weight: 400; }
+.walking-arrival { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.walking-notice { margin-top: 2px; color: var(--color-ink-2); font-size: 13px; line-height: 1.4; }
+.walking-next { display: flex; align-items: flex-start; gap: 8px; font-size: 15px; font-weight: 650; line-height: 1.4; }
+.walking-next > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: clip; }
+.walking-next > svg { flex: none; margin-top: 2px; }
+.walking-directions { position: static; }
+.walking-directions summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; gap: 4px; padding: 8px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; list-style: none; }
+.walking-directions summary:hover { background: var(--color-surface); }
+.walking-directions summary::-webkit-details-marker { display: none; }
+.walking-directions[open] summary > svg { transform: rotate(180deg); }
+.walking-directions-panel { position: absolute; z-index: 2; inset-inline: 0; bottom: calc(100% + 8px); max-height: min(55dvh, 360px); padding: 16px; overflow-y: auto; border: 1px solid var(--color-line); border-radius: 16px; background: var(--color-card); box-shadow: 0 4px 16px var(--color-shadow); overscroll-behavior: contain; }
+.walking-directions-panel > p { margin-bottom: 8px; font-size: 15px; font-weight: 700; }
+.walking-directions ol { padding: 0 0 8px 24px; list-style: decimal; }
+.walking-directions li { padding: 12px 0 12px 4px; border-top: 1px solid var(--color-line); font-size: 15px; line-height: 1.45; }
+.walking-directions li small { display: block; margin-top: 4px; color: var(--color-ink-2); font-size: 13px; }
+.walking-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0 4px; margin-top: 2px; }
+.walking-actions > button, .walking-actions > a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; gap: 8px; padding: 8px; border-radius: 12px; color: var(--color-ink); font-size: 14px; font-weight: 600; text-decoration: none; }
+.walking-actions > button:hover, .walking-actions > a:hover { background: var(--color-surface); }
+.walking-actions > button:active, .walking-actions > a:active { transform: translateY(1px); }
+.walking-navigation button:focus-visible, .walking-navigation a:focus-visible, .walking-navigation summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.walking-navigation button:disabled { opacity: .55; cursor: not-allowed; }
+@media (min-width: 60rem) {
+  .walking-directions[open] { flex-basis: 100%; order: 3; }
+  .walking-directions-panel { position: static; max-height: 240px; margin-top: 4px; box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) { .walking-navigation button:active, .walking-navigation a:active { transform: none; } }

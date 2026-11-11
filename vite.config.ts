@@ -19,8 +19,8 @@ export default defineConfig({
         short_name: 'Kompack!',
         description: 'Kerja bakti jadi quest di peta lingkunganmu. Check-in, kerjakan, kumpulkan poin.',
         lang: 'id',
-        theme_color: '#0D5E3F',
-        background_color: '#0D5E3F',
+        theme_color: '#171717',
+        background_color: '#171717',
         display: 'standalone',
         orientation: 'portrait',
         start_url: './',
@@ -33,6 +33,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/(tiles\.openfreemap\.org|tile\.openstreetmap\.org)\/.*/i,

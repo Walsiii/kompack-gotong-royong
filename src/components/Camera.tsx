@@ -20,7 +20,7 @@ export interface CameraProps {
   userId: string
   /** id misi / laporan untuk segel */
   refId: string
-  /** baris kedua watermark, mis. "RT 04 · Q-AB12CD" */
+  /** baris kedua watermark, mis. "RT 04 / Q-AB12CD" */
   caption: string
   /** foto sebelumnya sebagai panduan sudut (onion skin) */
   ghost?: string
@@ -104,19 +104,20 @@ function CameraInner({ onClose, onCapture, title, tag, userId, refId, caption, g
       const at = Date.now()
       const band = Math.round(ch * 0.13)
       const fs = Math.max(11, Math.round(band * 0.27))
-      ctx.fillStyle = 'rgba(15,31,25,.78)'
+      const palette = getComputedStyle(document.documentElement)
+      ctx.fillStyle = palette.getPropertyValue('--color-evidence-band').trim()
       ctx.fillRect(0, ch - band, cw, band)
-      ctx.fillStyle = '#FF5A1F'
+      ctx.fillStyle = palette.getPropertyValue('--color-ink-3').trim()
       ctx.fillRect(0, ch - band, Math.round(cw * 0.012), band)
-      ctx.fillStyle = '#fff'
-      ctx.font = `600 ${fs}px "Martian Mono", ui-monospace, monospace`
+      ctx.fillStyle = palette.getPropertyValue('--color-card').trim()
+      ctx.font = `600 ${fs}px ${palette.getPropertyValue('--font-body')}`
       ctx.textBaseline = 'middle'
       const pad = Math.round(cw * 0.03)
-      ctx.fillText(`${tag} · ${fmtStamp(at)}`, pad, ch - band * 0.68)
+      ctx.fillText(`${tag} / ${fmtStamp(at)}`, pad, ch - band * 0.68)
       ctx.globalAlpha = 0.85
-      ctx.font = `400 ${Math.round(fs * 0.86)}px "Martian Mono", ui-monospace, monospace`
+      ctx.font = `400 ${Math.round(fs * 0.86)}px ${palette.getPropertyValue('--font-body')}`
       const code = shortCode(`${userId}${refId}${at}`)
-      ctx.fillText(`${fmtCoord(fix)} ±${Math.round(fix.acc)}m · ${caption} · #${code}${isSample || fix.simulated ? ' · UJI' : ''}`, pad, ch - band * 0.3)
+      ctx.fillText(`${fmtCoord(fix)} ±${Math.round(fix.acc)}m / ${caption} / #${code}${isSample || fix.simulated ? ' / UJI' : ''}`, pad, ch - band * 0.3)
       ctx.globalAlpha = 1
 
       const img = canvas.toDataURL('image/jpeg', 0.72)
@@ -154,7 +155,7 @@ function CameraInner({ onClose, onCapture, title, tag, userId, refId, caption, g
 
   return (
     <motion.div
-      className="fixed inset-0 z-[1600] flex flex-col bg-[#05100c] text-white"
+      className="camera-screen fixed inset-0 z-[1600] flex flex-col bg-ink text-white"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -168,7 +169,7 @@ function CameraInner({ onClose, onCapture, title, tag, userId, refId, caption, g
           <X size={20} />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="mono text-[0.8rem] text-rompi">{tag}</p>
+          <p className="mono text-[0.8rem] text-inverse">{tag}</p>
           <p className="truncate font-display text-[1.05rem] font-bold">{title}</p>
         </div>
         {ghost && state === 'live' && !shot && (
@@ -199,8 +200,8 @@ function CameraInner({ onClose, onCapture, title, tag, userId, refId, caption, g
               <div className="absolute inset-x-0 top-2/3 h-px bg-white/25" />
             </div>
             {/* watermark langsung */}
-            <div className="mono pointer-events-none absolute inset-x-3 bottom-3 rounded-lg bg-black/55 px-3 py-2 text-[0.8rem] leading-relaxed backdrop-blur-sm">
-              <span className="text-rompi">● REC</span> {fmtStamp(now)}
+            <div className="mono pointer-events-none absolute inset-x-3 bottom-3 rounded-lg bg-ink px-3 py-2 text-[0.8rem] leading-relaxed">
+              <span className="text-inverse">Kamera aktif</span> {fmtStamp(now)}
               <br />
               {pos ? `${fmtCoord(pos)} ±${Math.round(acc ?? 0)}m` : 'mencari lokasi…'} {test ? '· UJI' : ''}
             </div>
@@ -244,7 +245,7 @@ function CameraInner({ onClose, onCapture, title, tag, userId, refId, caption, g
         {shot ? (
           <div className="mx-auto flex max-w-[520px] flex-col gap-2.5">
             <p className="flex items-center justify-center gap-1.5 text-[0.8rem] text-white/75">
-              <ShieldCheck size={15} className="text-[#6BE3A4]" /> Disegel: waktu, lokasi, dan foto terkunci
+              <ShieldCheck size={15} className="text-inverse" /> Disegel: waktu, lokasi, dan foto terkunci
             </p>
             <div className="flex gap-3">
               <Button tone="soft" className="flex-1" onClick={() => setShot(null)}>
