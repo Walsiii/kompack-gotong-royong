@@ -25,7 +25,7 @@ const byClass = (major: [number, number], mid: [number, number], minor: [number,
 
 /**
  * Gaya peta Kompack!: tanah abu kehijauan, jalan putih bersih, gedung 3D berwarna genteng pucat,
- * label dipangkas supaya penanda quest jadi pusat perhatian.
+ * label dipangkas supaya penanda misi jadi pusat perhatian.
  */
 export function kompackStyle(): StyleSpecification {
   const style = {

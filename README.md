@@ -1,10 +1,10 @@
 # Kompack! — Gotong Royong Acknowledgment
 
-Kerja bakti jadi quest di peta 3D RT-mu. Purwarupa hackathon tim **Batak Intelligence** (Case 2: Stronger Communities and Everyday Services).
+Kerja bakti jadi misi di peta 3D RT-mu. Purwarupa hackathon tim **Batak Intelligence** (Case 2: Stronger Communities and Everyday Services).
 
-| Peta 3D | Pos Ronda | Anti-curang | Wilayah RT |
+| Peta (2D, bisa 3D) | Pos Ronda | Anti-curang | Wilayah RT |
 |---|---|---|---|
-| ![](docs/peta-3d.png) | ![](docs/pos-ronda.png) | ![](docs/anti-curang.png) | ![](docs/wilayah.png) |
+| ![](docs/peta.png) | ![](docs/pos-ronda.png) | ![](docs/anti-curang.png) | ![](docs/wilayah.png) |
 
 ## Cara mencoba
 
@@ -23,7 +23,7 @@ Kamera dan GPS browser butuh `localhost` atau HTTPS.
 ## Alur
 
 1. Warga **melapor** (sampah, selokan, fasilitas rusak) atau **minta tolong**, dengan foto kamera di lokasi, di dalam wilayah RT-nya.
-2. Warga lain jadi **saksi**. Ketua RT meninjau lalu **menjadikannya quest** (pelapor +10 poin, dan tidak boleh mengerjakan laporannya sendiri).
+2. Warga lain jadi **saksi**. Ketua RT meninjau lalu **menjadikannya misi** (pelapor +10 poin, dan tidak boleh mengerjakan laporannya sendiri).
 3. Warga check-in di lokasi, foto sebelum, bekerja minimal N menit, foto sesudah, lalu kirim.
 4. Ketua RT memeriksa dengan panel anti-curang, menyetujui, dan poin masuk. Poin menaikkan pangkat, klasemen RT, dan lomba antar-RT.
 
@@ -37,11 +37,11 @@ Kamera dan GPS browser butuh `localhost` atau HTTPS.
 | Foto lama / dari galeri | Hanya kamera di dalam aplikasi; watermark waktu + koordinat dibakar ke foto; segel SHA-256 |
 | Foto sebelum = sesudah | Sidik visual dHash dibandingkan; terlalu mirip → tidak bisa dikirim |
 | Foto dipakai ulang | Dicocokkan dengan semua foto lain di RT |
-| Setoran kilat | Waktu kerja minimal per quest dengan hitung mundur |
-| Lapor lalu kerjakan sendiri | Pelapor diblokir dari quest hasil laporannya |
-| Farming | Maks. 4 quest dan 3 laporan per hari, satu quest aktif dalam satu waktu |
-| RT menyetujui diri sendiri | Ketua RT tidak ikut quest dan tidak bisa memeriksa setorannya |
-| Quest/laporan di luar wilayah | Wilayah RT berupa poligon; area check-in harus muat di dalamnya; batas RT tidak boleh menimpa tetangga |
+| Setoran kilat | Waktu kerja minimal per misi dengan hitung mundur |
+| Lapor lalu kerjakan sendiri | Pelapor diblokir dari misi hasil laporannya |
+| Farming | Maks. 4 misi dan 3 laporan per hari, satu misi aktif dalam satu waktu |
+| RT menyetujui diri sendiri | Ketua RT tidak ikut misi dan tidak bisa memeriksa setorannya |
+| Misi/laporan di luar wilayah | Wilayah RT berupa poligon; area check-in harus muat di dalamnya; batas RT tidak boleh menimpa tetangga |
 
 Aturannya ada di `src/lib/integrity.ts` dan `src/lib/store.ts`.
 
@@ -54,7 +54,7 @@ React 19 + Vite + TypeScript · MapLibre GL (peta vektor 3D, ubin OpenFreeMap, c
 ```
 src/lib/         data, aturan, geometri wilayah, anti-curang
 src/components/  peta 3D, kamera bukti, tombol tahan, UI
-src/screens/     peta, quest, lapor, pos ronda, klasemen, aku, rt/*
+src/screens/     peta, misi, lapor, pos ronda, klasemen, aku, rt/*
 android/         proyek Capacitor + IntegrityPlugin.java
 src-tauri/       pembungkus desktop Rust
 ```

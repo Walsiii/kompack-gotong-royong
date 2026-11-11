@@ -1,10 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Capacitor } from '@capacitor/core'
-import '@fontsource-variable/archivo/wdth.css'
-import '@fontsource-variable/onest/index.css'
-import '@fontsource/martian-mono/400.css'
-import '@fontsource/martian-mono/600.css'
+import '@fontsource-variable/atkinson-hyperlegible-next/index.css'
 import './styles.css'
 import App from './App'
 

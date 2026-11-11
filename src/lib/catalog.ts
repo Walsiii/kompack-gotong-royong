@@ -5,7 +5,7 @@ export interface CatInfo {
   label: string
   /** warna kategori: dipakai di penanda peta dan ikon */
   color: string
-  /** judul & deskripsi bawaan saat Ketua RT membuat quest */
+  /** judul & deskripsi bawaan saat Ketua RT membuat misi */
   title: string
   desc: string
   points: number
@@ -126,7 +126,7 @@ export const RULES = {
   maxSpeed: 40,
   /** check-in diblokir selama ini setelah lokasi melompat */
   jumpCooldownMs: 3 * 60000,
-  /** quest per hari per warga */
+  /** misi per hari per warga */
   dailyQuests: 4,
   /** laporan/minta tolong per hari per warga */
   dailyReports: 3,
@@ -146,7 +146,7 @@ export const RULES = {
 export const REJECT_REASONS = [
   'Lokasi belum bersih',
   'Foto tidak jelas',
-  'Foto bukan di lokasi quest',
+  'Foto bukan di lokasi misi',
   'Pekerjaan belum selesai',
 ]
 

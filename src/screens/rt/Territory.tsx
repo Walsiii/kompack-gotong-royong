@@ -102,7 +102,7 @@ export function Territory() {
               ].map(([k, v]) => (
                 <div key={k}>
                   <dt className="eyebrow">{k}</dt>
-                  <dd className="font-display wd-wide text-[1.05rem] font-extrabold">{v}</dd>
+                  <dd className="font-display wd-wide text-[1.05rem] font-bold">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -112,7 +112,7 @@ export function Territory() {
               </Note>
             ) : (
               <Note tone="info" className="mt-3">
-                Batas sah: tidak menimpa RT tetangga dan semua quest aktif masih di dalam.
+                Batas sah: tidak menimpa RT tetangga dan semua misi aktif masih di dalam.
               </Note>
             )}
             <div className="mt-3 flex gap-2">

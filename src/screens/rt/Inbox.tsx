@@ -28,7 +28,7 @@ export function Inbox() {
 
   return (
     <Page>
-      <TopBar title="Periksa" sub="Setoran quest dan laporan warga yang menunggu keputusanmu" />
+      <TopBar title="Periksa" sub="Setoran misi dan laporan warga yang menunggu keputusanmu" />
       <Section className="flex flex-col gap-4">
         <Segmented
           id="inbox"
@@ -65,9 +65,9 @@ export function Inbox() {
                     </div>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold">{w?.name} · {q?.title}</span>
-                      <span className="block text-[0.78rem] text-ink-3">Dikirim {fmtAgo(s.submittedAt ?? s.checkin.at, now)} · +{q?.points} poin</span>
+                      <span className="block text-[0.86rem] text-ink-3">Dikirim {fmtAgo(s.submittedAt ?? s.checkin.at, now)} · +{q?.points} poin</span>
                     </span>
-                    <span className={`flex-none rounded-full px-2.5 py-1 text-[0.72rem] font-semibold ${risk.cls}`}>{risk.text}</span>
+                    <span className={`flex-none rounded-full px-2.5 py-1 text-[0.8rem] font-semibold ${risk.cls}`}>{risk.text}</span>
                     <ChevronRight size={16} className="flex-none text-ink-3" />
                   </motion.button>
                 )
@@ -93,11 +93,11 @@ export function Inbox() {
                   {p.photo ? <img src={p.photo.img} alt="" className="h-12 w-12 flex-none rounded-xl object-cover" /> : <Avatar index={w?.avatar ?? 0} size={48} />}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold">{p.text}</span>
-                    <span className="block text-[0.78rem] text-ink-3">
+                    <span className="block text-[0.86rem] text-ink-3">
                       {p.kind === 'tolong' ? 'Minta tolong' : 'Laporan'} · {w?.name} · {fmtAgo(p.at, now)}
                     </span>
                   </span>
-                  <span className="mono flex flex-none items-center gap-1 text-[0.76rem] text-ink-2">
+                  <span className="mono flex flex-none items-center gap-1 text-[0.86rem] text-ink-2">
                     <Eye size={14} /> {p.witnesses?.length ?? 0}
                   </span>
                   <ChevronRight size={16} className="flex-none text-ink-3" />

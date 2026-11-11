@@ -7,7 +7,7 @@ import { Button, Empty, Page, Points, Section, Segmented, Sheet, TopBar, toast }
 import { CATS } from '../lib/catalog'
 import { personById, takenSlots, useIsRT, useMe, useStore } from '../lib/store'
 import { fmtAgo, phaseLabel, questPhase, useNow } from '../lib/time'
-import type { Group as GroupT, Person, Post, Quest } from '../lib/types'
+import type { Group as GroupT, Person, Post, Misi } from '../lib/types'
 
 /* Pos Ronda — papan kasus RT. Bukan ruang obrolan: warga merespons dengan aksi
    (jadi saksi, gabung regu, sanggup bawa alat), dan hanya pengurus yang memukul kentongan. */
@@ -21,7 +21,7 @@ const TOOLS: { key: string; label: string }[] = [
 
 const CALLS = [
   { label: 'Kerja bakti', text: 'Kerja bakti hari ini jam 16.00. Kumpul di pos ronda ya.' },
-  { label: 'Butuh regu', text: 'Masih butuh tenaga untuk quest hari ini. Yang senggang, gabung regu.' },
+  { label: 'Butuh regu', text: 'Masih butuh tenaga untuk misi hari ini. Yang senggang, gabung regu.' },
   { label: 'Info', text: '' },
 ]
 
@@ -43,7 +43,7 @@ function Track({ steps, at }: { steps: string[]; at: number }) {
             </motion.span>
             <span className={`h-[2px] flex-1 ${i === steps.length - 1 ? 'opacity-0' : i < at ? 'bg-plang' : 'bg-[#DDE3DC]'}`} />
           </div>
-          <span className={`mono mt-1 px-0.5 text-center text-[0.56rem] uppercase leading-tight ${i === at ? 'font-semibold text-ink' : 'text-ink-3'}`}>{s}</span>
+          <span className={`mono mt-1 px-0.5 text-center text-[0.8rem] leading-tight ${i === at ? 'font-semibold text-ink' : 'text-ink-3'}`}>{s}</span>
         </li>
       ))}
     </ol>
@@ -95,9 +95,9 @@ export function Group() {
   const questPosts = useMemo(
     () =>
       mine
-        .filter((p) => p.kind === 'quest' && p.questId)
+        .filter((p) => p.kind === 'misi' && p.questId)
         .map((p) => ({ p, q: quests.find((q) => q.id === p.questId) }))
-        .filter((x): x is { p: Post; q: Quest } => !!x.q && questPhase(x.q, now) !== 'ended')
+        .filter((x): x is { p: Post; q: Misi } => !!x.q && questPhase(x.q, now) !== 'ended')
         .sort((a, b) => a.q.startAt - b.q.startAt),
     [mine, quests, now],
   )
@@ -152,13 +152,13 @@ export function Group() {
               <span key={i} className="absolute left-0 top-0 h-20 w-20 rounded-full border border-rompi/60" style={{ animation: 'kp-pulse 3s ease-out infinite', animationDelay: `${i}s` }} />
             ))}
           </div>
-          <p className="mono flex items-center gap-1.5 text-[0.62rem] uppercase tracking-widest text-rompi">
+          <p className="mono flex items-center gap-1.5 text-[0.8rem] text-rompi">
             <BellRing size={13} /> Kentongan {group?.name}
           </p>
           {call ? (
             <>
               <p className="mt-2 max-w-[52ch] text-[1.02rem] font-medium leading-snug">{call.text}</p>
-              <p className="mt-1 text-[0.78rem] text-white/60">
+              <p className="mt-1 text-[0.86rem] text-white/60">
                 {personById(users, call.authorId)?.name} · {fmtAgo(call.at, now)}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -203,7 +203,7 @@ export function Group() {
             <div ref={boardRef} className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               {lane === 'regu' &&
                 (questPosts.length === 0 ? (
-                  <Empty title="Belum ada quest" text="Quest dari Ketua RT muncul di sini." />
+                  <Empty title="Belum ada misi" text="Misi dari Ketua RT muncul di sini." />
                 ) : (
                   questPosts.map(({ p, q }, i) => {
                     const regu = who(p.reactions?.ikut)
@@ -225,7 +225,7 @@ export function Group() {
 
                         <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2">
                           <Faces people={regu} />
-                          <span className="min-w-[120px] flex-1 text-[0.82rem] text-ink-2">
+                          <span className="min-w-[120px] flex-1 text-[0.86rem] text-ink-2">
                             {regu.length ? `${regu.length} sanggup datang` : 'Belum ada regu'} · {done}/{q.slots} sudah check-in
                           </span>
                           {me && !rt && !own && (
@@ -248,7 +248,7 @@ export function Group() {
                                   disabled={!me || rt || own}
                                   aria-pressed={on}
                                   onClick={() => me && toggleReaction(p.id, t.key, me.id)}
-                                  className={`chip !text-[0.78rem] ${ids.length && !on ? '!bg-[#E1EEE6] !text-plang-2 !shadow-none' : ''}`}
+                                  className={`chip !text-[0.86rem] ${ids.length && !on ? '!bg-[#E1EEE6] !text-plang-2 !shadow-none' : ''}`}
                                 >
                                   {ids.length > 0 && <Check size={12} strokeWidth={3} />}
                                   {t.label}
@@ -259,8 +259,8 @@ export function Group() {
                           </div>
                         </div>
 
-                        <Button tone="dark" small full className="mt-3.5" onClick={() => nav(`/quest/${q.id}`)}>
-                          {rt ? 'Lihat peserta' : own ? 'Dari laporanmu · lihat' : 'Buka quest'} <ArrowRight size={15} />
+                        <Button tone="dark" small full className="mt-3.5" onClick={() => nav(`/misi/${q.id}`)}>
+                          {rt ? 'Lihat peserta' : own ? 'Dari laporanmu · lihat' : 'Buka misi'} <ArrowRight size={15} />
                         </Button>
                       </motion.article>
                     )
@@ -292,7 +292,7 @@ export function Group() {
                               {p.kind === 'tolong' ? 'Minta tolong' : `Laporan ${CATS[p.category ?? 'sampah'].label.toLowerCase()}`}
                             </p>
                             <p className="mt-0.5 line-clamp-3 font-medium leading-snug">{p.text}</p>
-                            <p className="mt-1 flex items-center gap-1 truncate text-[0.76rem] text-ink-3">
+                            <p className="mt-1 flex items-center gap-1 truncate text-[0.86rem] text-ink-3">
                               {mineP ? 'Kamu' : a?.name} · {fmtAgo(p.at, now)}
                               {p.place && (
                                 <>
@@ -305,9 +305,9 @@ export function Group() {
                         </div>
                         <div className="px-3">
                           {p.status === 'ditolak' ? (
-                            <p className="rounded-xl bg-[#F6E0DC] px-3 py-2 text-[0.82rem] font-medium text-bad">Ditolak RT: {p.statusNote}</p>
+                            <p className="rounded-xl bg-[#F6E0DC] px-3 py-2 text-[0.86rem] font-medium text-bad">Ditolak RT: {p.statusNote}</p>
                           ) : (
-                            <Track steps={['Dilaporkan', 'Dicek RT', 'Jadi quest', 'Beres']} at={at} />
+                            <Track steps={['Dilaporkan', 'Dicek RT', 'Jadi misi', 'Beres']} at={at} />
                           )}
                         </div>
                         <div className="flex flex-wrap items-center gap-2 p-4 pt-3">
@@ -329,8 +329,8 @@ export function Group() {
                             </Button>
                           )}
                           {(p.status === 'jadi_quest' || p.status === 'beres') && p.questId && (
-                            <Button small tone="dark" onClick={() => nav(`/quest/${p.questId}`)}>
-                              {mineP ? 'Lihat quest' : p.status === 'beres' ? 'Lihat hasil' : 'Ambil quest'} <ArrowRight size={14} />
+                            <Button small tone="dark" onClick={() => nav(`/misi/${p.questId}`)}>
+                              {mineP ? 'Lihat misi' : p.status === 'beres' ? 'Lihat hasil' : 'Ambil misi'} <ArrowRight size={14} />
                             </Button>
                           )}
                         </div>
@@ -348,7 +348,7 @@ export function Group() {
                         <Check size={14} strokeWidth={3} className="text-ok" />
                       </span>
                       <span className="min-w-0 flex-1 text-[0.9rem]">{p.text}</span>
-                      <span className="mono flex-none text-[0.64rem] text-ink-3">{fmtAgo(p.at, now)}</span>
+                      <span className="mono flex-none text-[0.8rem] text-ink-3">{fmtAgo(p.at, now)}</span>
                     </li>
                   ))}
                 </ol>
@@ -362,7 +362,7 @@ export function Group() {
             {calls.slice(1).map((c) => (
               <li key={c.id} className="p-3.5">
                 <p className="text-[0.92rem]">{c.text}</p>
-                <p className="mt-0.5 text-[0.74rem] text-ink-3">
+                <p className="mt-0.5 text-[0.8rem] text-ink-3">
                   {personById(users, c.authorId)?.name} · {fmtAgo(c.at, now)}
                 </p>
               </li>
@@ -412,7 +412,7 @@ export function Group() {
               <Avatar index={p.avatar} size={34} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{p.id === me?.id ? `${p.name} (kamu)` : p.name}</span>
-                <span className="block text-[0.74rem] text-ink-3">{p.title ?? `${new Date().getFullYear() - p.birthYear} tahun`}</span>
+                <span className="block text-[0.8rem] text-ink-3">{p.title ?? `${new Date().getFullYear() - p.birthYear} tahun`}</span>
               </span>
             </li>
           ))}

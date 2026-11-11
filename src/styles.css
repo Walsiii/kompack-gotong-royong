@@ -1,32 +1,33 @@
 @import 'tailwindcss';
 @import 'maplibre-gl/dist/maplibre-gl.css';
 
-/* Kompack! — "Pasukan Oranye × plang jalan".
-   Warna dari rompi petugas kebersihan (oranye + pita reflektif) dan plang nama jalan (hijau, bingkai putih).
-   Layout: peta 3D memenuhi layar; panel putih bersudut lembut melayang di atasnya; mono dipakai untuk bukti & data. */
+/* Kompack! — polos dan mudah dibaca.
+   Satu keluarga huruf (Atkinson Hyperlegible, dirancang untuk mata yang sudah lemah), teks besar,
+   warna datar: putih, hijau plang jalan, dan satu aksen oranye rompi. Tanpa bayangan berwarna, tanpa gradien.
+   Layout: peta memenuhi layar; isi berupa daftar bergaris tipis, bukan kisi kartu. */
 @theme {
-  --color-ink: #0f1f19;
-  --color-ink-2: #44554d;
-  --color-ink-3: #85938c;
-  --color-paper: #eef0eb;
+  --color-ink: #10201a;
+  --color-ink-2: #3d4d45;
+  --color-ink-3: #6b7a72;
+  --color-paper: #f4f5f1;
   --color-card: #ffffff;
-  --color-line: #dfe4de;
+  --color-line: #dde2dc;
   --color-plang: #0d5e3f;
   --color-plang-2: #0a4a32;
-  --color-rompi: #ff5a1f;
-  --color-rompi-2: #e2470f;
-  --color-reflect: #e8eef0;
-  --color-ok: #138a52;
-  --color-warn: #c27e00;
-  --color-bad: #d23a2a;
+  --color-rompi: #e8500f;
+  --color-rompi-2: #c9420a;
+  --color-ok: #0f7a47;
+  --color-warn: #a86a00;
+  --color-bad: #c2301f;
 
-  --font-display: 'Archivo Variable', 'Arial Narrow', system-ui, sans-serif;
-  --font-body: 'Onest Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'Martian Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-display: 'Atkinson Hyperlegible Next Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Atkinson Hyperlegible Next Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
 
-  --shadow-float: 0 1px 2px rgb(15 31 25 / 0.06), 0 10px 30px -12px rgb(15 31 25 / 0.28);
-  --shadow-lift: 0 2px 4px rgb(15 31 25 / 0.08), 0 22px 50px -18px rgb(15 31 25 / 0.45);
+  --shadow-float: 0 0 0 1px var(--color-line);
+  --shadow-lift: 0 0 0 1px var(--color-line), 0 12px 32px -16px rgb(16 32 26 / 0.35);
 
+  --ease-fluid: cubic-bezier(0.22, 1, 0.36, 1);
   --breakpoint-lg: 60rem;
 }
 
@@ -34,7 +35,7 @@
   /* env() untuk browser/PWA; --safe-area-inset-* disuntikkan Capacitor di APK (layar edge-to-edge) */
   --safe-t: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
   --safe-b: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
-  --nav-h: 68px;
+  --nav-h: 76px;
 }
 
 @layer base {
@@ -48,7 +49,7 @@
     background: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-body);
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
@@ -71,10 +72,9 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    font-variation-settings: 'wdth' 78;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    line-height: 1.04;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.12;
     text-wrap: balance;
   }
 }
@@ -83,32 +83,27 @@
   .font-display {
     font-family: var(--font-display);
   }
-  .wd-narrow {
-    font-variation-settings: 'wdth' 72;
-  }
+  .wd-narrow,
   .wd-wide {
-    font-variation-settings: 'wdth' 125;
+    letter-spacing: -0.02em;
   }
   .tnum {
     font-variant-numeric: tabular-nums;
   }
   .mono {
     font-family: var(--font-mono);
-    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
   }
 
   .panel {
     background: var(--color-card);
-    border-radius: 22px;
+    border-radius: 16px;
     box-shadow: var(--shadow-float);
   }
 
   .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 600;
     color: var(--color-ink-3);
   }
 
@@ -119,19 +114,17 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 50px;
-    padding: 0.7rem 1.2rem;
+    min-height: 56px;
+    padding: 0.75rem 1.3rem;
     overflow: hidden;
     font-family: var(--font-display);
-    font-variation-settings: 'wdth' 90;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.02rem;
     line-height: 1.1;
     border-radius: 14px;
     transition:
-      transform 120ms ease-out,
-      background-color 150ms,
-      box-shadow 150ms;
+      transform 220ms var(--ease-fluid),
+      background-color 200ms var(--ease-fluid);
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
@@ -142,24 +135,9 @@
   .btn--primary {
     color: #fff;
     background: var(--color-rompi);
-    box-shadow: 0 8px 20px -10px rgb(255 90 31 / 0.9);
   }
   .btn--primary:hover:not(:disabled) {
     background: var(--color-rompi-2);
-  }
-  /* kilau pita reflektif saat disorot */
-  .btn--primary::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.55) 48%, rgb(255 255 255 / 0.15) 54%, transparent 62%);
-    transform: translateX(-120%);
-    pointer-events: none;
-  }
-  .btn--primary:hover:not(:disabled)::after,
-  .btn--primary:focus-visible::after {
-    transform: translateX(120%);
-    transition: transform 700ms ease;
   }
   .btn--dark {
     color: #fff;
@@ -192,14 +170,14 @@
     box-shadow: none !important;
   }
   .btn--sm {
-    min-height: 38px;
-    padding: 0.35rem 0.8rem;
-    font-size: 0.88rem;
-    border-radius: 11px;
+    min-height: 44px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.94rem;
+    border-radius: 12px;
   }
   .btn--icon {
-    width: 44px;
-    min-height: 44px;
+    width: 48px;
+    min-height: 48px;
     padding: 0;
     border-radius: 13px;
   }
@@ -215,12 +193,10 @@
     border-radius: 7px;
     box-shadow:
       inset 0 0 0 2px var(--color-plang),
-      inset 0 0 0 3.5px #fff,
-      0 6px 16px -8px rgb(13 94 63 / 0.7);
+      inset 0 0 0 3.5px #fff;
     font-family: var(--font-display);
-    font-variation-settings: 'wdth' 70;
-    font-weight: 800;
-    letter-spacing: 0.02em;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     line-height: 1;
     white-space: nowrap;
   }
@@ -229,9 +205,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.34rem 0.72rem;
+    padding: 0.5rem 0.9rem;
     font-weight: 600;
-    font-size: 0.82rem;
+    font-size: 0.92rem;
     line-height: 1.2;
     white-space: nowrap;
     color: var(--color-ink-2);
@@ -252,8 +228,8 @@
 
   .field {
     width: 100%;
-    min-height: 50px;
-    padding: 0.7rem 0.9rem;
+    min-height: 56px;
+    padding: 0.8rem 1rem;
     font: inherit;
     font-weight: 500;
     color: var(--color-ink);
@@ -281,14 +257,13 @@
     display: block;
     margin-bottom: 0.35rem;
     font-weight: 600;
-    font-size: 0.88rem;
-    color: var(--color-ink-2);
+    font-size: 0.96rem;
+    color: var(--color-ink);
   }
 
   /* motif pita reflektif rompi */
   .reflect-stripes {
-    background-image: repeating-linear-gradient(-55deg, var(--color-rompi) 0 22px, #ffd2bf 22px 28px, var(--color-rompi) 28px 50px);
-    background-size: 240px 100%;
+    background: var(--color-rompi);
   }
 
   .no-scrollbar {
@@ -369,7 +344,7 @@
   position: absolute;
   inset: 0;
   transform-origin: 50% 100%;
-  animation: kp-rise 560ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  animation: kp-rise 700ms var(--ease-fluid) both;
   animation-delay: var(--d, 0ms);
 }
 .bk-base {
@@ -393,7 +368,7 @@
   opacity: 0;
 }
 .bk.is-live .bk-ring {
-  animation: kp-pulse 2s ease-out infinite;
+  display: none;
 }
 .bk-stem {
   position: absolute;
@@ -404,7 +379,7 @@
   margin-left: -1.5px;
   border-radius: 2px;
   background: linear-gradient(var(--c), #0f1f19);
-  transition: height 220ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  transition: height 220ms var(--ease-fluid);
 }
 .bk-head {
   position: absolute;
@@ -417,12 +392,10 @@
   place-items: center;
   border-radius: 13px;
   background: var(--c);
-  box-shadow:
-    inset 0 0 0 2px rgb(255 255 255 / 0.9),
-    0 6px 14px -4px rgb(15 31 25 / 0.5);
+  box-shadow: inset 0 0 0 2.5px #fff, 0 0 0 1.5px rgb(16 32 26 / 0.35);
   transition:
-    transform 220ms cubic-bezier(0.3, 1.5, 0.5, 1),
-    bottom 220ms cubic-bezier(0.3, 1.5, 0.5, 1);
+    transform 220ms var(--ease-fluid),
+    bottom 220ms var(--ease-fluid);
 }
 .bk-head svg {
   width: 23px;
@@ -434,9 +407,8 @@
   top: -11px;
   transform: translateX(-50%);
   padding: 1px 6px;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 10px;
+  font-weight: 700;
+  font-size: 12px;
   line-height: 1.5;
   color: #fff;
   background: var(--color-ink);
@@ -466,7 +438,7 @@
   width: 34px;
   height: 40px;
   cursor: pointer;
-  animation: kp-rise 480ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  animation: kp-rise 700ms var(--ease-fluid) both;
   animation-delay: var(--d, 0ms);
   transform-origin: 50% 100%;
 }
@@ -482,9 +454,7 @@
   border-radius: 50% 50% 50% 4px;
   transform: rotate(-45deg);
   background: #fff;
-  box-shadow:
-    inset 0 0 0 2.5px var(--c),
-    0 5px 12px -4px rgb(15 31 25 / 0.45);
+  box-shadow: inset 0 0 0 2.5px var(--c), 0 0 0 1.5px #fff;
   transition: transform 200ms;
 }
 .rp-head > * {
@@ -506,8 +476,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgb(255 90 31 / 0.35);
-  animation: kp-pulse 2.2s ease-out infinite;
+  display: none;
 }
 .me-av {
   position: absolute;
@@ -517,8 +486,7 @@
   background: #fff;
   box-shadow:
     0 0 0 3px #fff,
-    0 0 0 5px var(--color-rompi),
-    0 8px 16px -6px rgb(15 31 25 / 0.6);
+    0 0 0 5.5px var(--color-rompi);
 }
 .me-av svg {
   display: block;
@@ -530,10 +498,8 @@
 .nb-label {
   pointer-events: none;
   font-family: var(--font-display);
-  font-variation-settings: 'wdth' 70;
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  font-size: 13px;
   color: #fff;
   background: rgb(15 31 25 / 0.55);
   padding: 3px 8px;

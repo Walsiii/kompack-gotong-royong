@@ -18,7 +18,7 @@ export interface CameraProps {
   /** "SEBELUM" / "SESUDAH" / "LAPORAN" */
   tag: string
   userId: string
-  /** id quest / laporan untuk segel */
+  /** id misi / laporan untuk segel */
   refId: string
   /** baris kedua watermark, mis. "RT 04 · Q-AB12CD" */
   caption: string
@@ -168,7 +168,7 @@ function CameraInner({ onClose, onCapture, title, tag, userId, refId, caption, g
           <X size={20} />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="mono text-[0.66rem] uppercase tracking-widest text-rompi">{tag}</p>
+          <p className="mono text-[0.8rem] text-rompi">{tag}</p>
           <p className="truncate font-display text-[1.05rem] font-bold">{title}</p>
         </div>
         {ghost && state === 'live' && !shot && (
@@ -199,7 +199,7 @@ function CameraInner({ onClose, onCapture, title, tag, userId, refId, caption, g
               <div className="absolute inset-x-0 top-2/3 h-px bg-white/25" />
             </div>
             {/* watermark langsung */}
-            <div className="mono pointer-events-none absolute inset-x-3 bottom-3 rounded-lg bg-black/55 px-3 py-2 text-[0.66rem] leading-relaxed backdrop-blur-sm">
+            <div className="mono pointer-events-none absolute inset-x-3 bottom-3 rounded-lg bg-black/55 px-3 py-2 text-[0.8rem] leading-relaxed backdrop-blur-sm">
               <span className="text-rompi">● REC</span> {fmtStamp(now)}
               <br />
               {pos ? `${fmtCoord(pos)} ±${Math.round(acc ?? 0)}m` : 'mencari lokasi…'} {test ? '· UJI' : ''}

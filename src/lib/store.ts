@@ -18,7 +18,7 @@ import type {
   LatLng,
   Person,
   Post,
-  Quest,
+  Misi,
   Redemption,
   Ring,
   Submission,
@@ -80,7 +80,7 @@ interface Data {
   meId: string | null
   users: Person[]
   groups: Group[]
-  quests: Quest[]
+  quests: Misi[]
   posts: Post[]
   subs: Submission[]
   bonuses: Bonus[]
@@ -133,7 +133,7 @@ export const ME = 'me'
 
 /* ───────────── Aturan (dipakai store & UI) ───────────── */
 
-export function territoryProblem(ring: Ring, groupId: string, groups: Group[], quests: Quest[]): string | null {
+export function territoryProblem(ring: Ring, groupId: string, groups: Group[], quests: Misi[]): string | null {
   if (ring.length < 3) return 'Wilayah butuh minimal 3 titik sudut.'
   if (selfIntersects(ring)) return 'Garis batas saling menyilang. Geser titik supaya tidak berpotongan.'
   for (const g of groups) {
@@ -141,13 +141,13 @@ export function territoryProblem(ring: Ring, groupId: string, groups: Group[], q
     if (ringsOverlap(ring, g.territory)) return `Bertabrakan dengan wilayah ${g.name}. Geser batas supaya tidak menimpa RT tetangga.`
   }
   const out = quests.filter((q) => q.groupId === groupId && !q.closed && questPhase(q) !== 'ended' && !circleInRing(q, q.radius, ring))
-  if (out.length) return `Quest "${out[0].title}" jadi berada di luar wilayah. Tutup quest itu dulu atau perluas wilayah.`
+  if (out.length) return `Misi "${out[0].title}" jadi berada di luar wilayah. Tutup misi itu dulu atau perluas wilayah.`
   return null
 }
 
 export function questProblem(q: Pick<NewQuest, 'lat' | 'lng' | 'radius'>, group: Group | undefined): string | null {
   if (!group || group.territory.length < 3) return 'Wilayah RT belum diatur.'
-  if (!pointInRing(q, group.territory)) return `Titik quest di luar wilayah ${group.name}.`
+  if (!pointInRing(q, group.territory)) return `Titik misi di luar wilayah ${group.name}.`
   if (!circleInRing(q, q.radius, group.territory)) return `Area check-in ${q.radius} m keluar dari batas ${group.name}. Kecilkan radius atau geser titik.`
   return null
 }
@@ -285,10 +285,10 @@ export const useStore = create<Data & Actions>()(
           const prob = questProblem(input, group)
           if (prob) return fail(prob)
           const id = uid('q')
-          const quest: Quest = {
+          const misi: Misi = {
             ...input,
             id,
-            code: `Q-${shortCode(id)}`,
+            code: `M-${shortCode(id)}`,
             groupId: post.groupId,
             createdAt: Date.now(),
             createdBy: reviewerId,
@@ -298,17 +298,17 @@ export const useStore = create<Data & Actions>()(
           }
           const author = s.users.find((u) => u.id === post.authorId)
           setState({
-            quests: [...s.quests, quest],
+            quests: [...s.quests, misi],
             posts: [
               ...s.posts.map((p) => (p.id === postId ? { ...p, status: 'jadi_quest' as const, questId: id } : p)),
               {
                 id: uid('m'),
                 groupId: post.groupId,
-                channel: 'quest',
-                kind: 'quest',
+                channel: 'misi',
+                kind: 'misi',
                 authorId: reviewerId,
                 at: Date.now(),
-                text: post.kind === 'tolong' ? `Permintaan tolong ${author?.name ?? 'warga'} sekarang jadi quest.` : `Laporan ${author?.name ?? 'warga'} sekarang jadi quest.`,
+                text: post.kind === 'tolong' ? `Permintaan tolong ${author?.name ?? 'warga'} sekarang jadi misi.` : `Laporan ${author?.name ?? 'warga'} sekarang jadi misi.`,
                 questId: id,
               },
             ],
@@ -330,18 +330,18 @@ export const useStore = create<Data & Actions>()(
         checkIn: (questId, userId, fix, dist) => {
           const s = getState()
           const q = s.quests.find((x) => x.id === questId)
-          if (!q) return fail('Quest tidak ditemukan.')
+          if (!q) return fail('Misi tidak ditemukan.')
           const existing = s.subs.find((x) => x.questId === questId && x.userId === userId)
           if (existing && existing.status !== 'rejected') return { ok: true, value: existing.id }
           if (q.requesterId === userId) return fail('Ini laporanmu sendiri. Biar warga lain yang mengerjakan.')
-          if (questPhase(q) !== 'live') return fail('Quest ini belum dibuka atau sudah selesai.')
+          if (questPhase(q) !== 'live') return fail('Misi ini belum dibuka atau sudah selesai.')
           if (takenSlots(s.subs, questId) >= q.slots) return fail('Kuota peserta sudah penuh.')
           const active = activeSubOf(s.subs, userId, questId)
           if (active) {
             const aq = s.quests.find((x) => x.id === active.questId)
-            return fail(`Selesaikan dulu quest "${aq?.title ?? 'sebelumnya'}". Satu quest dalam satu waktu.`)
+            return fail(`Selesaikan dulu misi "${aq?.title ?? 'sebelumnya'}". Satu misi dalam satu waktu.`)
           }
-          if (todayCount(s.subs, userId) >= RULES.dailyQuests) return fail(`Batas ${RULES.dailyQuests} quest per hari sudah tercapai. Istirahat dulu, lanjut besok.`)
+          if (todayCount(s.subs, userId) >= RULES.dailyQuests) return fail(`Batas ${RULES.dailyQuests} misi per hari sudah tercapai. Istirahat dulu, lanjut besok.`)
           if (dist > q.radius) return fail('Kamu di luar area check-in.')
           const sub: Submission = { id: uid('s'), questId, userId, checkin: { ...fix, dist: Math.round(dist) }, status: 'checked_in' }
           setState({ subs: [...s.subs.filter((x) => x.id !== existing?.id), sub] })
@@ -372,7 +372,7 @@ export const useStore = create<Data & Actions>()(
           const extra: Post[] = []
           let posts = s.posts
           if (approve) {
-            extra.push(sysPost(q.groupId, 'quest', `${worker?.name ?? 'Warga'} menyelesaikan "${q.title}" · +${q.points} poin`, { questId: q.id }))
+            extra.push(sysPost(q.groupId, 'misi', `${worker?.name ?? 'Warga'} menyelesaikan "${q.title}" · +${q.points} poin`, { questId: q.id }))
             if (q.fromPostId) posts = posts.map((p) => (p.id === q.fromPostId ? { ...p, status: 'beres' as const } : p))
           }
           setState({
@@ -399,16 +399,16 @@ export const useStore = create<Data & Actions>()(
           const s = getState()
           const by_ = s.users.find((u) => u.id === by)
           const group = s.groups.find((g) => g.leaderId === by && g.id === by_?.groupId)
-          if (!group) return fail('Hanya Ketua RT yang bisa membuat quest.')
+          if (!group) return fail('Hanya Ketua RT yang bisa membuat misi.')
           const prob = questProblem(input, group)
           if (prob) return fail(prob)
           const id = uid('q')
-          const quest: Quest = { ...input, id, code: `Q-${shortCode(id)}`, groupId: group.id, createdAt: Date.now(), createdBy: by, source: 'rt' }
+          const misi: Misi = { ...input, id, code: `M-${shortCode(id)}`, groupId: group.id, createdAt: Date.now(), createdBy: by, source: 'rt' }
           setState({
-            quests: [...s.quests, quest],
+            quests: [...s.quests, misi],
             posts: [
               ...s.posts,
-              { id: uid('m'), groupId: group.id, channel: 'quest', kind: 'quest', authorId: by, at: Date.now(), text: 'Quest baru dari pengurus RT.', questId: id },
+              { id: uid('m'), groupId: group.id, channel: 'misi', kind: 'misi', authorId: by, at: Date.now(), text: 'Misi baru dari pengurus RT.', questId: id },
             ],
           })
           return { ok: true, value: id }
@@ -447,8 +447,8 @@ export const useStore = create<Data & Actions>()(
       }
     },
     {
-      name: 'kompack-v2',
-      version: 2,
+      name: 'kompack-v3',
+      version: 3,
       storage: createJSONStorage(() => storage),
       partialize: (s): Data => ({
         meId: s.meId,

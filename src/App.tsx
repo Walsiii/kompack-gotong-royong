@@ -38,7 +38,7 @@ function Screens() {
     <Shell>
       <Routes>
         <Route path="/" element={<MapHome />} />
-        <Route path="/quest/:id" element={<QuestFlow />} />
+        <Route path="/misi/:id" element={<QuestFlow />} />
         <Route path="/lapor" element={<Report />} />
         <Route path="/grup" element={<Group />} />
         <Route path="/peringkat" element={<Leaderboard />} />
@@ -46,7 +46,7 @@ function Screens() {
         <Route path="/rt/periksa" element={ketua(<Inbox />)} />
         <Route path="/rt/cek/:id" element={ketua(<ReviewSub />)} />
         <Route path="/rt/laporan/:id" element={ketua(<ReviewReport />)} />
-        <Route path="/rt/quest-baru" element={ketua(<QuestEditor />)} />
+        <Route path="/rt/misi-baru" element={ketua(<QuestEditor />)} />
         <Route path="/rt/wilayah" element={ketua(<Territory />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

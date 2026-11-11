@@ -51,8 +51,8 @@ export function TopBar({ title, sub, back, right }: { title: ReactNode; sub?: Re
           </button>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[1.45rem] lg:text-[1.7rem]">{title}</h1>
-          {sub && <p className="truncate text-[0.84rem] font-medium text-ink-2">{sub}</p>}
+          <h1 className="truncate text-[1.6rem] lg:text-[1.8rem]">{title}</h1>
+          {sub && <p className="truncate text-[0.86rem] font-medium text-ink-2">{sub}</p>}
         </div>
         {right && <div className="flex flex-none items-center gap-2">{right}</div>}
       </div>
@@ -64,9 +64,9 @@ export function TopBar({ title, sub, back, right }: { title: ReactNode; sub?: Re
 export function Page({ children, className = '', bare }: { children: ReactNode; className?: string; bare?: boolean }) {
   return (
     <motion.main
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       className={`scroll-y h-full overflow-x-hidden ${className}`}
       style={{ paddingBottom: bare ? 'calc(var(--safe-b) + 24px)' : 'calc(var(--nav-h) + var(--safe-b) + 24px)' }}
     >
@@ -175,7 +175,7 @@ export function Note({ children, tone = 'test', className = '' }: { children: Re
     info: { cls: 'bg-[#E1EEE6] text-plang-2', icon: <Check size={15} strokeWidth={2.6} /> },
   }[tone]
   return (
-    <div className={`flex items-start gap-2 rounded-xl px-3 py-2.5 text-[0.84rem] font-medium leading-snug ${map.cls} ${className}`}>
+    <div className={`flex items-start gap-2 rounded-xl px-3 py-2.5 text-[0.86rem] font-medium leading-snug ${map.cls} ${className}`}>
       <span className="mt-px flex-none">{map.icon}</span>
       <div className="min-w-0">{children}</div>
     </div>

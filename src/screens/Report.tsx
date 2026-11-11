@@ -37,7 +37,7 @@ export function Report() {
   const category: Category = kind === 'tolong' ? 'bantu' : cat
   const inside = pos && group ? pointInRing(pos, group.territory) : null
 
-  if (rt) return <Navigate to="/rt/quest-baru" replace />
+  if (rt) return <Navigate to="/rt/misi-baru" replace />
   if (!me || !group) return null
 
   const validate = (fix: Fix) => {
@@ -108,7 +108,7 @@ export function Report() {
                     <X size={16} />
                   </button>
                 </div>
-                <p className="absolute left-2 top-2 flex items-center gap-1 rounded-lg bg-ink/70 px-2 py-1 text-[0.72rem] font-semibold text-white">
+                <p className="absolute left-2 top-2 flex items-center gap-1 rounded-lg bg-ink/70 px-2 py-1 text-[0.8rem] font-semibold text-white">
                   <ShieldCheck size={13} className="text-[#6BE3A4]" /> Disegel
                 </p>
               </motion.div>
@@ -135,7 +135,7 @@ export function Report() {
             <div className="relative h-[170px] overflow-hidden rounded-2xl">
               <Map3D center={pos ?? home} zoom={16.8} me={pos} meAvatar={me.avatar} territory={group.territory} interactive={false} threeD={false} focus={pos ? { ...pos, key: `${pos.lat},${pos.lng}` } : null} />
             </div>
-            <p className={`mt-2 flex items-center gap-1.5 text-[0.84rem] font-semibold ${inside ? 'text-ok' : 'text-bad'}`}>
+            <p className={`mt-2 flex items-center gap-1.5 text-[0.86rem] font-semibold ${inside ? 'text-ok' : 'text-bad'}`}>
               {inside ? <Check size={15} strokeWidth={3} /> : <MapPin size={15} />}
               {inside === null ? 'Mencari posisimu…' : inside ? `Di dalam wilayah ${group.name}` : `Di luar wilayah ${group.name} — laporan tidak bisa dikirim`}
             </p>
@@ -155,7 +155,7 @@ export function Report() {
           </div>
 
           <Note tone="info">
-            Ketua RT memeriksa dulu. Kalau diterima, ini jadi quest untuk warga lain dan kamu dapat +{RULES.reporterBonus} poin pelapor. Kamu tidak bisa mengerjakan quest dari {kind === 'tolong' ? 'permintaanmu' : 'laporanmu'} sendiri.
+            Ketua RT memeriksa dulu. Kalau diterima, ini jadi misi untuk warga lain dan kamu dapat +{RULES.reporterBonus} poin pelapor. Kamu tidak bisa mengerjakan misi dari {kind === 'tolong' ? 'permintaanmu' : 'laporanmu'} sendiri.
           </Note>
 
           <div>

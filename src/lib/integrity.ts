@@ -7,7 +7,7 @@
  */
 import { RULES } from './catalog'
 import { distM, fmtDist } from './geo'
-import type { Check, CheckStatus, Evidence, Fix, Person, Quest, Submission } from './types'
+import type { Check, CheckStatus, Evidence, Fix, Person, Misi, Submission } from './types'
 
 /* ───────────── Sidik visual foto (dHash 64-bit) ───────────── */
 
@@ -153,7 +153,7 @@ export function riskOf(checks: Check[]): Assessment['risk'] {
 
 export async function assessSubmission(
   sub: Submission,
-  quest: Quest,
+  misi: Misi,
   user: Person,
   others: EvidenceRef[],
 ): Promise<Assessment> {
@@ -165,11 +165,11 @@ export async function assessSubmission(
   // 1. check-in di area
   add(
     'lokasi',
-    'Check-in di area quest',
-    ci.dist > quest.radius ? 'bad' : testMode ? 'warn' : 'ok',
+    'Check-in di area misi',
+    ci.dist > misi.radius ? 'bad' : testMode ? 'warn' : 'ok',
     testMode
       ? `Lokasi disimulasikan (mode uji) · ${fmtDist(ci.dist)} dari titik`
-      : `${fmtDist(ci.dist)} dari titik (radius ${quest.radius} m), akurasi ±${Math.round(ci.acc)} m`,
+      : `${fmtDist(ci.dist)} dari titik (radius ${misi.radius} m), akurasi ±${Math.round(ci.acc)} m`,
   )
 
   // 2. pemalsu GPS
@@ -189,28 +189,28 @@ export async function assessSubmission(
   const { before, after } = sub
   if (before && after) {
     // 3. foto diambil di lokasi
-    const tol = quest.radius + Math.min(25, Math.max(before.acc, after.acc))
-    const db = distM(before, quest)
-    const da = distM(after, quest)
+    const tol = misi.radius + Math.min(25, Math.max(before.acc, after.acc))
+    const db = distM(before, misi)
+    const da = distM(after, misi)
     add(
       'foto-lokasi',
       'Foto diambil di lokasi',
       db > tol || da > tol ? 'bad' : 'ok',
-      db > tol || da > tol ? `Foto diambil ${fmtDist(Math.max(db, da))} dari titik quest` : `Sebelum ${fmtDist(db)} · sesudah ${fmtDist(da)} dari titik`,
+      db > tol || da > tol ? `Foto diambil ${fmtDist(Math.max(db, da))} dari titik misi` : `Sebelum ${fmtDist(db)} · sesudah ${fmtDist(da)} dari titik`,
     )
 
     // 4. lama kerja
     const mins = (after.at - before.at) / 60000
-    const enough = mins >= quest.minMinutes
+    const enough = mins >= misi.minMinutes
     add(
       'durasi',
       'Lama kerja wajar',
       enough ? 'ok' : testMode ? 'warn' : 'bad',
       enough
-        ? `${Math.round(mins)} menit kerja (minimal ${quest.minMinutes})`
+        ? `${Math.round(mins)} menit kerja (minimal ${misi.minMinutes})`
         : testMode
-          ? `Waktu tunggu dilewati di mode uji (${Math.max(0, Math.round(mins))} dari ${quest.minMinutes} menit)`
-          : `Hanya ${Math.max(0, Math.round(mins))} menit, minimal ${quest.minMinutes}`,
+          ? `Waktu tunggu dilewati di mode uji (${Math.max(0, Math.round(mins))} dari ${misi.minMinutes} menit)`
+          : `Hanya ${Math.max(0, Math.round(mins))} menit, minimal ${misi.minMinutes}`,
     )
 
     // 5. ada perubahan
@@ -262,7 +262,7 @@ export async function assessSubmission(
         ? 'Foto sesudah terlihat sama dengan foto sebelum. Selesaikan pekerjaannya dulu, lalu foto ulang.'
         : hard.id === 'foto-baru'
           ? 'Foto ini pernah dipakai di setoran lain. Ambil foto baru di lokasi.'
-          : 'Foto diambil di luar area quest. Ambil ulang di lokasi.'
+          : 'Foto diambil di luar area misi. Ambil ulang di lokasi.'
       : null,
   }
 }

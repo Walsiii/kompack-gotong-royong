@@ -35,7 +35,7 @@ function Step({ n, title, state, children, summary }: { n: number; title: string
       </div>
       <div className="min-w-0 flex-1 pb-4">
         <h3 className={`pt-1 text-[1.08rem] ${state === 'todo' ? 'text-ink-3' : ''}`}>{title}</h3>
-        {state === 'done' && summary && <div className="mt-0.5 text-[0.82rem] text-ink-2">{summary}</div>}
+        {state === 'done' && summary && <div className="mt-0.5 text-[0.86rem] text-ink-2">{summary}</div>}
         <AnimatePresence initial={false}>
           {state === 'active' && (
             <motion.div
@@ -85,7 +85,7 @@ export function QuestFlow() {
 
   const sub = view?.mySub && view.mySub.status !== 'rejected' ? view.mySub : undefined
   const rejected = view?.mySub?.status === 'rejected' ? view.mySub : undefined
-  const q = view?.quest
+  const q = view?.misi
   const workLeft = sub?.before && q ? q.minMinutes * 60000 - (now - sub.before.at) : 0
 
   const stage: Stage = useMemo(() => {
@@ -118,7 +118,7 @@ export function QuestFlow() {
   if (!view || !q) {
     return (
       <div className="h-full">
-        <Empty title="Quest tidak ditemukan" text="Mungkin sudah ditutup Ketua RT." action={<Button onClick={() => nav('/')}>Kembali ke peta</Button>} />
+        <Empty title="Misi tidak ditemukan" text="Mungkin sudah ditutup Ketua RT." action={<Button onClick={() => nav('/')}>Kembali ke peta</Button>} />
       </div>
     )
   }
@@ -178,20 +178,20 @@ export function QuestFlow() {
         <Map3D
           center={q}
           zoom={17.6}
-          pins={[{ id: q.id, lat: q.lat, lng: q.lng, kind: 'quest', category: q.category, label: `+${q.points}`, state: view.phase === 'live' ? 'live' : 'off' }]}
+          pins={[{ id: q.id, lat: q.lat, lng: q.lng, kind: 'misi', category: q.category, label: `+${q.points}`, state: view.phase === 'live' ? 'live' : 'off' }]}
           selectedId={q.id}
           me={rt ? null : pos}
           meAvatar={me?.avatar ?? 0}
           territory={group?.territory}
           circle={{ lat: q.lat, lng: q.lng, radius: q.radius }}
-          orbit
+          threeD={false}
           onMapClick={(p) => testMode && !rt && setSimPos(p)}
         />
         <div className="absolute left-3 top-0 z-10 flex items-center gap-2" style={{ paddingTop: 'calc(var(--safe-t) + 10px)' }}>
           <button type="button" aria-label="Kembali" onClick={() => nav(-1)} className="btn btn--white btn--icon !h-10 !min-h-10 !w-10">
             <ArrowLeft size={19} strokeWidth={2.4} />
           </button>
-          <span className="plang text-[0.82rem]">{q.code}</span>
+          <span className="plang text-[0.86rem]">{q.code}</span>
         </div>
         <AnimatePresence>
           {(checking || hadir) && (
@@ -227,7 +227,7 @@ export function QuestFlow() {
             <CatTile cat={q.category} size={50} muted={view.phase !== 'live'} />
             <div className="min-w-0 flex-1">
               <p className="eyebrow" style={{ color: cat.color }}>
-                {q.source === 'rt' ? 'Quest dari RT' : q.source === 'laporan' ? 'Dari laporan warga' : 'Permintaan tolong'}
+                {q.source === 'rt' ? 'Misi dari RT' : q.source === 'laporan' ? 'Dari laporan warga' : 'Permintaan tolong'}
               </p>
               <h1 className="mt-0.5 text-[1.6rem]">{q.title}</h1>
               <p className="mt-1 flex items-center gap-1 text-[0.86rem] text-ink-2">
@@ -237,16 +237,16 @@ export function QuestFlow() {
           </div>
 
           {/* angka utama */}
-          <dl className="mt-5 grid grid-cols-4 divide-x divide-line rounded-2xl bg-paper py-3 text-center">
+          <dl className="mt-5 divide-y divide-line border-y border-line">
             {[
               ['Poin', <span className="text-rompi">+{q.points}</span>],
-              ['Jarak', view.dist !== null ? fmtDist(view.dist) : '—'],
-              ['Peserta', `${view.taken}/${q.slots}`],
-              ['Kerja', `≥${q.minMinutes}m`],
+              ['Jarak darimu', view.dist !== null ? fmtDist(view.dist) : '—'],
+              ['Peserta', `${view.taken} dari ${q.slots} orang`],
+              ['Lama kerja minimal', `${q.minMinutes} menit`],
             ].map(([k, v]) => (
-              <div key={k as string} className="px-1">
-                <dt className="eyebrow">{k}</dt>
-                <dd className="font-display wd-wide mt-0.5 text-[1.05rem] font-extrabold">{v}</dd>
+              <div key={k as string} className="flex items-baseline justify-between gap-4 py-2.5">
+                <dt className="text-ink-2">{k}</dt>
+                <dd className="text-[1.1rem] font-bold tnum">{v}</dd>
               </div>
             ))}
           </dl>
@@ -269,7 +269,7 @@ export function QuestFlow() {
                 </span>
                 <span className="block truncate text-[0.88rem] font-medium">“{fromPost.text}”</span>
               </span>
-              <span className="mono flex flex-none items-center gap-1 text-[0.72rem] text-ink-2">
+              <span className="mono flex flex-none items-center gap-1 text-[0.8rem] text-ink-2">
                 <Eye size={13} /> {fromPost.witnesses?.length ?? 0}
               </span>
             </button>
@@ -281,7 +281,7 @@ export function QuestFlow() {
             <section>
               <h2 className="text-[1.2rem]">Peserta</h2>
               <Note tone="info" className="mt-2">
-                Ketua RT tidak ikut mengerjakan quest supaya pemeriksaan tetap adil.
+                Ketua RT tidak ikut mengerjakan misi supaya pemeriksaan tetap adil.
               </Note>
               <ul className="mt-3 flex flex-col gap-1">
                 {participants.length === 0 && <li className="py-3 text-ink-2">Belum ada yang check-in.</li>}
@@ -297,7 +297,7 @@ export function QuestFlow() {
                       >
                         <Avatar index={who?.avatar ?? 0} size={36} />
                         <span className="min-w-0 flex-1 font-semibold">{who?.name}</span>
-                        <span className="chip !text-[0.74rem]">
+                        <span className="chip !text-[0.8rem]">
                           {s.status === 'pending' ? 'Perlu dicek' : s.status === 'approved' ? 'Disetujui' : s.status === 'rejected' ? 'Ditolak' : 'Sedang kerja'}
                         </span>
                         {s.status === 'pending' && <ChevronRight size={16} />}
@@ -325,7 +325,7 @@ export function QuestFlow() {
                       Check-in dibuka <b className="text-ink">{fmtDateTime(q.startAt - EARLY_MS, now)}</b>.
                     </p>
                   ) : view.phase === 'ended' ? (
-                    <p className="text-ink-2">Quest ini sudah selesai.</p>
+                    <p className="text-ink-2">Misi ini sudah selesai.</p>
                   ) : view.full ? (
                     <p className="text-ink-2">Kuota peserta sudah penuh.</p>
                   ) : (
@@ -347,7 +347,7 @@ export function QuestFlow() {
                         <Note className="mt-3">
                           Mode uji: ketuk peta di atas, atau{' '}
                           <button type="button" className="font-semibold underline" onClick={() => setSimPos(offset(q, 8, -6))}>
-                            pindah ke lokasi quest
+                            pindah ke lokasi misi
                           </button>
                           .
                         </Note>
@@ -365,14 +365,14 @@ export function QuestFlow() {
 
                 <Step n={3} title="Kerjakan" state={st(2)} summary={sub?.before && `Minimal ${q.minMinutes} menit kerja`}>
                   <div className="rounded-2xl bg-ink p-4 text-white">
-                    <p className="mono flex items-center gap-1.5 text-[0.66rem] uppercase tracking-widest text-rompi">
+                    <p className="mono flex items-center gap-1.5 text-[0.8rem] text-rompi">
                       <Timer size={13} /> Foto sesudah terbuka dalam
                     </p>
-                    <p className="font-display wd-wide mt-1 text-[2.6rem] font-extrabold leading-none tnum">{fmtCountdown(workLeft)}</p>
+                    <p className="font-display wd-wide mt-1 text-[2.6rem] font-bold leading-none tnum">{fmtCountdown(workLeft)}</p>
                     <div className="mt-3">
                       <Bar value={sub?.before ? 1 - workLeft / (q.minMinutes * 60000) : 0} height={6} />
                     </div>
-                    <p className="mt-2.5 text-[0.82rem] text-white/70">Waktu minimal ini mencegah setoran asal-asalan. Selesaikan pekerjaannya dengan tenang.</p>
+                    <p className="mt-2.5 text-[0.86rem] text-white/70">Waktu minimal ini mencegah setoran asal-asalan. Selesaikan pekerjaannya dengan tenang.</p>
                   </div>
                   {testMode && (
                     <Note className="mt-3">
@@ -407,7 +407,7 @@ export function QuestFlow() {
                     <p className="flex items-center gap-1.5 text-[0.86rem] font-semibold">
                       <ShieldCheck size={16} className="text-plang" /> Pemeriksaan otomatis
                     </p>
-                    <div className="mt-3">{assess ? <CheckList checks={assess.checks} compact /> : <p className="text-[0.84rem] text-ink-2">Memeriksa…</p>}</div>
+                    <div className="mt-3">{assess ? <CheckList checks={assess.checks} compact /> : <p className="text-[0.86rem] text-ink-2">Memeriksa…</p>}</div>
                   </div>
                   {assess?.block ? (
                     <>
@@ -449,7 +449,7 @@ export function QuestFlow() {
               )}
               {stage === 'approved' && (
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="overflow-hidden rounded-2xl bg-plang p-4 text-white">
-                  <p className="font-display wd-wide text-[2rem] font-extrabold leading-none">+{sub?.awarded ?? q.points}</p>
+                  <p className="font-display wd-wide text-[2rem] font-bold leading-none">+{sub?.awarded ?? q.points}</p>
                   <p className="mt-1 font-semibold">Disetujui {sub?.reviewedAt ? fmtDateTime(sub.reviewedAt, now) : ''}. Terima kasih sudah turun!</p>
                   <Button tone="white" small className="mt-3" onClick={() => nav('/peringkat')}>
                     Lihat klasemen

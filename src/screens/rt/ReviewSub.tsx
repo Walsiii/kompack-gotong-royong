@@ -29,13 +29,13 @@ export function ReviewSub() {
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), [])
 
   const sub = subs.find((s) => s.id === id)
-  const quest = sub && quests.find((q) => q.id === sub.questId)
+  const misi = sub && quests.find((q) => q.id === sub.questId)
   const who = sub && personById(users, sub.userId)
 
   // periksa ulang di sisi RT (termasuk segel bukti)
   useEffect(() => {
     setChecks(null)
-    if (!sub || !quest || !who) return
+    if (!sub || !misi || !who) return
     let alive = true
     const others: EvidenceRef[] = []
     for (const s of subs) {
@@ -45,13 +45,13 @@ export function ReviewSub() {
       if (s.after) others.push({ ref: s.id, label: `setoran ${n}`, ev: s.after })
     }
     for (const p of posts) if (p.photo) others.push({ ref: p.id, label: `laporan ${personById(users, p.authorId)?.name ?? 'warga'}`, ev: p.photo })
-    void assessSubmission(sub, quest, who, others).then((a) => alive && setChecks(a.checks))
+    void assessSubmission(sub, misi, who, others).then((a) => alive && setChecks(a.checks))
     return () => {
       alive = false
     }
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!sub || !quest || !who || !sub.before || !sub.after || !me) {
+  if (!sub || !misi || !who || !sub.before || !sub.after || !me) {
     return (
       <Page bare>
         <TopBar back="/rt/periksa" title="Setoran tidak ditemukan" />
@@ -82,7 +82,7 @@ export function ReviewSub() {
 
   return (
     <Page bare>
-      <TopBar back="/rt/periksa" title="Periksa setoran" sub={quest.title} />
+      <TopBar back="/rt/periksa" title="Periksa setoran" sub={misi.title} />
       <Section className="grid gap-5 lg:grid-cols-[1.1fr_1fr] lg:items-start">
         <div className="relative">
           <Compare before={sub.before.img} after={sub.after.img} />
@@ -109,9 +109,9 @@ export function ReviewSub() {
             <Avatar index={who.avatar} size={48} />
             <div className="min-w-0 flex-1">
               <p className="font-display text-[1.25rem] font-bold leading-tight">{who.name}</p>
-              <p className="text-[0.82rem] text-ink-2">{new Date().getFullYear() - who.birthYear} tahun · kepercayaan {who.trust}/100</p>
+              <p className="text-[0.86rem] text-ink-2">{new Date().getFullYear() - who.birthYear} tahun · kepercayaan {who.trust}/100</p>
             </div>
-            {risk && <span className={`rounded-full px-3 py-1.5 text-[0.78rem] font-semibold ${risk.cls}`}>{risk.text}</span>}
+            {risk && <span className={`rounded-full px-3 py-1.5 text-[0.86rem] font-semibold ${risk.cls}`}>{risk.text}</span>}
           </div>
 
           {sub.note && (
@@ -135,7 +135,7 @@ export function ReviewSub() {
                 <X size={18} /> Tolak
               </Button>
               <Button tone="plang" className="flex-[1.6]" onClick={() => decide(true)}>
-                <Check size={18} strokeWidth={2.6} /> Setujui +{quest.points}
+                <Check size={18} strokeWidth={2.6} /> Setujui +{misi.points}
               </Button>
             </div>
           ) : (

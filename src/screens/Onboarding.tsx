@@ -9,7 +9,7 @@ import { locateOnce } from '../lib/location'
 import { useSession, useStore } from '../lib/store'
 
 const HOW = [
-  { icon: MapPinned, title: 'Lihat quest di peta 3D RT-mu', text: 'Ketua RT memasang tugas; warga bisa melapor sampah atau minta tolong.' },
+  { icon: MapPinned, title: 'Lihat misi di peta 3D RT-mu', text: 'Ketua RT memasang tugas; warga bisa melapor sampah atau minta tolong.' },
   { icon: Camera, title: 'Datang, check-in, foto', text: 'Check-in GPS di lokasi, foto sebelum dan sesudah dari kamera aplikasi.' },
   { icon: Trophy, title: 'Dapat poin, angkat RT-mu', text: 'Naik pangkat, tukar hadiah, dan menangkan lomba antar-RT.' },
 ]
@@ -72,7 +72,7 @@ export function Onboarding() {
               <h1 className="mt-6 text-[2.6rem] leading-[0.98]">
                 Kerja bakti,
                 <br />
-                tapi jadi quest.
+                tapi jadi misi.
               </h1>
               <div className="reflect-stripes mt-5 h-2.5 w-28 rounded-full" style={{ animation: 'kp-sweep 3s linear infinite' }} />
               <ol className="mt-8 flex flex-col gap-5">
@@ -80,7 +80,7 @@ export function Onboarding() {
                   <motion.li key={h.title} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.12 }} className="flex gap-4">
                     <span className="relative grid h-12 w-12 flex-none place-items-center rounded-2xl bg-white/10">
                       <h.icon size={22} />
-                      <span className="mono absolute -left-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-rompi text-[0.62rem] font-semibold">{i + 1}</span>
+                      <span className="mono absolute -left-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-rompi text-[0.8rem] font-semibold">{i + 1}</span>
                     </span>
                     <div>
                       <p className="font-display text-[1.12rem] font-bold leading-tight">{h.title}</p>
@@ -178,7 +178,7 @@ export function Onboarding() {
                 <Button full tone="white" disabled={!!busy} onClick={() => finish('uji')}>
                   <FlaskConical size={18} /> {busy === 'uji' ? 'Menyiapkan…' : 'Coba di PC (mode uji)'}
                 </Button>
-                <p className="text-center text-[0.78rem] text-white/60">Mode uji: posisi dipindah dengan mengetuk peta dan boleh memakai foto contoh. Semua hasilnya ditandai.</p>
+                <p className="text-center text-[0.86rem] text-white/60">Mode uji: posisi dipindah dengan mengetuk peta dan boleh memakai foto contoh. Semua hasilnya ditandai.</p>
               </div>
             </motion.section>
           )}

@@ -15,9 +15,9 @@ import type { Post } from '../lib/types'
 
 /* kamera & animasi pembuka diingat selama aplikasi terbuka */
 let introDone = false
-let tilt = true
+let tilt = false
 
-type Item = { key: string; type: 'quest'; view: QuestView } | { key: string; type: 'post'; post: Post; dist: number | null }
+type Item = { key: string; type: 'misi'; view: QuestView } | { key: string; type: 'post'; post: Post; dist: number | null }
 
 export function MapHome() {
   const nav = useNavigate()
@@ -39,7 +39,7 @@ export function MapHome() {
   const views = useQuestViews(now)
   const reports = useOpenReports()
 
-  const [tab, setTab] = useState<'quest' | 'laporan'>('quest')
+  const [tab, setTab] = useState<'misi' | 'laporan'>('misi')
   const [threeD, setThreeD] = useState(tilt)
   const [selected, setSelected] = useState<string | null>(null)
   const [focus, setFocus] = useState<{ lat: number; lng: number; key: number } | null>(null)
@@ -54,14 +54,14 @@ export function MapHome() {
   }, [threeD])
 
   const items: Item[] = useMemo(() => {
-    const q: Item[] = views.map((v) => ({ key: `q:${v.quest.id}`, type: 'quest', view: v }))
+    const q: Item[] = views.map((v) => ({ key: `q:${v.misi.id}`, type: 'misi', view: v }))
     const r: Item[] = reports
       .map((p) => ({ key: `p:${p.id}`, type: 'post' as const, post: p, dist: pos && p.lat !== undefined ? distM(pos, { lat: p.lat, lng: p.lng! }) : null }))
       .sort((a, b) => (a.dist ?? 1e9) - (b.dist ?? 1e9))
-    return tab === 'quest' ? [...q, ...r] : [...r, ...q]
+    return tab === 'misi' ? [...q, ...r] : [...r, ...q]
   }, [views, reports, pos, tab])
 
-  const listed = items.filter((i) => (tab === 'quest' ? i.type === 'quest' : i.type === 'post'))
+  const listed = items.filter((i) => (tab === 'misi' ? i.type === 'misi' : i.type === 'post'))
 
   useEffect(() => {
     if (!selected || !items.some((i) => i.key === selected)) setSelected(listed[0]?.key ?? items[0]?.key ?? null)
@@ -70,12 +70,12 @@ export function MapHome() {
   const pins: MapPin[] = useMemo(
     () => [
       ...views.map((v) => ({
-        id: `q:${v.quest.id}`,
-        lat: v.quest.lat,
-        lng: v.quest.lng,
-        kind: 'quest' as const,
-        category: v.quest.category,
-        label: v.mySub?.status === 'approved' || v.mySub?.status === 'pending' ? '✓' : `+${v.quest.points}`,
+        id: `q:${v.misi.id}`,
+        lat: v.misi.lat,
+        lng: v.misi.lng,
+        kind: 'misi' as const,
+        category: v.misi.category,
+        label: v.mySub?.status === 'approved' || v.mySub?.status === 'pending' ? '✓' : `+${v.misi.points}`,
         state: v.mySub && (v.mySub.status === 'approved' || v.mySub.status === 'pending') ? ('done' as const) : v.phase === 'live' ? ('live' as const) : ('off' as const),
       })),
       ...reports.map((p) => ({
@@ -103,9 +103,9 @@ export function MapHome() {
   const pick = (key: string, collapse = true) => {
     setSelected(key)
     const it = items.find((i) => i.key === key)
-    if (it?.type === 'quest') fly(it.view.quest.lat, it.view.quest.lng)
+    if (it?.type === 'misi') fly(it.view.misi.lat, it.view.misi.lng)
     if (it?.type === 'post' && it.post.lat !== undefined) fly(it.post.lat, it.post.lng!)
-    if (it) setTab(it.type === 'quest' ? 'quest' : 'laporan')
+    if (it) setTab(it.type === 'misi' ? 'misi' : 'laporan')
     if (collapse) setExpanded(false)
   }
 
@@ -122,7 +122,7 @@ export function MapHome() {
   const sel = items.find((i) => i.key === selected) ?? null
   const active = me ? activeSubOf(subs, me.id) : undefined
   const activeQuest = active && quests.find((q) => q.id === active.questId)
-  const selQuest = sel?.type === 'quest' ? sel.view.quest : null
+  const selQuest = sel?.type === 'misi' ? sel.view.misi : null
   const center = useMemo(() => (group?.territory.length ? ringCenter(group.territory) : home), [group?.territory, home])
 
   const onMapClick = (p: { lat: number; lng: number }) => {
@@ -134,8 +134,8 @@ export function MapHome() {
   const focusCard = sel && (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div key={sel.key} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
-        {sel.type === 'quest' ? (
-          <QuestFocus v={sel.view} now={now} rt={rt} onOpen={() => nav(`/quest/${sel.view.quest.id}`)} />
+        {sel.type === 'misi' ? (
+          <QuestFocus v={sel.view} now={now} rt={rt} onOpen={() => nav(`/misi/${sel.view.misi.id}`)} />
         ) : (
           <ReportFocus
             post={sel.post}
@@ -159,7 +159,7 @@ export function MapHome() {
     <div className="flex flex-col">
       {listed.length === 0 && (
         <p className="px-1 py-6 text-center text-[0.9rem] text-ink-2">
-          {tab === 'quest' ? 'Belum ada quest berlangsung.' : 'Tidak ada laporan yang menunggu. Lingkunganmu sedang rapi.'}
+          {tab === 'misi' ? 'Belum ada misi berlangsung.' : 'Tidak ada laporan yang menunggu. Lingkunganmu sedang rapi.'}
         </p>
       )}
       {listed.map((it, i) => {
@@ -175,17 +175,17 @@ export function MapHome() {
             onClick={() => pick(it.key)}
             className={`flex items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition-colors ${on ? 'bg-paper' : 'hover:bg-paper/60'}`}
           >
-            {it.type === 'quest' ? (
+            {it.type === 'misi' ? (
               <>
-                <CatTile cat={it.view.quest.category} size={40} muted={it.view.phase !== 'live'} />
+                <CatTile cat={it.view.misi.category} size={40} muted={it.view.phase !== 'live'} />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold leading-tight">{it.view.quest.title}</span>
-                  <span className="block truncate text-[0.78rem] text-ink-2">
-                    {phaseLabel(it.view.quest, now)}
-                    {it.view.dist !== null && ` · ${fmtDist(it.view.dist)}`} · {it.view.taken}/{it.view.quest.slots} orang
+                  <span className="block truncate font-semibold leading-tight">{it.view.misi.title}</span>
+                  <span className="block truncate text-[0.86rem] text-ink-2">
+                    {phaseLabel(it.view.misi, now)}
+                    {it.view.dist !== null && ` · ${fmtDist(it.view.dist)}`} · {it.view.taken}/{it.view.misi.slots} orang
                   </span>
                 </span>
-                <Points value={it.view.quest.points} plus />
+                <Points value={it.view.misi.points} plus />
               </>
             ) : (
               <>
@@ -199,11 +199,11 @@ export function MapHome() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold leading-tight">{it.post.text}</span>
-                  <span className="block truncate text-[0.78rem] text-ink-2">
+                  <span className="block truncate text-[0.86rem] text-ink-2">
                     {it.post.kind === 'tolong' ? 'Minta tolong' : 'Laporan'} · {personById(users, it.post.authorId)?.name} · {fmtAgo(it.post.at, now)}
                   </span>
                 </span>
-                <span className="mono flex flex-none items-center gap-1 text-[0.74rem] text-ink-2">
+                <span className="mono flex flex-none items-center gap-1 text-[0.8rem] text-ink-2">
                   <Eye size={13} /> {it.post.witnesses?.length ?? 0}
                 </span>
               </>
@@ -220,11 +220,11 @@ export function MapHome() {
       value={tab}
       onChange={(v) => {
         setTab(v)
-        const first = items.find((i) => (v === 'quest' ? i.type === 'quest' : i.type === 'post'))
+        const first = items.find((i) => (v === 'misi' ? i.type === 'misi' : i.type === 'post'))
         if (first) pick(first.key, false)
       }}
       options={[
-        { value: 'quest', label: `Quest · ${views.length}` },
+        { value: 'misi', label: `Misi · ${views.length}` },
         { value: 'laporan', label: `Laporan · ${reports.length}` },
       ]}
       className="w-full"
@@ -282,10 +282,10 @@ export function MapHome() {
             >
               <Avatar index={me.avatar} size={30} />
               <Coin size={15} />
-              <CountUp value={points.total} className="font-display wd-wide text-[1rem] font-extrabold" />
+              <CountUp value={points.total} className="font-display wd-wide text-[1rem] font-bold" />
             </button>
           )}
-          {rt && <span className="plang pointer-events-auto !bg-ink text-[0.82rem]" style={{ boxShadow: 'inset 0 0 0 2px #0F1F19, inset 0 0 0 3.5px #FF5A1F' }}>MODE KETUA RT</span>}
+          {rt && <span className="plang pointer-events-auto !bg-ink text-[0.86rem]" style={{ boxShadow: 'inset 0 0 0 2px #0F1F19, inset 0 0 0 3.5px #FF5A1F' }}>MODE KETUA RT</span>}
         </div>
 
         <AnimatePresence>
@@ -295,12 +295,12 @@ export function MapHome() {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              onClick={() => nav(`/quest/${activeQuest.id}`)}
+              onClick={() => nav(`/misi/${activeQuest.id}`)}
               className="pointer-events-auto mt-2.5 flex w-full max-w-[420px] items-center gap-2.5 overflow-hidden rounded-2xl bg-ink py-2 pl-2 pr-3 text-left text-white shadow-lift"
             >
               <span className="reflect-stripes h-9 w-2 flex-none rounded-full" style={{ animation: 'kp-sweep 2s linear infinite' }} />
               <span className="min-w-0 flex-1">
-                <span className="mono block text-[0.62rem] uppercase tracking-wider text-rompi">Misi aktif</span>
+                <span className="mono block text-[0.8rem] text-rompi">Misi aktif</span>
                 <span className="block truncate text-[0.9rem] font-semibold">{activeQuest.title}</span>
               </span>
               <ArrowRight size={18} className="flex-none" />
@@ -309,15 +309,15 @@ export function MapHome() {
         </AnimatePresence>
 
         {testMode && !rt && (
-          <div className="pointer-events-auto mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#2E2452]/90 px-3 py-1.5 text-[0.76rem] font-semibold text-white backdrop-blur-sm">
+          <div className="pointer-events-auto mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#2E2452]/90 px-3 py-1.5 text-[0.86rem] font-semibold text-white backdrop-blur-sm">
             <MousePointerClick size={14} /> Mode uji · ketuk peta untuk pindah posisi
           </div>
         )}
         {!testMode && !rt && (status === 'denied' || status === 'unavailable' || status === 'locating') && (
-          <div className="pointer-events-auto mt-2.5 flex max-w-[420px] items-center gap-2 rounded-2xl bg-white px-3 py-2 text-[0.82rem] shadow-float">
+          <div className="pointer-events-auto mt-2.5 flex max-w-[420px] items-center gap-2 rounded-2xl bg-white px-3 py-2 text-[0.86rem] shadow-float">
             <LocateFixed size={16} className={status === 'locating' ? 'animate-pulse text-rompi' : 'text-bad'} />
             <span className="min-w-0 flex-1 font-medium">
-              {status === 'locating' ? 'Mencari sinyal GPS…' : status === 'denied' ? 'Izin lokasi ditolak. Quest butuh lokasi untuk check-in.' : 'GPS belum dapat sinyal.'}
+              {status === 'locating' ? 'Mencari sinyal GPS…' : status === 'denied' ? 'Izin lokasi ditolak. Misi butuh lokasi untuk check-in.' : 'GPS belum dapat sinyal.'}
             </span>
             {status !== 'locating' && (
               <button type="button" onClick={retry} className="font-semibold text-rompi">
@@ -342,7 +342,7 @@ export function MapHome() {
           aria-pressed={threeD}
         >
           {threeD ? <Box size={18} strokeWidth={2.2} /> : <Square size={17} strokeWidth={2.2} />}
-          <span className="mono text-[0.56rem] font-semibold">{threeD ? '3D' : '2D'}</span>
+          <span className="mono text-[0.8rem] font-semibold">{threeD ? '3D' : '2D'}</span>
         </motion.button>
         <motion.button
           type="button"
@@ -414,7 +414,7 @@ export function MapHome() {
 /* ───────────── Kartu fokus ───────────── */
 
 function QuestFocus({ v, now, rt, onOpen }: { v: QuestView; now: number; rt: boolean; onOpen: () => void }) {
-  const q = v.quest
+  const q = v.misi
   const s = v.mySub?.status
   const cta =
     rt ? 'Lihat peserta'
@@ -425,14 +425,14 @@ function QuestFocus({ v, now, rt, onOpen }: { v: QuestView; now: number; rt: boo
     : v.own ? 'Laporanmu · lihat'
     : v.phase === 'upcoming' ? 'Lihat jadwal'
     : v.inRange ? 'Kamu di lokasi · mulai'
-    : 'Buka quest'
+    : 'Buka misi'
   return (
     <div>
       <div className="flex items-start gap-3">
         <CatTile cat={q.category} size={48} muted={v.phase !== 'live'} />
         <div className="min-w-0 flex-1">
           <p className="eyebrow truncate" style={{ color: CATS[q.category].color }}>
-            {q.source === 'rt' ? 'Quest RT' : q.source === 'laporan' ? 'Dari laporan warga' : 'Permintaan tolong'}
+            {q.source === 'rt' ? 'Misi RT' : q.source === 'laporan' ? 'Dari laporan warga' : 'Permintaan tolong'}
           </p>
           <h2 className="mt-0.5 line-clamp-2 text-[1.2rem]">{q.title}</h2>
           <p className="mt-0.5 truncate text-[0.8rem] text-ink-2">
@@ -441,7 +441,7 @@ function QuestFocus({ v, now, rt, onOpen }: { v: QuestView; now: number; rt: boo
           </p>
         </div>
         <div className="flex flex-none flex-col items-end">
-          <span className="font-display wd-wide text-[1.5rem] font-extrabold leading-none text-rompi">+{q.points}</span>
+          <span className="font-display wd-wide text-[1.5rem] font-bold leading-none text-rompi">+{q.points}</span>
           <span className="mono text-[0.6rem] text-ink-3">POIN</span>
         </div>
       </div>

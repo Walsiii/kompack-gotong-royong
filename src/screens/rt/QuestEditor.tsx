@@ -22,9 +22,9 @@ function Stepper({ value, set, min, max, step, label, unit }: { value: number; s
         <button type="button" aria-label={`Kurangi ${label}`} disabled={value <= min} onClick={() => set(Math.max(min, value - step))} className="btn btn--white btn--icon !h-10 !min-h-10 !w-10">
           <Minus size={17} />
         </button>
-        <motion.span key={value} initial={{ y: -5, opacity: 0.4 }} animate={{ y: 0, opacity: 1 }} className="font-display wd-wide tnum flex-1 text-center text-[1.15rem] font-extrabold" aria-live="polite">
+        <motion.span key={value} initial={{ y: -5, opacity: 0.4 }} animate={{ y: 0, opacity: 1 }} className="font-display wd-wide tnum flex-1 text-center text-[1.15rem] font-bold" aria-live="polite">
           {value}
-          {unit && <span className="mono ml-1 text-[0.66rem] font-medium text-ink-3">{unit}</span>}
+          {unit && <span className="mono ml-1 text-[0.8rem] font-medium text-ink-3">{unit}</span>}
         </motion.span>
         <button type="button" aria-label={`Tambah ${label}`} disabled={value >= max} onClick={() => set(Math.min(max, value + step))} className="btn btn--white btn--icon !h-10 !min-h-10 !w-10">
           <Plus size={17} />
@@ -84,7 +84,7 @@ export function QuestEditor() {
   if (title.trim().length < 4) errors.push('Judul minimal 4 huruf.')
   if (place.trim().length < 3) errors.push('Isi patokan tempat.')
   if (!(endAt > startAt)) errors.push('Jam selesai harus setelah jam mulai.')
-  else if (endAt <= now) errors.push('Waktu quest sudah lewat.')
+  else if (endAt <= now) errors.push('Waktu misi sudah lewat.')
 
   if (!me || !group) return null
 
@@ -94,13 +94,13 @@ export function QuestEditor() {
     const r = from ? acceptReport(from.id, me.id, input) : createQuest(input, me.id)
     if (!r.ok) return toast(r.error, 'warn')
     navigator.vibrate?.([30, 40, 70])
-    toast('Quest terbit. Warga sudah bisa melihatnya di peta.')
+    toast('Misi terbit. Warga sudah bisa melihatnya di peta.')
     nav('/', { replace: true })
   }
 
   return (
     <Page bare>
-      <TopBar back title={from ? 'Jadikan quest' : 'Quest baru'} sub={from ? 'Dari laporan warga' : `Untuk warga ${group.name}`} />
+      <TopBar back title={from ? 'Jadikan misi' : 'Misi baru'} sub={from ? 'Dari laporan warga' : `Untuk warga ${group.name}`} />
       <Section className="grid gap-5 lg:grid-cols-[1.1fr_1fr] lg:items-start">
         {/* peta: geser peta, pin tetap di tengah */}
         <div className="lg:sticky lg:top-20">
@@ -112,14 +112,14 @@ export function QuestEditor() {
                 <circle cx="19" cy="17.5" r="5.5" fill="#fff" />
               </svg>
             </div>
-            <p className="mono absolute left-2.5 top-2.5 z-10 rounded-lg bg-ink/75 px-2 py-1 text-[0.64rem] text-white">Geser peta untuk memindahkan titik</p>
+            <p className="mono absolute left-2.5 top-2.5 z-10 rounded-lg bg-ink/75 px-2 py-1 text-[0.8rem] text-white">Geser peta untuk memindahkan titik</p>
           </div>
           <div className="mt-3">
             <div className="flex items-baseline justify-between">
               <label className="label !mb-0" htmlFor="q-radius">
                 Radius area check-in
               </label>
-              <span className="font-display wd-wide tnum font-extrabold">{radius} m</span>
+              <span className="font-display wd-wide tnum font-bold">{radius} m</span>
             </div>
             <input id="q-radius" type="range" min={20} max={150} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="mt-2 w-full accent-[#FF5A1F]" />
             <p className={`mt-1 text-[0.8rem] ${areaProblem ? 'font-semibold text-bad' : 'text-ink-3'}`}>
@@ -139,7 +139,7 @@ export function QuestEditor() {
           )}
           <div>
             <span className="label">Jenis</span>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Jenis quest">
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Jenis misi">
               {CAT_LIST.map((c) => (
                 <button
                   key={c.id}
@@ -209,7 +209,7 @@ export function QuestEditor() {
                 <input id="q-end" type="time" className="field" value={end} onChange={(e) => e.target.value && setEnd(e.target.value)} />
               </div>
             </div>
-            {endAt > startAt && <p className="mono mt-1.5 text-[0.72rem] text-ink-3">{fmtWindow(startAt, endAt, now)}</p>}
+            {endAt > startAt && <p className="mono mt-1.5 text-[0.8rem] text-ink-3">{fmtWindow(startAt, endAt, now)}</p>}
           </div>
           <div className="grid grid-cols-3 gap-3">
             <Stepper label="Poin" value={points} set={(v) => ((touched.current = true), setPoints(v))} min={10} max={150} step={5} />
@@ -218,7 +218,7 @@ export function QuestEditor() {
           </div>
           {errors.length > 0 && <Note tone="warn">{errors[0]}</Note>}
           <Button full disabled={errors.length > 0} onClick={publish}>
-            <Rocket size={18} /> Terbitkan quest
+            <Rocket size={18} /> Terbitkan misi
           </Button>
         </div>
       </Section>

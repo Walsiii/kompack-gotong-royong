@@ -78,8 +78,8 @@ export function Leaderboard() {
             {mine && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 overflow-hidden rounded-[22px] bg-ink p-4 text-white">
                 <div>
-                  <p className="mono text-[0.62rem] uppercase tracking-widest text-rompi">Posisimu</p>
-                  <p className="font-display wd-wide text-[2.6rem] font-extrabold leading-none">
+                  <p className="mono text-[0.8rem] text-rompi">Posisimu</p>
+                  <p className="font-display wd-wide text-[2.6rem] font-bold leading-none">
                     #<CountUp value={mine.place} duration={0.6} />
                   </p>
                 </div>
@@ -110,7 +110,7 @@ export function Leaderboard() {
                     <div className="min-w-0">
                       <p className="truncate font-semibold leading-tight">
                         {r.person.name}
-                        {isMe && <span className="ml-1.5 text-[0.74rem] font-medium text-rompi">kamu</span>}
+                        {isMe && <span className="ml-1.5 text-[0.8rem] font-medium text-rompi">kamu</span>}
                       </p>
                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#E9EDE8]">
                         <motion.div
@@ -120,11 +120,11 @@ export function Leaderboard() {
                           transition={{ type: 'spring', stiffness: 70, damping: 16, delay: 0.1 + Math.min(i, 12) * 0.03 }}
                         />
                       </div>
-                      <p className="mt-1 truncate text-[0.72rem] text-ink-3">
-                        {rankOf(pointsOf(snap, r.person.id)).name} · {r.quests} quest
+                      <p className="mt-1 truncate text-[0.8rem] text-ink-3">
+                        {rankOf(pointsOf(snap, r.person.id)).name} · {r.quests} misi
                       </p>
                     </div>
-                    <span className="font-display wd-wide tnum text-right text-[1.1rem] font-extrabold">{r.points}</span>
+                    <span className="font-display wd-wide tnum text-right text-[1.1rem] font-bold">{r.points}</span>
                   </motion.li>
                 )
               })}
@@ -153,7 +153,7 @@ export function Leaderboard() {
                     <Shape ring={r.g.territory} active={mineRt} />
                     <div className="min-w-0 flex-1">
                       <p className="font-display text-[1.1rem] font-bold leading-tight">
-                        {r.g.name} {mineRt && <span className="text-[0.74rem] font-medium text-rompi">RT-mu</span>}
+                        {r.g.name} {mineRt && <span className="text-[0.8rem] font-medium text-rompi">RT-mu</span>}
                       </p>
                       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#E9EDE8]">
                         <motion.div
@@ -164,14 +164,14 @@ export function Leaderboard() {
                         />
                       </div>
                     </div>
-                    <span className="font-display wd-wide tnum text-[1.2rem] font-extrabold">
+                    <span className="font-display wd-wide tnum text-[1.2rem] font-bold">
                       <CountUp value={r.points} />
                     </span>
                   </motion.li>
                 )
               })}
             </ol>
-            <p className="px-1 text-[0.8rem] text-ink-3">Setiap quest yang kamu selesaikan menambah poin RT-mu.</p>
+            <p className="px-1 text-[0.8rem] text-ink-3">Setiap misi yang kamu selesaikan menambah poin RT-mu.</p>
           </>
         )}
       </Section>

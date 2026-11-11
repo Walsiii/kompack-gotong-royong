@@ -23,18 +23,18 @@ function useItems(): { items: Item[]; action: { to: string; label: string } } {
     return {
       items: [
         { to: '/', label: 'Peta', icon: Map, end: true },
-        { to: '/grup', label: 'Grup', icon: MessagesSquare },
+        { to: '/grup', label: 'Pos', icon: MessagesSquare },
         { to: '/rt/periksa', label: 'Periksa', icon: ClipboardCheck, badge: waiting },
         { to: '/aku', label: 'Aku', icon: UserRound },
       ],
-      action: { to: '/rt/quest-baru', label: 'Quest' },
+      action: { to: '/rt/misi-baru', label: 'Misi' },
     }
   }
   const todo = subs.filter((s) => s.userId === me?.id && (s.status === 'checked_in' || s.status === 'rejected')).length
   return {
     items: [
       { to: '/', label: 'Peta', icon: Map, end: true },
-      { to: '/grup', label: 'Grup', icon: MessagesSquare },
+      { to: '/grup', label: 'Pos', icon: MessagesSquare },
       { to: '/peringkat', label: 'Klasemen', icon: Trophy },
       { to: '/aku', label: 'Aku', icon: UserRound, badge: todo },
     ],
@@ -43,7 +43,7 @@ function useItems(): { items: Item[]; action: { to: string; label: string } } {
 }
 
 /** halaman alur penuh: tanpa navigasi bawah di ponsel */
-const FULL = ['/quest/', '/lapor', '/rt/quest-baru', '/rt/cek/', '/rt/laporan/', '/rt/wilayah']
+const FULL = ['/misi/', '/lapor', '/rt/misi-baru', '/rt/cek/', '/rt/laporan/', '/rt/wilayah']
 
 export function Shell({ children }: { children: ReactNode }) {
   const { items, action } = useItems()
@@ -65,12 +65,12 @@ export function Shell({ children }: { children: ReactNode }) {
           <span className="relative">
             <it.icon size={22} strokeWidth={isActive ? 2.4 : 1.9} className={isActive ? 'text-ink' : 'text-ink-3'} />
             {!!it.badge && (
-              <span className="mono tnum absolute -right-2.5 -top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-rompi px-1 text-[0.58rem] font-semibold leading-none text-white ring-2 ring-white">
+              <span className="mono tnum absolute -right-2.5 -top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-rompi px-1 text-[0.8rem] font-semibold leading-none text-white ring-2 ring-white">
                 {it.badge}
               </span>
             )}
           </span>
-          <span className={`text-[0.68rem] leading-tight ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-3'}`}>{it.label}</span>
+          <span className={`text-[0.8rem] leading-tight ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-3'}`}>{it.label}</span>
         </>
       )}
     </NavLink>
@@ -83,7 +83,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="px-5 pb-4 pt-6">
           <Logo size={26} />
           <div className="mt-4">
-            <span className="plang text-[0.82rem]">
+            <span className="plang text-[0.86rem]">
               {group?.name ?? 'RT'} · {group?.rw}
             </span>
           </div>
@@ -93,7 +93,7 @@ export function Shell({ children }: { children: ReactNode }) {
           onClick={() => nav(action.to)}
           className="btn btn--primary mx-4 mb-3"
         >
-          <Plus size={18} strokeWidth={2.6} /> {rt ? 'Buat quest' : 'Lapor / minta tolong'}
+          <Plus size={18} strokeWidth={2.6} /> {rt ? 'Buat misi' : 'Lapor / minta tolong'}
         </button>
         <nav className="flex flex-1 flex-col gap-0.5 px-3" aria-label="Navigasi utama">
           {items.map((it) => (
@@ -105,7 +105,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   <it.icon size={20} strokeWidth={isActive ? 2.4 : 1.9} className={`relative ${isActive ? 'text-ink' : 'text-ink-3'}`} />
                   <span className={`relative flex-1 ${isActive ? 'text-ink' : 'text-ink-2'}`}>{it.label}</span>
                   {!!it.badge && (
-                    <span className="mono tnum relative grid h-5 min-w-5 place-items-center rounded-full bg-rompi px-1.5 text-[0.66rem] font-semibold text-white">{it.badge}</span>
+                    <span className="mono tnum relative grid h-5 min-w-5 place-items-center rounded-full bg-rompi px-1.5 text-[0.8rem] font-semibold text-white">{it.badge}</span>
                   )}
                 </>
               )}
@@ -117,7 +117,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Avatar index={me.avatar} size={34} />
             <span className="min-w-0">
               <span className="block truncate text-[0.9rem] font-semibold">{me.name}</span>
-              <span className="block truncate text-[0.74rem] text-ink-3">{me.title ?? 'Warga'}</span>
+              <span className="block truncate text-[0.8rem] text-ink-3">{me.title ?? 'Warga'}</span>
             </span>
           </button>
         )}
@@ -141,10 +141,10 @@ export function Shell({ children }: { children: ReactNode }) {
                   whileTap={{ scale: 0.9 }}
                   onClick={() => nav(action.to)}
                   className="btn btn--primary -mt-5 !h-[58px] !min-h-[58px] !w-[58px] flex-col !gap-0 !rounded-[18px] !p-0"
-                  aria-label={rt ? 'Buat quest' : 'Lapor atau minta tolong'}
+                  aria-label={rt ? 'Buat misi' : 'Lapor atau minta tolong'}
                 >
                   <Plus size={22} strokeWidth={2.8} />
-                  <span className="text-[0.62rem] font-bold">{action.label}</span>
+                  <span className="text-[0.8rem] font-bold">{action.label}</span>
                 </motion.button>
               </div>
               {items.slice(half).map(tab)}

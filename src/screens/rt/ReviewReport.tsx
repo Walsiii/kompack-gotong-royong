@@ -49,7 +49,7 @@ export function ReviewReport() {
             <Avatar index={who.avatar} size={46} />
             <div className="min-w-0">
               <p className="font-display text-[1.2rem] font-bold leading-tight">{who.name}</p>
-              <p className="text-[0.82rem] text-ink-2">{new Date().getFullYear() - who.birthYear} tahun · kepercayaan {who.trust}/100</p>
+              <p className="text-[0.86rem] text-ink-2">{new Date().getFullYear() - who.birthYear} tahun · kepercayaan {who.trust}/100</p>
             </div>
           </div>
           <p className="text-[1.05rem] leading-snug">“{post.text}”</p>
@@ -60,7 +60,7 @@ export function ReviewReport() {
             <li className="flex items-center gap-2.5">
               <MapPin size={17} className={inside ? 'text-ok' : 'text-bad'} />
               <span>
-                {inside ? `Di dalam wilayah ${group.name}` : `Di luar wilayah ${group.name}`} <span className="mono text-[0.72rem] text-ink-3">{fmtCoord(loc)}</span>
+                {inside ? `Di dalam wilayah ${group.name}` : `Di luar wilayah ${group.name}`} <span className="mono text-[0.8rem] text-ink-3">{fmtCoord(loc)}</span>
               </span>
             </li>
             <li className="flex items-center gap-2.5">
@@ -74,14 +74,14 @@ export function ReviewReport() {
           {post.status === 'menunggu' ? (
             <>
               <Note tone="info">
-                Kalau dijadikan quest, {who.name} dapat +{RULES.reporterBonus} poin pelapor dan tidak bisa mengerjakannya sendiri.
+                Kalau dijadikan misi, {who.name} dapat +{RULES.reporterBonus} poin pelapor dan tidak bisa mengerjakannya sendiri.
               </Note>
               <div className="flex gap-3">
                 <Button tone="soft" className="flex-1" onClick={() => setAsk(true)}>
                   <X size={18} /> Tolak
                 </Button>
-                <Button className="flex-[1.6]" disabled={!inside} onClick={() => nav(`/rt/quest-baru?dari=${post.id}`)}>
-                  <Sparkles size={18} /> Jadikan quest
+                <Button className="flex-[1.6]" disabled={!inside} onClick={() => nav(`/rt/misi-baru?dari=${post.id}`)}>
+                  <Sparkles size={18} /> Jadikan misi
                 </Button>
               </div>
             </>

@@ -79,7 +79,7 @@ export function Me() {
           <div className="min-w-0">
             <h2 className="truncate text-[1.7rem]">{me.name}</h2>
             <p className="text-[0.88rem] text-ink-2">{me.title ?? `${age} tahun · ${group?.name}`}</p>
-            {!rt && <span className="plang mt-1.5 text-[0.76rem]">LV {rank.level} · {rank.name.toUpperCase()}</span>}
+            {!rt && <span className="plang mt-1.5 text-[0.86rem]">LV {rank.level} · {rank.name.toUpperCase()}</span>}
           </div>
         </div>
 
@@ -89,11 +89,11 @@ export function Me() {
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <p className="eyebrow">Total poin</p>
-                  <p className="font-display wd-wide flex items-center gap-1.5 text-[2.4rem] font-extrabold leading-none">
+                  <p className="font-display wd-wide flex items-center gap-1.5 text-[2.4rem] font-bold leading-none">
                     <CountUp value={pts.total} />
                   </p>
                 </div>
-                <p className="pb-1 text-right text-[0.82rem] text-ink-2">
+                <p className="pb-1 text-right text-[0.86rem] text-ink-2">
                   {next ? (
                     <>
                       <b className="text-ink">{next.min - pts.total} poin</b> lagi
@@ -106,19 +106,19 @@ export function Me() {
                 </p>
               </div>
               <Bar value={rankProgress(pts.total)} className="mt-3" />
-              <dl className="mt-4 grid grid-cols-3 divide-x divide-line text-center">
+              <dl className="mt-4 divide-y divide-line border-t border-line">
                 {[
-                  ['Quest', pts.quests],
-                  ['Bisa ditukar', pts.spendable],
-                  ['Kepercayaan', me.trust],
+                  ['Misi selesai', pts.quests],
+                  ['Poin yang bisa ditukar', pts.spendable],
+                  ['Skor kepercayaan', `${me.trust} dari 100`],
                 ].map(([k, v]) => (
-                  <div key={k}>
-                    <dt className="eyebrow">{k}</dt>
-                    <dd className="font-display wd-wide text-[1.25rem] font-extrabold">{v}</dd>
+                  <div key={k} className="flex items-baseline justify-between gap-4 py-2.5">
+                    <dt className="text-ink-2">{k}</dt>
+                    <dd className="text-[1.1rem] font-bold tnum">{v}</dd>
                   </div>
                 ))}
               </dl>
-              <p className="mt-3 flex items-start gap-1.5 text-[0.78rem] text-ink-3">
+              <p className="mt-3 flex items-start gap-1.5 text-[0.86rem] text-ink-3">
                 <ShieldCheck size={14} className="mt-px flex-none text-plang" />
                 Skor kepercayaan turun bila setoran ditolak Ketua RT, dan ikut dilihat saat pemeriksaan.
               </p>
@@ -128,16 +128,16 @@ export function Me() {
             <section>
               <h3 className="mb-2 text-[1.2rem]">Misi-ku</h3>
               <div className="panel divide-y divide-line">
-                {mySubs.length === 0 && <p className="p-4 text-ink-2">Belum ada. Pilih quest di peta dan check-in di lokasinya.</p>}
+                {mySubs.length === 0 && <p className="p-4 text-ink-2">Belum ada. Pilih misi di peta dan check-in di lokasinya.</p>}
                 {mySubs.map(({ s, q }) => (
-                  <button key={s.id} type="button" onClick={() => nav(`/quest/${q!.id}`)} className="flex w-full items-center gap-3 p-3 text-left">
+                  <button key={s.id} type="button" onClick={() => nav(`/misi/${q!.id}`)} className="flex w-full items-center gap-3 p-3 text-left">
                     <CatTile cat={q!.category} size={38} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold">{q!.title}</span>
-                      <span className="block text-[0.76rem] text-ink-3">{fmtDateTime(s.checkin.at, now)}</span>
+                      <span className="block text-[0.86rem] text-ink-3">{fmtDateTime(s.checkin.at, now)}</span>
                     </span>
                     <span
-                      className={`rounded-full px-2.5 py-1 text-[0.72rem] font-semibold ${
+                      className={`rounded-full px-2.5 py-1 text-[0.8rem] font-semibold ${
                         s.status === 'approved'
                           ? 'bg-[#E1EEE6] text-plang-2'
                           : s.status === 'pending'
@@ -160,13 +160,13 @@ export function Me() {
               <h3 className="mb-2 text-[1.2rem]">Hadiah</h3>
               <div className="panel overflow-hidden">
                 <div className="bg-plang p-4 text-white">
-                  <p className="mono text-[0.62rem] uppercase tracking-widest text-white/70">Hadiah bersama {group?.name}</p>
+                  <p className="mono text-[0.8rem] text-white/70">Hadiah bersama {group?.name}</p>
                   <p className="font-display mt-1 text-[1.3rem] font-bold">{COMMUNITY.goalTitle}</p>
-                  <p className="mt-0.5 text-[0.84rem] text-white/75">{COMMUNITY.goalDesc}</p>
+                  <p className="mt-0.5 text-[0.86rem] text-white/75">{COMMUNITY.goalDesc}</p>
                   <div className="mt-3">
                     <Bar value={Math.min(1, team / COMMUNITY.goalTarget)} height={10} />
                   </div>
-                  <p className="mono mt-1.5 text-[0.72rem]">
+                  <p className="mono mt-1.5 text-[0.8rem]">
                     {team.toLocaleString('id-ID')} / {COMMUNITY.goalTarget.toLocaleString('id-ID')} poin
                   </p>
                 </div>
@@ -180,7 +180,7 @@ export function Me() {
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-semibold">{r.title}</span>
-                          <span className="block truncate text-[0.76rem] text-ink-3">{r.partner}</span>
+                          <span className="block truncate text-[0.86rem] text-ink-3">{r.partner}</span>
                         </span>
                         <Button small tone={lack > 0 ? 'soft' : 'primary'} disabled={lack > 0} onClick={() => setConfirm(r)}>
                           <Coin size={13} /> {r.cost}
@@ -197,9 +197,9 @@ export function Me() {
                       <span className="reflect-stripes h-10 w-1.5 flex-none rounded-full" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{REWARDS.find((x) => x.id === red.rewardId)?.title}</span>
-                        <span className="mono block text-[0.72rem] text-ink-3">{red.code}</span>
+                        <span className="mono block text-[0.8rem] text-ink-3">{red.code}</span>
                       </span>
-                      <span className={`rounded-full px-2.5 py-1 text-[0.72rem] font-semibold ${red.fulfilledAt ? 'bg-[#E1EEE6] text-plang-2' : 'bg-[#FDECDD] text-[#8A3A0E]'}`}>
+                      <span className={`rounded-full px-2.5 py-1 text-[0.8rem] font-semibold ${red.fulfilledAt ? 'bg-[#E1EEE6] text-plang-2' : 'bg-[#FDECDD] text-[#8A3A0E]'}`}>
                         {red.fulfilledAt ? 'Sudah diambil' : 'Siap ditukar'}
                       </span>
                     </button>
@@ -219,12 +219,12 @@ export function Me() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-[1.15rem]">Wilayah {group.name}</h3>
-                  <p className="mono text-[0.76rem] text-ink-2">
+                  <p className="mono text-[0.86rem] text-ink-2">
                     {group.territory.length} titik sudut · luas {fmtArea(ringArea(group.territory))}
                   </p>
                 </div>
               </div>
-              <p className="mt-2 text-[0.86rem] text-ink-2">Laporan dan quest hanya bisa dibuat di dalam wilayah ini. Batas tidak boleh menimpa RT tetangga.</p>
+              <p className="mt-2 text-[0.86rem] text-ink-2">Laporan dan misi hanya bisa dibuat di dalam wilayah ini. Batas tidak boleh menimpa RT tetangga.</p>
               <Button tone="dark" className="mt-3" onClick={() => nav('/rt/wilayah')}>
                 Atur batas wilayah
               </Button>
@@ -243,12 +243,12 @@ export function Me() {
                         <Avatar index={w?.avatar ?? 0} size={34} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-semibold">{REWARDS.find((x) => x.id === red.rewardId)?.title}</span>
-                          <span className="mono block text-[0.72rem] text-ink-3">
+                          <span className="mono block text-[0.8rem] text-ink-3">
                             {w?.name} · {red.code}
                           </span>
                         </span>
                         {red.fulfilledAt ? (
-                          <span className="flex items-center gap-1 text-[0.78rem] font-semibold text-ok">
+                          <span className="flex items-center gap-1 text-[0.86rem] font-semibold text-ok">
                             <Check size={14} /> Diberikan
                           </span>
                         ) : (
@@ -275,7 +275,7 @@ export function Me() {
                   <label htmlFor="sw-test" className="block font-semibold">
                     Mode uji (coba di PC)
                   </label>
-                  <p className="text-[0.82rem] text-ink-2">
+                  <p className="text-[0.86rem] text-ink-2">
                     Posisi dipindah dengan mengetuk peta, boleh pakai foto contoh, dan waktu tunggu bisa dilewati. Semua setoran mode uji ditandai untuk Ketua RT.
                   </p>
                 </div>
@@ -294,7 +294,7 @@ export function Me() {
               <ArrowLeftRight size={20} className="mt-0.5 flex-none text-ink-2" />
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{rt ? 'Kembali ke akun warga' : 'Akun demo Ketua RT'}</p>
-                <p className="text-[0.82rem] text-ink-2">
+                <p className="text-[0.86rem] text-ink-2">
                   {rt
                     ? 'Kembali ke akunmu sendiri.'
                     : 'Masuk sebagai Pak Hendra untuk mencoba memeriksa setoran dan laporan. Ini akun terpisah: kamu tetap tidak bisa menyetujui setoranmu sendiri.'}
@@ -308,14 +308,14 @@ export function Me() {
               <RotateCcw size={20} className="mt-0.5 flex-none text-ink-2" />
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">Mulai ulang demo</p>
-                <p className="text-[0.82rem] text-ink-2">Hapus semua data di perangkat ini.</p>
+                <p className="text-[0.86rem] text-ink-2">Hapus semua data di perangkat ini.</p>
                 <Button small tone="ghost" className="mt-2.5" onClick={() => setAskReset(true)}>
                   Hapus data
                 </Button>
               </div>
             </div>
           </div>
-          <p className="mt-3 px-1 text-[0.74rem] text-ink-3">
+          <p className="mt-3 px-1 text-[0.8rem] text-ink-3">
             Kompack! 2.0 · {isNative ? 'Android' : 'Web'} · purwarupa tim Batak Intelligence. Data tersimpan di perangkat ini.
           </p>
         </section>
@@ -354,15 +354,15 @@ export function Me() {
             <div className="reflect-stripes h-3" style={{ animation: 'kp-sweep 2s linear infinite' }} />
             <div className="p-5 text-center">
               <p className="font-semibold">{REWARDS.find((x) => x.id === ticket.rewardId)?.title}</p>
-              <p className="mono mt-3 select-all text-[2rem] font-semibold tracking-wider">{ticket.code}</p>
-              <p className="mt-2 text-[0.84rem] text-white/70">Tunjukkan ke {REWARDS.find((x) => x.id === ticket.rewardId)?.partner}. Ketua RT menandai saat hadiah diberikan.</p>
+              <p className="mono mt-3 select-all text-[2rem] font-semibold">{ticket.code}</p>
+              <p className="mt-2 text-[0.86rem] text-white/70">Tunjukkan ke {REWARDS.find((x) => x.id === ticket.rewardId)?.partner}. Ketua RT menandai saat hadiah diberikan.</p>
             </div>
           </div>
         )}
       </Sheet>
 
       <Sheet open={askReset} onClose={() => setAskReset(false)} title="Hapus semua data?">
-        <Note tone="warn">Profil, poin, laporan, foto, dan quest buatan di perangkat ini akan hilang.</Note>
+        <Note tone="warn">Profil, poin, laporan, foto, dan misi buatan di perangkat ini akan hilang.</Note>
         <div className="mt-5 flex gap-3">
           <Button tone="soft" className="flex-1" onClick={() => setAskReset(false)}>
             Batal

@@ -2,7 +2,7 @@ import { CATS } from './catalog'
 import { offset } from './geo'
 import { dHash, sealEvidence, shortCode } from './integrity'
 import { demoPhoto } from './photo'
-import type { Bonus, Category, Evidence, Group, LatLng, Person, Post, Quest, Ring, Submission } from './types'
+import type { Bonus, Category, Evidence, Group, LatLng, Person, Post, Misi, Ring, Submission } from './types'
 
 export const uid = (p = 'id') => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
 
@@ -77,7 +77,7 @@ interface QSeed {
   durMin: number
   points: number
   slots: number
-  source: Quest['source']
+  source: Misi['source']
   requester?: string
 }
 
@@ -181,7 +181,7 @@ async function evidence(
   return { ...base, seal: await sealEvidence(base, userId, ref) }
 }
 
-/** Data awal sebuah RT: quest contoh, laporan, obrolan, dan beberapa setoran untuk dicek Ketua RT. */
+/** Data awal sebuah RT: misi contoh, laporan, obrolan, dan beberapa setoran untuk dicek Ketua RT. */
 export async function seedData(home: LatLng, now = Date.now()) {
   const groups = seedGroups(home)
   const posts: Post[] = []
@@ -192,7 +192,7 @@ export async function seedData(home: LatLng, now = Date.now()) {
     return full
   }
 
-  // laporan & permintaan tolong yang sudah jadi quest
+  // laporan & permintaan tolong yang sudah jadi misi
   const dimasReport = post({
     groupId: MY_GROUP,
     channel: 'laporan',
@@ -223,15 +223,15 @@ export async function seedData(home: LatLng, now = Date.now()) {
   })
   yatiPost.photo = await evidence(demoPhoto('before', 'got', 5), yatiPost.at, pos(130, -80), 'p_yati', yatiPost.id)
 
-  // quest
-  const quests: Quest[] = QUESTS.map((d) => {
+  // misi
+  const quests: Misi[] = QUESTS.map((d) => {
     const p = pos(d.at[0], d.at[1])
     const startAt = now + d.offsetMin * MIN
     const id = uid('q')
     const fromPostId = d.key === 'kenari' ? dimasReport.id : d.key === 'yati' ? yatiPost.id : undefined
     return {
       id,
-      code: `Q-${shortCode(id)}`,
+      code: `M-${shortCode(id)}`,
       groupId: MY_GROUP,
       title: d.title,
       category: d.category,
@@ -314,16 +314,16 @@ export async function seedData(home: LatLng, now = Date.now()) {
     reactions: { siap: ['p_nabila', 'p_raka', 'p_dimas', 'p_alya', 'p_yati'] },
   })
 
-  // pengumuman quest
+  // pengumuman misi
   for (const k of ['kenari', 'selokan', 'yati', 'taman', 'lampu']) {
     const qq = q(k)
     post({
       groupId: MY_GROUP,
-      channel: 'quest',
-      kind: 'quest',
+      channel: 'misi',
+      kind: 'misi',
       authorId: LEADER,
       at: qq.createdAt,
-      text: qq.source === 'rt' ? 'Quest baru dari pengurus RT.' : qq.source === 'laporan' ? 'Dari laporan warga, sekarang jadi quest.' : 'Permintaan tolong warga, sekarang jadi quest.',
+      text: qq.source === 'rt' ? 'Misi baru dari pengurus RT.' : qq.source === 'laporan' ? 'Dari laporan warga, sekarang jadi misi.' : 'Permintaan tolong warga, sekarang jadi misi.',
       questId: qq.id,
       reactions: PLEDGES[k],
     })
@@ -373,19 +373,19 @@ export async function seedData(home: LatLng, now = Date.now()) {
 }
 
 /**
- * Quest contoh yang sudah lewat jadwalnya dibuat ulang dengan jadwal baru,
- * supaya demo selalu punya quest aktif. Quest lama ditutup dan tetap jadi riwayat.
+ * Misi contoh yang sudah lewat jadwalnya dibuat ulang dengan jadwal baru,
+ * supaya demo selalu punya misi aktif. Misi lama ditutup dan tetap jadi riwayat.
  */
-export function rollDemoQuests(quests: Quest[], now = Date.now()): Quest[] | null {
+export function rollDemoQuests(quests: Misi[], now = Date.now()): Misi[] | null {
   let changed = false
-  const out: Quest[] = []
+  const out: Misi[] = []
   for (const q of quests) {
     if (q.demo && !q.closed && now > q.endAt) {
       changed = true
       out.push({ ...q, closed: true, demo: undefined })
       const startAt = now + Math.max(-30, q.demo.offsetMin) * MIN
       const id = uid('q')
-      out.push({ ...q, id, code: `Q-${shortCode(id)}`, startAt, endAt: startAt + q.demo.durMin * MIN, createdAt: now - 60 * MIN })
+      out.push({ ...q, id, code: `M-${shortCode(id)}`, startAt, endAt: startAt + q.demo.durMin * MIN, createdAt: now - 60 * MIN })
     } else {
       out.push(q)
     }

@@ -43,7 +43,7 @@ export interface Person {
 
 export type QuestSource = 'rt' | 'laporan' | 'tolong'
 
-export interface Quest {
+export interface Misi {
   id: string
   code: string
   groupId: string
@@ -65,7 +65,7 @@ export interface Quest {
   createdBy: string
   source: QuestSource
   fromPostId?: string
-  /** pelapor / peminta tolong — tidak boleh mengambil quest ini */
+  /** pelapor / peminta tolong — tidak boleh mengambil misi ini */
   requesterId?: string
   closed?: boolean
   demo?: { offsetMin: number; durMin: number }
@@ -127,8 +127,8 @@ export interface Submission {
   checks?: Check[]
 }
 
-export type Channel = 'obrolan' | 'laporan' | 'tolong' | 'quest'
-export type PostKind = 'chat' | 'laporan' | 'tolong' | 'quest' | 'umum' | 'sistem'
+export type Channel = 'obrolan' | 'laporan' | 'tolong' | 'misi'
+export type PostKind = 'chat' | 'laporan' | 'tolong' | 'misi' | 'umum' | 'sistem'
 export type PostStatus = 'menunggu' | 'jadi_quest' | 'ditolak' | 'beres'
 
 export interface Post {

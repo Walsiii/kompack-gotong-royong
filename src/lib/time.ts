@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Quest } from './types'
+import type { Misi } from './types'
 
 const DAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -61,13 +61,13 @@ export type Phase = 'upcoming' | 'live' | 'ended'
 /** Check-in dibuka 15 menit sebelum jam mulai. */
 export const EARLY_MS = 15 * 60000
 
-export function questPhase(q: Pick<Quest, 'startAt' | 'endAt' | 'closed'>, now = Date.now()): Phase {
+export function questPhase(q: Pick<Misi, 'startAt' | 'endAt' | 'closed'>, now = Date.now()): Phase {
   if (q.closed || now > q.endAt) return 'ended'
   if (now < q.startAt - EARLY_MS) return 'upcoming'
   return 'live'
 }
 
-export function phaseLabel(q: Pick<Quest, 'startAt' | 'endAt' | 'closed'>, now = Date.now()): string {
+export function phaseLabel(q: Pick<Misi, 'startAt' | 'endAt' | 'closed'>, now = Date.now()): string {
   const p = questPhase(q, now)
   if (p === 'ended') return 'Sudah selesai'
   if (p === 'upcoming') return `Mulai ${fmtDuration(q.startAt - now)} lagi`

@@ -45,24 +45,24 @@ export function Celebration() {
               transition={{ duration: 1.1, delay: i * 0.12, ease: [0.3, 0, 0.2, 1] }}
             />
           ))}
-          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mono text-[0.7rem] uppercase tracking-[0.2em] text-white/70">
+          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mono text-[0.7rem] text-white/70">
             Disetujui Ketua RT
           </motion.p>
           <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mt-2 max-w-[18ch] text-[1.7rem]">
-            {n > 1 ? `${n} quest selesai` : title}
+            {n > 1 ? `${n} misi selesai` : title}
           </motion.h2>
           <motion.p
             initial={{ scale: 0.4, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 220, damping: 13, delay: 0.7 }}
-            className="font-display wd-wide mt-5 text-[6rem] font-black leading-none"
+            className="font-display wd-wide mt-5 text-[6rem] font-bold leading-none"
           >
             +<CountUp value={gained} duration={1.2} />
           </motion.p>
-          <p className="mono text-[0.8rem] uppercase tracking-widest text-rompi">poin</p>
+          <p className="mono text-[0.8rem] text-rompi">poin</p>
           {after.level > before.level && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.3 }} className="mt-6 flex flex-col items-center gap-2">
-              <span className="flex items-center gap-1 text-[0.82rem] font-semibold text-white/80">
+              <span className="flex items-center gap-1 text-[0.86rem] font-semibold text-white/80">
                 <ChevronsUp size={16} className="text-rompi" /> Naik pangkat
               </span>
               <span className="plang !bg-white !px-4 !py-2 text-[1.2rem] !text-plang" style={{ boxShadow: 'inset 0 0 0 2px #fff, inset 0 0 0 3.5px #0D5E3F' }}>

@@ -11,7 +11,7 @@ export interface MapPin {
   id: string
   lat: number
   lng: number
-  kind: 'quest' | 'laporan' | 'tolong'
+  kind: 'misi' | 'laporan' | 'tolong'
   category: Category
   /** teks kecil di atas penanda, mis. "+50" */
   label?: string
@@ -98,7 +98,7 @@ function maskFC(ring: Ring | null | undefined): GeoJSON.FeatureCollection {
 function pinElement(p: MapPin, index: number): HTMLElement {
   const el = document.createElement('div')
   const color = CATS[p.category].color
-  if (p.kind === 'quest') {
+  if (p.kind === 'misi') {
     el.className = `bk is-${p.state}`
     el.style.setProperty('--c', color)
     el.style.setProperty('--d', `${Math.min(index, 8) * 80}ms`)
@@ -116,7 +116,7 @@ function pinElement(p: MapPin, index: number): HTMLElement {
     }</div>`
   }
   el.setAttribute('role', 'button')
-  el.setAttribute('aria-label', p.kind === 'quest' ? `Quest ${CATS[p.category].label}` : p.kind === 'tolong' ? 'Permintaan tolong' : 'Laporan warga')
+  el.setAttribute('aria-label', p.kind === 'misi' ? `Misi ${CATS[p.category].label}` : p.kind === 'tolong' ? 'Permintaan tolong' : 'Laporan warga')
   return el
 }
 
@@ -145,7 +145,7 @@ export function Map3D({
   neighbors = [],
   circle,
   onMapClick,
-  threeD = true,
+  threeD = false,
   focus,
   padding,
   interactive = true,
@@ -173,9 +173,9 @@ export function Map3D({
       container: el.current,
       style: kompackStyle(),
       center: [center.lng, center.lat],
-      zoom: intro ? zoom - 2.4 : zoom,
+      zoom: intro ? zoom - 1.6 : zoom,
       pitch: intro ? 0 : threeD ? PITCH : 0,
-      bearing: intro ? 40 : threeD ? BEARING : 0,
+      bearing: threeD && !intro ? BEARING : 0,
       maxPitch: 70,
       minZoom: 12,
       maxZoom: 19.5,
@@ -224,13 +224,6 @@ export function Map3D({
         paint: { 'line-color': '#55655D', 'line-width': 1.6, 'line-dasharray': [3, 2], 'line-opacity': 0.8 },
       })
       map.addLayer({
-        id: 'terr-glow',
-        type: 'line',
-        source: 'territory',
-        layout: { 'line-join': 'round' },
-        paint: { 'line-color': '#FF5A1F', 'line-width': 9, 'line-opacity': 0.16, 'line-blur': 3 },
-      })
-      map.addLayer({
         id: 'terr-line',
         type: 'line',
         source: 'territory',
@@ -252,7 +245,7 @@ export function Map3D({
       applyAreas()
       if (intro) {
         const { threeD: td } = latest.current
-        map.flyTo({ center: [center.lng, center.lat], zoom, pitch: td ? PITCH : 0, bearing: td ? BEARING : 0, duration: 2400, curve: 1.3, essential: true })
+        map.flyTo({ center: [center.lng, center.lat], zoom, pitch: td ? PITCH : 0, bearing: td ? BEARING : 0, duration: 2200, curve: 1.2, essential: true })
       }
       cb.current.onReady?.(map)
     })
@@ -325,10 +318,9 @@ export function Map3D({
     if (!map || !loaded.current) return
     const c = territoryBad ? '#D23A2A' : '#FF5A1F'
     map.setPaintProperty('terr-line', 'line-color', c)
-    map.setPaintProperty('terr-glow', 'line-color', c)
   }, [territoryBad])
 
-  /* penanda quest & laporan */
+  /* penanda misi & laporan */
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
@@ -408,7 +400,7 @@ export function Map3D({
       firstTilt.current = false
       return
     }
-    mapRef.current?.easeTo({ pitch: threeD ? PITCH : 0, bearing: threeD ? BEARING : 0, duration: 900 })
+    mapRef.current?.easeTo({ pitch: threeD ? PITCH : 0, bearing: threeD ? BEARING : 0, duration: 1100, easing: (t) => 1 - Math.pow(1 - t, 4) })
   }, [threeD])
 
   /* fokus ke titik */
@@ -420,7 +412,8 @@ export function Map3D({
       center: [focus.lng, focus.lat],
       zoom: Math.max(map.getZoom(), focus.zoom ?? 16.8),
       padding: { top: p?.top ?? 0, bottom: p?.bottom ?? 0, left: p?.left ?? 0, right: p?.right ?? 0 },
-      duration: 850,
+      duration: 1000,
+      easing: (t) => 1 - Math.pow(1 - t, 4),
       essential: true,
     })
   }, [focus?.key]) // eslint-disable-line react-hooks/exhaustive-deps
