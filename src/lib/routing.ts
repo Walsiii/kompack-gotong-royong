@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { distM } from './geo'
+import { routeOnRoads, type RoadLine } from './localRoute'
 import type { LatLng } from './types'
 
 export type RouteCoordinate = [number, number]
@@ -15,13 +16,18 @@ export interface WalkingRoute {
   distanceM: number
   durationS: number
   instructions: WalkingInstruction[]
+  /** 'service' = layanan rute online, 'device' = dihitung di perangkat dari data jalan peta */
+  source: 'service' | 'device'
+  /** jarak dari posisimu / tujuan ke ujung jalur di jalan (digambar putus-putus) */
+  gapStartM: number
+  gapEndM: number
 }
 export interface WalkingTarget extends LatLng { id: string; title: string; radius?: number }
 export interface PositionQuality { accuracyM: number | null; simulated: boolean; at?: number; mock?: boolean }
 
 export const WALKING_ROUTE_ENDPOINT = 'https://valhalla1.openstreetmap.de/route'
 const MAX_POINTS = 50_000
-const REQUEST_TIMEOUT_MS = 15_000
+const REQUEST_TIMEOUT_MS = 10_000
 
 export class WalkingRouteError extends Error {
   constructor(public readonly code: 'input' | 'network' | 'timeout' | 'service' | 'response', message: string) {
@@ -34,7 +40,7 @@ function validPosition(value: LatLng): boolean {
   return Number.isFinite(value?.lat) && Number.isFinite(value?.lng) && Math.abs(value.lat) <= 90 && Math.abs(value.lng) <= 180
 }
 function invalidResponse(): never {
-  throw new WalkingRouteError('response', 'Rute dari layanan belum bisa dibaca. Coba lagi atau buka Google Maps.')
+  throw new WalkingRouteError('response', 'Rute dari layanan belum bisa dibaca.')
 }
 
 /** Valhalla native JSON encodes latitude then longitude at precision 6.
@@ -112,7 +118,7 @@ function instructionText(maneuver: RecordValue): string {
 /** Parses the actual Valhalla response, never fabricating a connecting path. */
 export function parseWalkingRoute(value: unknown): WalkingRoute {
   const body = record(value)
-  if (body.error_code !== undefined || body.error) throw new WalkingRouteError('service', 'Layanan belum menemukan jalur jalan kaki di sini. Coba Google Maps.')
+  if (body.error_code !== undefined || body.error) throw new WalkingRouteError('service', 'Layanan belum menemukan jalur jalan kaki di sini.')
   const trip = record(body.trip)
   if (trip.status !== 0 || (trip.units !== 'kilometers' && trip.units !== 'km')) invalidResponse()
   const summary = record(trip.summary)
@@ -131,7 +137,7 @@ export function parseWalkingRoute(value: unknown): WalkingRoute {
     return { text: instructionText(maneuver), distanceM: nonnegative(maneuver.length) * 1000, beginShapeIndex: begin, endShapeIndex: end }
   })
   if (distanceM <= 0 || durationS <= 0) invalidResponse()
-  return { coordinates, geometry: { type: 'LineString', coordinates }, distanceM, durationS, instructions }
+  return { coordinates, geometry: { type: 'LineString', coordinates }, distanceM, durationS, instructions, source: 'service', gapStartM: 0, gapEndM: 0 }
 }
 
 export async function fetchWalkingRoute(from: LatLng, to: LatLng, signal?: AbortSignal): Promise<WalkingRoute> {
@@ -153,7 +159,7 @@ export async function fetchWalkingRoute(from: LatLng, to: LatLng, signal?: Abort
       }),
       signal: controller.signal, credentials: 'omit', referrerPolicy: 'no-referrer',
     })
-    if (!response.ok) throw new WalkingRouteError('service', response.status === 429 ? 'Layanan rute sedang ramai. Tunggu sebentar lalu coba lagi.' : 'Layanan rute belum dapat dihubungi. Coba lagi atau buka Google Maps.')
+    if (!response.ok) throw new WalkingRouteError('service', response.status === 429 ? 'Layanan rute sedang ramai. Tunggu sebentar lalu coba lagi.' : 'Layanan rute belum dapat dihubungi.')
     const raw = await response.text()
     if (raw.length > 5_000_000) invalidResponse()
     let body: unknown
@@ -162,14 +168,16 @@ export async function fetchWalkingRoute(from: LatLng, to: LatLng, signal?: Abort
     const first = route.coordinates[0]
     const last = route.coordinates[route.coordinates.length - 1]
     if (distM(from, { lng: first[0], lat: first[1] }) > 300 || distM(to, { lng: last[0], lat: last[1] }) > 300) {
-      throw new WalkingRouteError('response', 'Jalur yang ditemukan terlalu jauh dari lokasi misi. Coba Google Maps.')
+      throw new WalkingRouteError('response', 'Jalur yang ditemukan terlalu jauh dari lokasi misi.')
     }
+    route.gapStartM = distM(from, { lng: first[0], lat: first[1] })
+    route.gapEndM = distM(to, { lng: last[0], lat: last[1] })
     return route
   } catch (error) {
     if (signal?.aborted) throw new DOMException('Navigation cancelled', 'AbortError')
-    if (timedOut) throw new WalkingRouteError('timeout', 'Mencari rute terlalu lama. Coba lagi atau buka Google Maps.')
+    if (timedOut) throw new WalkingRouteError('timeout', 'Mencari rute terlalu lama.')
     if (error instanceof WalkingRouteError) throw error
-    throw new WalkingRouteError('network', 'Rute belum tersambung. Periksa internet atau buka Google Maps.')
+    throw new WalkingRouteError('network', 'Layanan rute online tidak terjangkau.')
   } finally {
     clearTimeout(timer)
     signal?.removeEventListener('abort', abort)
@@ -200,8 +208,9 @@ export function projectNearestRoutePoint(position: LatLng, coordinates: RouteCoo
     const t = lengthSquared ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lengthSquared)) : 0
     const distance = Math.hypot(ax + dx * t, ay + dy * t)
     const segmentM = distM(a, b)
-    if (distance < best) {
-      best = distance
+    // seri di titik belokan: pilih ruas sesudahnya supaya petunjuk langsung maju ke belokan berikutnya
+    if (distance < best || (distance - best < 0.05 && t === 0 && i > 0)) {
+      best = Math.min(best, distance)
       closestIndex = i
       progressM = totalM + t * segmentM
     }
@@ -210,40 +219,78 @@ export function projectNearestRoutePoint(position: LatLng, coordinates: RouteCoo
   return { closestIndex, progressM, distanceFromRouteM: best, totalM }
 }
 
-export function walkingMapsLink(target: LatLng): string {
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${target.lat},${target.lng}`)}&travelmode=walking`
+/** Rute dari data jalan yang sudah termuat di peta (tanpa internet ke layanan rute). */
+export function deviceWalkingRoute(lines: RoadLine[], named: RoadLine[], from: LatLng, to: LatLng): WalkingRoute | null {
+  const r = routeOnRoads(lines, from, to, named)
+  if (!r) return null
+  return { coordinates: r.coordinates, geometry: { type: 'LineString', coordinates: r.coordinates }, distanceM: r.distanceM, durationS: r.durationS, instructions: r.instructions, source: 'device', gapStartM: r.gapStartM, gapEndM: r.gapEndM }
+}
+
+/** arah jalur (derajat dari utara) di titik proyeksi — dipakai untuk kamera "arah jalan di atas" */
+export function routeBearingAt(route: WalkingRoute, closestIndex: number): number {
+  const c = route.coordinates
+  const i = Math.max(0, Math.min(c.length - 2, closestIndex))
+  const [a, b] = [c[i], c[i + 1]]
+  const r = Math.PI / 180
+  const y = Math.sin((b[0] - a[0]) * r) * Math.cos(b[1] * r)
+  const x = Math.cos(a[1] * r) * Math.sin(b[1] * r) - Math.sin(a[1] * r) * Math.cos(b[1] * r) * Math.cos((b[0] - a[0]) * r)
+  return ((Math.atan2(y, x) / r) + 360) % 360
 }
 
 /** A navigation estimate is distinct from the mission's existing check-in rules. */
-export function calculateWalkingProgress(route: WalkingRoute | null, target: WalkingTarget | null, position: LatLng | null, quality: PositionQuality | undefined, now = Date.now()) {
-  const reliablePosition = !!(position && validPosition(position) && quality && !quality.simulated && !quality.mock &&
+export function calculateWalkingProgress(route: WalkingRoute | null, target: WalkingTarget | null, position: LatLng | null, quality: PositionQuality | undefined, now = Date.now(), opts: { allowSimulated?: boolean } = {}) {
+  // Mode uji (posisi simulasi) boleh menampilkan progres navigasi; check-in misi tetap punya aturan sendiri.
+  const simulatedOk = !!(opts.allowSimulated && quality?.simulated && !quality.mock && position && validPosition(position))
+  const reliablePosition = simulatedOk || !!(position && validPosition(position) && quality && !quality.simulated && !quality.mock &&
     quality.accuracyM !== null && quality.accuracyM >= 0 && quality.accuracyM <= 50 &&
     quality.at && now - quality.at < 30_000 && quality.at <= now + 10_000)
   const projection = route && position && reliablePosition ? projectNearestRoutePoint(position, route.coordinates) : null
   const distanceToTargetM = position && target && reliablePosition ? distM(position, target) : null
   const radius = target?.radius && Number.isFinite(target.radius) && target.radius > 0 ? target.radius : 25
   // Include GPS uncertainty: merely overlapping the radius cannot confirm arrival.
-  const arrived = !!(route && distanceToTargetM !== null && distanceToTargetM + (quality?.accuracyM ?? Infinity) <= radius)
+  const arrived = !!(route && distanceToTargetM !== null && distanceToTargetM + (simulatedOk ? 0 : (quality?.accuracyM ?? Infinity)) <= radius)
   const offRoute = !!(projection && projection.distanceFromRouteM > Math.max(30, (quality?.accuracyM ?? 50) * 1.5))
   const remainingFraction = projection?.totalM ? Math.max(0, Math.min(1, 1 - projection.progressM / projection.totalM)) : null
   const remainingDistanceM = !offRoute && route && remainingFraction !== null ? route.distanceM * remainingFraction : null
   const remainingDurationS = !offRoute && route && remainingFraction !== null ? route.durationS * remainingFraction : null
   const currentInstruction = route && projection ? route.instructions.find((item) => item.endShapeIndex > projection.closestIndex) ?? route.instructions[route.instructions.length - 1] : null
-  return { reliablePosition, projection, distanceToTargetM, arrived, offRoute, remainingDistanceM, remainingDurationS, currentInstruction }
+  // belokan berikutnya = petunjuk sesudah ruas yang sedang dilalui
+  const steps = route?.instructions ?? []
+  const currentIdx = currentInstruction ? steps.indexOf(currentInstruction) : -1
+  const nextInstruction = route ? (currentIdx >= 0 ? steps[currentIdx + 1] ?? null : steps[1] ?? steps[0] ?? null) : null
+  const thenInstruction = nextInstruction ? steps[steps.indexOf(nextInstruction) + 1] ?? null : null
+  let distanceToNextM: number | null = null
+  if (route && nextInstruction) {
+    let at = 0
+    for (let i = 0; i < nextInstruction.beginShapeIndex && i < route.coordinates.length - 1; i++) {
+      const a = route.coordinates[i]
+      const b = route.coordinates[i + 1]
+      at += distM({ lng: a[0], lat: a[1] }, { lng: b[0], lat: b[1] })
+    }
+    distanceToNextM = projection && !offRoute ? Math.max(0, at - projection.progressM) : projection ? null : at
+  }
+  const heading = route ? routeBearingAt(route, projection?.closestIndex ?? 0) : null
+  const progressFraction = projection?.totalM && !offRoute ? Math.max(0, Math.min(1, projection.progressM / projection.totalM)) : 0
+  return { reliablePosition, projection, distanceToTargetM, arrived, offRoute, remainingDistanceM, remainingDurationS, currentInstruction, nextInstruction, thenInstruction, distanceToNextM, heading, progressFraction }
 }
 
 type RouteState = { status: 'idle' | 'loading' | 'ready' | 'error'; route: WalkingRoute | null; error: string | null }
 const EMPTY: RouteState = { status: 'idle', route: null, error: null }
 
-export function useWalkingRoute(target: WalkingTarget | null, position: LatLng | null, quality?: PositionQuality) {
+export interface RoadSource {
+  /** garis jalan yang bisa dilalui dan garis bernama, dari ubin peta yang sudah dimuat */
+  (from: LatLng, to: LatLng): Promise<{ lines: RoadLine[]; named: RoadLine[] } | null>
+}
+
+export function useWalkingRoute(target: WalkingTarget | null, position: LatLng | null, quality?: PositionQuality, opts: { roads?: RoadSource; allowSimulated?: boolean } = {}) {
   const [state, setState] = useState<RouteState>(EMPTY)
   const [active, setActive] = useState(false)
   const [clock, setClock] = useState(Date.now)
   const request = useRef<AbortController | null>(null)
   const generation = useRef(0)
   const lastRequest = useRef<{ at: number; from: LatLng } | null>(null)
-  const latest = useRef({ target, position, quality })
-  latest.current = { target, position, quality }
+  const latest = useRef({ target, position, quality, roads: opts.roads })
+  latest.current = { target, position, quality, roads: opts.roads }
 
   const cancel = useCallback(() => {
     generation.current++
@@ -277,7 +324,18 @@ export function useWalkingRoute(target: WalkingTarget | null, position: LatLng |
       if (id === generation.current) setState({ status: 'ready', route, error: null })
     } catch (error) {
       if (controller.signal.aborted || id !== generation.current) return
-      setState({ status: 'error', route: null, error: error instanceof Error ? error.message : 'Rute belum bisa dimuat.' })
+      // layanan online gagal: hitung di perangkat dari data jalan peta
+      const roads = latest.current.roads ? await latest.current.roads(from, to).catch(() => null) : null
+      if (controller.signal.aborted || id !== generation.current) return
+      const local = roads ? deviceWalkingRoute(roads.lines, roads.named, from, to) : null
+      if (local) {
+        setState({ status: 'ready', route: local, error: null })
+        return
+      }
+      const why = !roads || !roads.lines.length
+        ? 'Data jalan di sekitar belum termuat. Periksa sambungan internet, lalu coba lagi.'
+        : 'Tidak ada jalan terpetakan yang menyambung ke lokasi ini.'
+      setState({ status: 'error', route: null, error: error instanceof WalkingRouteError && error.code === 'service' ? `${error.message} ${why}` : why })
     } finally {
       if (id === generation.current) request.current = null
     }
@@ -290,20 +348,22 @@ export function useWalkingRoute(target: WalkingTarget | null, position: LatLng |
     return () => clearInterval(timer)
   }, [active])
 
-  const progress = useMemo(() => calculateWalkingProgress(state.route, target, position, quality, clock),
-    [state.route, target, position?.lat, position?.lng, quality?.accuracyM, quality?.simulated, quality?.at, quality?.mock, clock])
+  const allowSimulated = !!opts.allowSimulated
+  const progress = useMemo(() => calculateWalkingProgress(state.route, target, position, quality, clock, { allowSimulated }),
+    [state.route, target, position?.lat, position?.lng, quality?.accuracyM, quality?.simulated, quality?.at, quality?.mock, clock, allowSimulated])
   const { reliablePosition, offRoute } = progress
   const arrived = active && state.status === 'ready' && progress.arrived
 
   useEffect(() => {
     const last = lastRequest.current
     if (!active || !offRoute || !reliablePosition || !position || state.status !== 'ready' || !last) return
-    if (Date.now() - last.at < 30_000 || distM(last.from, position) < 30) return
+    // rute perangkat murah dihitung ulang; layanan online dijaga supaya tidak dibanjiri permintaan
+    const device = state.route?.source === 'device'
+    if (Date.now() - last.at < (device ? 4_000 : 30_000) || distM(last.from, position) < (device ? 10 : 30)) return
     void start()
-  }, [active, offRoute, reliablePosition, position?.lat, position?.lng, state.status, clock, start])
+  }, [active, offRoute, reliablePosition, position?.lat, position?.lng, state.status, state.route?.source, clock, start])
 
-  return { ...state, ...progress, active, start, retry: start, cancel, arrived,
-    mapsLink: target ? walkingMapsLink(target) : null }
+  return { ...state, ...progress, active, start, retry: start, cancel, arrived }
 }
 
 export type WalkingNavigationState = ReturnType<typeof useWalkingRoute>

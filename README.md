@@ -28,11 +28,20 @@ Foto contoh baru adalah gambar simulasi yang dibuat untuk demo, ditandai di luar
 
 ## Peta dan navigasi
 
-Cari misi/laporan, pilih kategori atau penanda, lalu tekan **Mulai navigasi**. Jalur jalan kaki mengikuti respons Valhalla, dengan petunjuk belokan, estimasi waktu, posisi GPS, dan pencarian ulang saat keluar jalur. Menekan atau menggeser peta tidak otomatis meminta rute. Tersedia tautan arah jalan kaki di Google Maps saat layanan rute tidak terhubung.
+Pilih misi di peta lalu tekan **Mulai navigasi**. Navigasi jalan kaki berjalan sepenuhnya di dalam aplikasi, tanpa membuka Google Maps:
 
-Izinkan HTTPS ke `tiles.openfreemap.org`, `tile.openstreetmap.org`, dan `valhalla1.openstreetmap.de`. Lokasi awal dan tujuan dikirim ke layanan rute hanya setelah navigasi dimulai. GPS simulasi, tidak akurat, atau kedaluwarsa tidak mengonfirmasi kedatangan. Sampai di tujuan tetap harus dilanjutkan dengan check-in misi.
+- banner belokan di atas (ikon, jarak ke belokan, nama jalan, dan "Lalu…" untuk belokan berikutnya);
+- kamera mengikuti posisimu dengan arah jalan di atas, posisimu tampil sebagai panah;
+- bagian jalur yang sudah dilewati berubah abu-abu, potongan di luar jalan (dari posisimu ke jalan, dari jalan ke titik misi) digambar putus-putus;
+- panel bawah berisi sisa waktu, jarak, jam tiba, dan daftar semua langkah;
+- suara petunjuk berbahasa Indonesia (bisa dimatikan), tombol **Pusatkan ulang** setelah peta digeser, cari ulang rute otomatis saat keluar jalur;
+- layar **Kamu sudah sampai** dengan tombol **Mulai misi di sini**.
 
-Validasi: `npm run test:routing` menguji parser rute, pembatalan/timeout, dan kualitas GPS dengan respons fixture; `npm run build` memeriksa TypeScript dan menghasilkan web/PWA. Tes fixture tidak membuktikan konektivitas layanan langsung. Pada lingkungan cloud saat revisi ini dibuat, ketiga host peta/rute masih ditolak proxy; draft allowlist perlu disimpan dan diterapkan sebelum pengujian langsung.
+Rute diambil dari layanan Valhalla (`valhalla1.openstreetmap.de`). Bila layanan itu tidak terjangkau, aplikasi menghitung rute **di perangkat** dari data jalan OpenStreetMap yang sudah termuat di peta (`src/lib/localRoute.ts`): ruas dipecah di setiap persilangan, lalu dicari jalur terpendek. Jalurnya selalu mengikuti jalan yang terpetakan, tidak pernah garis lurus menembus rumah. Bila data jalan belum termuat (tanpa internet sama sekali), aplikasi menjelaskannya dan menawarkan **Coba lagi**.
+
+GPS simulasi, tidak akurat, atau kedaluwarsa tidak mengonfirmasi kedatangan. Di **mode uji** (PC), tombol **Jalan otomatis** menggerakkan posisimu sepanjang rute supaya alur navigasi bisa dicoba tanpa berjalan; check-in misi tetap memakai aturannya sendiri dan ditandai sebagai uji.
+
+Validasi: `npm run test:routing` (11 tes: parser Valhalla, proyeksi GPS, rute perangkat yang mengikuti jalan, belokan bernama, titik di luar jangkauan, jarak ke belokan berikutnya).
 
 ## Alur
 

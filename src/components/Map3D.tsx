@@ -51,6 +51,12 @@ interface Props {
   walkingRoute?: GeoJSON.LineString | null
   walkingTarget?: LatLng | null
   followMe?: boolean
+  /** mode navigasi: kamera miring, arah jalan di atas, posisi jadi panah */
+  navigating?: boolean
+  /** arah hadap (derajat dari utara) untuk panah & kamera navigasi */
+  meHeading?: number | null
+  /** bagian rute yang sudah dilewati (0–1), digambar abu-abu */
+  routeProgress?: number
   onFollowChange?: (following: boolean) => void
   onReady?: (map: MLMap) => void
   /** arah peta berubah (derajat); dipakai tombol kompas */
@@ -185,6 +191,9 @@ export function Map3D({
   walkingRoute,
   walkingTarget,
   followMe = false,
+  navigating = false,
+  meHeading = null,
+  routeProgress = 0,
   onFollowChange,
   onReady,
   onBearing,
@@ -202,11 +211,13 @@ export function Map3D({
   const pinsReady = useRef(false)
   const nbMarkers = useRef<maplibregl.Marker[]>([])
   const meMk = useRef<maplibregl.Marker | null>(null)
+  const navMk = useRef<maplibregl.Marker | null>(null)
+  const drawing = useRef(false)
   const meAnim = useRef<number | null>(null)
   const cb = useRef({ onSelect, onMapClick, onReady, onFollowChange, onBearing })
   cb.current = { onSelect, onMapClick, onReady, onFollowChange, onBearing }
-  const latest = useRef({ territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget, pins, selectedId })
-  latest.current = { territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget, pins, selectedId }
+  const latest = useRef({ territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget, pins, selectedId, me, routeProgress })
+  latest.current = { territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget, pins, selectedId, me, routeProgress }
 
   /** jalankan animasi bernama; yang lama dengan nama sama dihentikan */
   const tween = (name: string, ms: number, step: (t: number) => void, done?: () => void) => {
@@ -324,6 +335,8 @@ export function Map3D({
       map.addSource('walking-route', { type: 'geojson', data: EMPTY, lineMetrics: true })
       map.addLayer({ id: 'walking-route-halo', type: 'line', source: 'walking-route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': c.light, 'line-width': ['interpolate', ['linear'], ['zoom'], 15, 8, 18, 13], 'line-opacity': 0.95 } }, beforeLabels)
       map.addLayer({ id: 'walking-route-line', type: 'line', source: 'walking-route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': c.accent, 'line-width': ['interpolate', ['linear'], ['zoom'], 15, 4, 18, 7] } }, beforeLabels)
+      map.addSource('walking-gap', { type: 'geojson', data: EMPTY })
+      map.addLayer({ id: 'walking-gap', type: 'line', source: 'walking-gap', layout: { 'line-cap': 'round' }, paint: { 'line-color': c.accent, 'line-width': 3, 'line-dasharray': [0.6, 1.8] } }, beforeLabels)
       map.addSource('walking-destination', { type: 'geojson', data: EMPTY })
       map.addLayer({ id: 'walking-destination-point', type: 'circle', source: 'walking-destination', paint: { 'circle-radius': 7, 'circle-color': c.accent, 'circle-stroke-color': c.light, 'circle-stroke-width': 3 } })
       /* penanda misi & laporan */
@@ -390,6 +403,7 @@ export function Map3D({
     })
 
     map.on('dragstart', () => cb.current.onFollowChange?.(false))
+    map.on('rotatestart', (e) => { if ((e as { originalEvent?: Event }).originalEvent) cb.current.onFollowChange?.(false) })
     const hit = (pt: maplibregl.Point, slop: number): string | null => {
       if (!pinsReady.current) return null
       const found = map.queryRenderedFeatures([[pt.x - slop, pt.y - slop], [pt.x + slop, pt.y + slop]], { layers: ['pin-disc'] })
@@ -452,6 +466,7 @@ export function Map3D({
         ['circle-fill', 'fill-color', ['case', ['get', 'bad'], palette.bad, palette.accent]],
         ['circle-line', 'line-color', ['case', ['get', 'bad'], palette.bad, palette.accent]],
         ['walking-route-halo', 'line-color', palette.light], ['walking-route-line', 'line-color', palette.accent],
+        ['walking-gap', 'line-color', palette.accent],
         ['walking-destination-point', 'circle-color', palette.accent], ['walking-destination-point', 'circle-stroke-color', palette.light],
         ['pin-disc', 'circle-color', ['match', ['get', 'state'], 'off', palette.ground, palette.light]], ['pin-disc', 'circle-stroke-color', palette.ink],
         ['pin-pulse', 'circle-color', palette.ink], ['ripple', 'circle-color', palette.ink],
@@ -501,9 +516,41 @@ export function Map3D({
       loaded.current = false
       nbMarkers.current = []
       meMk.current = null
+      navMk.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  /** bagian yang sudah dilewati abu-abu, sisanya warna aksen */
+  const applyProgress = () => {
+    const map = mapRef.current
+    if (!map || !loaded.current || drawing.current || !map.getLayer('walking-route-line')) return
+    const k = latest.current.routeProgress ?? 0
+    if (k <= 0.002) {
+      map.setPaintProperty('walking-route-line', 'line-gradient', undefined)
+      return
+    }
+    const palette = mapPalette()
+    map.setPaintProperty('walking-route-line', 'line-gradient', ['step', ['line-progress'], palette.edge, Math.min(0.999, k), palette.accent])
+  }
+
+  /** garis putus-putus dari posisimu ke awal jalur dan dari ujung jalur ke tujuan (bagian di luar jalan) */
+  const applyGaps = () => {
+    const map = mapRef.current
+    if (!map || !loaded.current) return
+    const route = latest.current.walkingRoute
+    const target = latest.current.walkingTarget
+    const me = latest.current.me
+    const lines: GeoJSON.Feature[] = []
+    if (route && route.coordinates.length > 1) {
+      const first = route.coordinates[0]
+      const last = route.coordinates[route.coordinates.length - 1]
+      const far = (a: [number, number], b: LatLng) => Math.hypot((a[0] - b.lng) * 110000, (a[1] - b.lat) * 110000) > 4
+      if (me && far(first as [number, number], me) && (latest.current.routeProgress ?? 0) < 0.02) lines.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[me.lng, me.lat], first] } })
+      if (target && far(last as [number, number], target)) lines.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [last, [target.lng, target.lat]] } })
+    }
+    ;(map.getSource('walking-gap') as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: lines })
+  }
 
   const hadRoute = useRef(false)
   const applyWalkingRoute = () => {
@@ -515,37 +562,68 @@ export function Map3D({
     const destination: GeoJSON.FeatureCollection = route && target ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [target.lng, target.lat] } }] } : EMPTY
     ;(map.getSource('walking-route') as GeoJSONSource | undefined)?.setData(data)
     ;(map.getSource('walking-destination') as GeoJSONSource | undefined)?.setData(destination)
+    applyGaps()
     const fresh = !!route && !hadRoute.current
     hadRoute.current = !!route
     if (fresh) {
       const palette = mapPalette()
       const clear = 'rgba(0,0,0,0)'
+      drawing.current = true
       tween('route', 900, (t) => {
         const k = Math.min(0.999, Math.max(0.001, cubicOut(t)))
         map.setPaintProperty('walking-route-line', 'line-gradient', ['step', ['line-progress'], palette.accent, k, clear])
         map.setPaintProperty('walking-route-halo', 'line-gradient', ['step', ['line-progress'], palette.light, k, clear])
       }, () => {
-        map.setPaintProperty('walking-route-line', 'line-gradient', undefined)
+        drawing.current = false
         map.setPaintProperty('walking-route-halo', 'line-gradient', undefined)
+        applyProgress()
       })
-    }
-    if (route && route.coordinates.length > 1) {
+    } else if (route) applyProgress()
+    // rute baru: tunjukkan seluruh jalur dulu (kecuali sedang mengikuti posisi dalam mode navigasi)
+    if (fresh && route && route.coordinates.length > 1 && !(navigating && followMe)) {
       const bounds = new maplibregl.LngLatBounds()
       for (const [lng, lat] of route.coordinates) bounds.extend([lng, lat])
       const p = latest.current.padding
-      // padding peta (panel & kepala) sudah dipasang lewat setPadding; di sini cukup ruang napas
       map.setPadding({ top: p?.top ?? 0, bottom: p?.bottom ?? 0, left: p?.left ?? 0, right: p?.right ?? 0 })
       map.fitBounds(bounds, { padding: 48, duration: reducedMotion() ? 0 : 900, maxZoom: 18.4, easing: (t) => 1 - Math.pow(1 - t, 4) })
     }
   }
   useEffect(applyWalkingRoute, [walkingRoute, walkingTarget?.lat, walkingTarget?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    applyProgress()
+    applyGaps()
+  }, [routeProgress, me?.lat, me?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* padding mengikuti tata letak (mis. banner navigasi muncul) */
+  const padKey = `${padding?.top}|${padding?.bottom}|${padding?.left}|${padding?.right}`
+  useEffect(() => {
+    const p = latest.current.padding
+    mapRef.current?.easeTo({ padding: { top: p?.top ?? 0, bottom: p?.bottom ?? 0, left: p?.left ?? 0, right: p?.right ?? 0 }, duration: reducedMotion() ? 0 : 400 })
+  }, [padKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* kamera mengikuti posisi; dalam mode navigasi miring 50° dengan arah jalan di atas */
   useEffect(() => {
     const map = mapRef.current
     if (!map || !followMe || !me) return
     const p = latest.current.padding
-    map.easeTo({ center: [me.lng, me.lat], padding: { top: p?.top ?? 0, bottom: p?.bottom ?? 0, left: p?.left ?? 0, right: p?.right ?? 0 }, duration: reducedMotion() ? 0 : 400, essential: false })
-  }, [followMe, me?.lat, me?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
+    map.easeTo({
+      center: [me.lng, me.lat],
+      padding: { top: p?.top ?? 0, bottom: p?.bottom ?? 0, left: p?.left ?? 0, right: p?.right ?? 0 },
+      ...(navigating ? { zoom: Math.max(17.6, Math.min(18.4, map.getZoom())), pitch: 50, bearing: meHeading ?? map.getBearing() } : {}),
+      duration: reducedMotion() ? 0 : navigating ? 650 : 400,
+      easing: (t) => t * (2 - t),
+      essential: false,
+    })
+  }, [followMe, navigating, me?.lat, me?.lng, meHeading === null ? null : Math.round(meHeading / 4)]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* keluar navigasi: kembalikan kamera tegak */
+  const wasNavigating = useRef(false)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    if (wasNavigating.current && !navigating) map.easeTo({ pitch: latest.current.threeD ? PITCH : 0, bearing: latest.current.threeD ? BEARING : 0, duration: reducedMotion() ? 0 : 700 })
+    wasNavigating.current = navigating
+  }, [navigating])
 
   /* wilayah, tetangga, lingkaran */
   const applyAreas = () => {
@@ -638,7 +716,26 @@ export function Map3D({
   }
   useEffect(() => applySelection(), [selectedId, pinsKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* posisi kamu — bergerak halus */
+  /* posisi kamu — bergerak halus; saat navigasi jadi panah yang menghadap arah jalan */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const showArrow = navigating && meHeading !== null && !!me
+    if (showArrow && !navMk.current && me) {
+      const el = document.createElement('div')
+      el.className = 'nav-arrow'
+      el.innerHTML = '<svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="var(--color-card)" stroke="var(--color-ink)" stroke-width="2"/><path d="M20 8 29 29 20 24 11 29z" fill="var(--color-ink)"/></svg>'
+      navMk.current = new maplibregl.Marker({ element: el, anchor: 'center', rotationAlignment: 'map', pitchAlignment: 'map' }).setLngLat([me.lng, me.lat]).addTo(map)
+    }
+    if (!showArrow && navMk.current) {
+      navMk.current.remove()
+      navMk.current = null
+    }
+    if (navMk.current && meHeading !== null) navMk.current.setRotation(meHeading)
+    const av = meMk.current?.getElement()
+    if (av) av.style.visibility = showArrow ? 'hidden' : ''
+  }, [navigating, meHeading, !!me]) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
@@ -649,6 +746,7 @@ export function Map3D({
     }
     if (!meMk.current) {
       meMk.current = new maplibregl.Marker({ element: meElement(meAvatar), anchor: 'center', pitchAlignment: 'viewport' }).setLngLat([me.lng, me.lat]).addTo(map)
+      navMk.current?.setLngLat([me.lng, me.lat])
       return
     }
     const mk = meMk.current
@@ -656,12 +754,17 @@ export function Map3D({
     const to = { lng: me.lng, lat: me.lat }
     if (Math.abs(from.lng - to.lng) < 1e-9 && Math.abs(from.lat - to.lat) < 1e-9) return
     if (meAnim.current) cancelAnimationFrame(meAnim.current)
-    if (reducedMotion()) { mk.setLngLat([to.lng, to.lat]); return }
+    const put = (lng: number, lat: number) => {
+      mk.setLngLat([lng, lat])
+      navMk.current?.setLngLat([lng, lat])
+    }
+    if (reducedMotion()) { put(to.lng, to.lat); return }
     const t0 = performance.now()
+    const dur = navigating ? 600 : 700
     const step = (t: number) => {
-      const k = Math.min(1, (t - t0) / 700)
-      const e = 1 - (1 - k) ** 3
-      mk.setLngLat([from.lng + (to.lng - from.lng) * e, from.lat + (to.lat - from.lat) * e])
+      const k = Math.min(1, (t - t0) / dur)
+      const e = navigating ? k * (2 - k) : 1 - (1 - k) ** 3
+      put(from.lng + (to.lng - from.lng) * e, from.lat + (to.lat - from.lat) * e)
       meAnim.current = k < 1 ? requestAnimationFrame(step) : null
     }
     meAnim.current = requestAnimationFrame(step)
@@ -703,7 +806,7 @@ export function Map3D({
   return (
     <div className={`relative h-full w-full ${className}`}>
       <div ref={el} className="h-full w-full" />
-      {mapUnavailable && <details className="map-availability"><summary aria-label="Status peta"><WifiOff size={16} aria-hidden="true" /><span>Peta</span></summary><p role="status">Ubin peta belum terhubung. Lokasi dan daftar misi tetap bisa dipakai. Periksa jaringan atau buka arah di Google Maps.</p></details>}
+      {mapUnavailable && <details className="map-availability"><summary aria-label="Status peta"><WifiOff size={16} aria-hidden="true" /><span>Peta</span></summary><p role="status">Ubin peta belum terhubung. Lokasi dan daftar misi tetap bisa dipakai. Periksa sambungan internet.</p></details>}
     </div>
   )
 }

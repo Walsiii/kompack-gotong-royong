@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { ClipboardCheck, Map, MessagesSquare, Plus, Trophy, UserRound, type LucideIcon } from 'lucide-react'
+import { useChrome } from '../lib/chrome'
 import { useIsRT, useMe, useMyGroup, useStore } from '../lib/store'
 import { Avatar, Logo } from './art'
 
@@ -52,7 +53,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const me = useMe()
   const group = useMyGroup()
   const rt = useIsRT()
-  const hideBar = FULL.some((p) => pathname.startsWith(p))
+  const immersive = useChrome((s) => s.immersive)
+  const hideBar = immersive || FULL.some((p) => pathname.startsWith(p))
   const half = Math.ceil(items.length / 2)
 
   const tab = (it: Item) => (

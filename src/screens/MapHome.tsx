@@ -12,8 +12,11 @@ import { useGeo, useMyPos } from '../lib/location'
 import { useOpenReports, useQuestViews, type QuestView } from '../lib/quests'
 import { activeSubOf, personById, useIsRT, useMe, useMyGroup, usePoints, useStore } from '../lib/store'
 import { fmtAgo, fmtWindow, phaseLabel, useNow } from '../lib/time'
-import { useWalkingRoute } from '../lib/routing'
-import { WalkingNavigation } from '../components/WalkingNavigation'
+import { useWalkingRoute, type RoadSource } from '../lib/routing'
+import type { RoadLine } from '../lib/localRoute'
+import { NavigationMode } from '../components/NavigationMode'
+import { useChrome } from '../lib/chrome'
+import maplibregl from 'maplibre-gl'
 import type { Category, Post } from '../lib/types'
 import '../components/map-redesign.css'
 
@@ -156,8 +159,73 @@ export function MapHome() {
   const activeQuest = active && quests.find((q) => q.id === active.questId)
   const selQuest = sel?.type === 'misi' ? sel.view.misi : null
   const navigationTarget = useMemo(() => selQuest ? { id: selQuest.id, title: selQuest.title, lat: selQuest.lat, lng: selQuest.lng, radius: selQuest.radius } : null, [selQuest?.id, selQuest?.title, selQuest?.lat, selQuest?.lng, selQuest?.radius])
-  const walking = useWalkingRoute(navigationTarget, pos, { accuracyM: acc, simulated: testMode, at: gpsTimestamp })
+  /* data jalan dari ubin peta yang sudah termuat, untuk rute di perangkat */
+  const roads: RoadSource = useCallback(async (from, to) => {
+    const map = mapApi.current
+    if (!map || !map.getSource('ofm')) return null
+    const view = map.getBounds()
+    if (!view.contains([from.lng, from.lat]) || !view.contains([to.lng, to.lat])) {
+      const b = new maplibregl.LngLatBounds([from.lng, from.lat], [from.lng, from.lat]).extend([to.lng, to.lat])
+      map.fitBounds(b, { padding: 60, duration: 0, maxZoom: 16 })
+      await new Promise<void>((resolve) => {
+        const t = window.setTimeout(resolve, 4000)
+        map.once('idle', () => { window.clearTimeout(t); resolve() })
+      })
+    }
+    const toLines = (layer: string, withName: boolean, filter?: maplibregl.FilterSpecification): RoadLine[] => {
+      const out: RoadLine[] = []
+      for (const f of map.querySourceFeatures('ofm', { sourceLayer: layer, filter })) {
+        const g = f.geometry
+        const name = withName ? String(f.properties?.['name:latin'] ?? f.properties?.name ?? '') || undefined : undefined
+        if (g.type === 'LineString') out.push({ coords: g.coordinates as [number, number][], name })
+        else if (g.type === 'MultiLineString') for (const c of g.coordinates) out.push({ coords: c as [number, number][], name })
+      }
+      return out
+    }
+    const WALKABLE = ['trunk', 'primary', 'secondary', 'tertiary', 'minor', 'service', 'track', 'path', 'busway']
+    const lines = toLines('transportation', false, ['in', ['get', 'class'], ['literal', WALKABLE]] as maplibregl.FilterSpecification)
+    const named = toLines('transportation_name', true)
+    return { lines, named }
+  }, [])
+  const walking = useWalkingRoute(navigationTarget, pos, { accuracyM: acc, simulated: testMode, at: gpsTimestamp }, { roads, allowSimulated: testMode })
+  const navActive = walking.active && !!selQuest && !rt
+  const setImmersive = useChrome((s) => s.setImmersive)
+  useEffect(() => {
+    setImmersive(navActive)
+    return () => setImmersive(false)
+  }, [navActive, setImmersive])
   useEffect(() => { if (!walking.active) setFollowing(false) }, [walking.active])
+
+  /* mode uji: berjalan otomatis sepanjang rute (±15 m/detik, dipercepat untuk demo) */
+  const [simulating, setSimulating] = useState(false)
+  useEffect(() => { if (!walking.active || walking.arrived || walking.status !== 'ready') setSimulating(false) }, [walking.active, walking.arrived, walking.status])
+  useEffect(() => {
+    const route = walking.route
+    if (!simulating || !route || !testMode) return
+    const coords = route.coordinates
+    const cum = [0]
+    for (let i = 1; i < coords.length; i++) cum.push(cum[i - 1] + distM({ lng: coords[i - 1][0], lat: coords[i - 1][1] }, { lng: coords[i][0], lat: coords[i][1] }))
+    let walked = walking.projection?.progressM ?? 0
+    const id = window.setInterval(() => {
+      walked = Math.min(cum[cum.length - 1], walked + 6)
+      let i = 1
+      while (i < cum.length - 1 && cum[i] < walked) i++
+      const f = (walked - cum[i - 1]) / Math.max(0.01, cum[i] - cum[i - 1])
+      const a = coords[i - 1]
+      const b = coords[i]
+      useStore.getState().setSimPos({ lng: a[0] + (b[0] - a[0]) * f, lat: a[1] + (b[1] - a[1]) * f })
+      if (walked >= cum[cum.length - 1]) {
+        const t = navigationTarget
+        if (t) useStore.getState().setSimPos({ lat: t.lat, lng: t.lng })
+        window.clearInterval(id)
+      }
+    }, 400)
+    return () => window.clearInterval(id)
+  }, [simulating, walking.route]) // eslint-disable-line react-hooks/exhaustive-deps
+  const exitNavigation = () => {
+    setSimulating(false)
+    walking.cancel()
+  }
   const recenter = () => {
     if (pos && !rt) {
       setFollowing(walking.active)
@@ -168,6 +236,10 @@ export function MapHome() {
     setExpanded(false)
     setFollowing(true)
     if (!walking.active) void walking.start()
+  }
+  const recenterNav = () => {
+    setFollowing(true)
+    if (pos) fly(pos.lat, pos.lng)
   }
   const center = useMemo(() => (group?.territory.length ? ringCenter(group.territory) : home), [group?.territory, home])
 
@@ -299,7 +371,6 @@ export function MapHome() {
       <RollingNumber value={points.total} />
     </span>
   ) : null
-  const navigationCard = walking.active && selQuest ? <WalkingNavigation navigation={walking} targetTitle={selQuest.title} onRecenter={recenter} positionAccuracyM={acc} simulated={testMode} onOpenMission={() => nav(`/misi/${selQuest.id}`)} /> : null
 
   const searchControl = (
     <div className="map-search-shell">
@@ -330,7 +401,7 @@ export function MapHome() {
   const collapsedY = Math.max(0, sheetH - peek)
 
   return (
-    <div className="neighborhood-map" data-navigating={walking.active}>
+    <div className="neighborhood-map" data-navigating={navActive}>
       <Map3D
         center={center}
         zoom={16.4}
@@ -341,10 +412,13 @@ export function MapHome() {
         meAvatar={me?.avatar ?? 0}
         territory={group?.territory}
         neighbors={neighbors}
-        circle={selQuest && !walking.active ? { lat: selQuest.lat, lng: selQuest.lng, radius: selQuest.radius } : null}
+        circle={selQuest && !navActive ? { lat: selQuest.lat, lng: selQuest.lng, radius: selQuest.radius } : null}
         walkingRoute={walking.route?.geometry ?? null}
         walkingTarget={navigationTarget}
-        followMe={following && walking.active}
+        followMe={following && navActive}
+        navigating={navActive && walking.status === 'ready'}
+        meHeading={navActive && walking.status === 'ready' ? walking.heading : null}
+        routeProgress={walking.progressFraction}
         onFollowChange={setFollowing}
         onReady={(map) => { mapApi.current = map; setMapReady(true) }}
         onBearing={setBearing}
@@ -352,10 +426,29 @@ export function MapHome() {
         onMapClick={onMapClick}
         threeD={threeD}
         focus={focus}
-        padding={wide ? { left: 388, top: 64, bottom: 40 } : { top: 132, bottom: peek + 76 }}
+        padding={navActive ? (wide ? { left: 452, top: 40, bottom: 40 } : { top: 170, bottom: 150 }) : wide ? { left: 388, top: 64, bottom: 40 } : { top: 132, bottom: peek + 76 }}
         intro={intro}
       />
 
+      {navActive && selQuest && (
+        <NavigationMode
+          nav={walking}
+          targetTitle={selQuest.title}
+          following={following}
+          onRecenter={recenterNav}
+          onExit={exitNavigation}
+          onOpenMission={() => {
+            const id = selQuest.id
+            exitNavigation()
+            nav(`/misi/${id}`)
+          }}
+          testMode={testMode}
+          simulating={simulating}
+          onSimulate={setSimulating}
+        />
+      )}
+
+      {!navActive && <>
       <div className="map-floating-header" style={{ paddingTop: 'calc(var(--safe-t) + 16px)' }}>
         {!wide && <>{searchControl}{categoryControl}</>}
         {wide && <div className="map-desktop-avatar">{pointsHud}{avatarMenu}</div>}
@@ -405,7 +498,7 @@ export function MapHome() {
       {wide ? (
         <section className="map-desktop-panel" aria-label="Misi di sekitarmu">
           <div className="map-panel-heading">{searchControl}{categoryControl}<h1>{normalizedQuery ? 'Hasil pencarian' : 'Di sekitarmu'}</h1><p role="status">{normalizedQuery ? `${listed.length} hasil di lingkunganmu` : `${group?.name ?? 'Wilayahmu'}, ${group?.rw ?? ''}`}</p></div>
-          <div className="map-focus-wrap">{navigationCard ?? focusCard ?? <p className="text-ink-2">Pilih penanda di peta.</p>}</div>
+          <div className="map-focus-wrap">{focusCard ?? <p className="text-ink-2">Pilih penanda di peta.</p>}</div>
           <div className="map-panel-tabs">{tabs}</div>
           <div className="scroll-y map-panel-list">{list}</div>
         </section>
@@ -443,11 +536,12 @@ export function MapHome() {
             <span>{expanded ? 'Kembali ke peta' : walking.active ? 'Navigasi jalan kaki' : 'Detail misi'}</span>
             {expanded ? <ChevronDown size={17} aria-hidden="true" /> : <ChevronUp size={17} aria-hidden="true" />}
           </button>
-          <div className="map-focus-wrap">{navigationCard ?? focusCard ?? <p className="map-selection-empty">{normalizedQuery || category !== 'all' ? 'Belum ada yang cocok. Coba kata atau kategori lain.' : 'Pilih misi atau laporan di peta.'}</p>}{walking.active && expanded && focusCard}</div>
+          <div className="map-focus-wrap">{focusCard ?? <p className="map-selection-empty">{normalizedQuery || category !== 'all' ? 'Belum ada yang cocok. Coba kata atau kategori lain.' : 'Pilih misi atau laporan di peta.'}</p>}{walking.active && expanded && focusCard}</div>
           <div className="map-panel-tabs">{tabs}</div>
           <div id="map-mobile-missions" className="scroll-y map-panel-list">{list}</div>
         </motion.section>
       )}
+      </>}
     </div>
   )
 }
