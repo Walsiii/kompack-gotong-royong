@@ -1,11 +1,11 @@
 import { create } from 'zustand'
 
-export type Theme = 'ink' | 'forest' | 'sunset'
+export type Theme = 'kampung' | 'laut' | 'ink'
 const KEY = 'kompack-appearance'
 export const THEMES: { id: Theme; label: string; description: string }[] = [
   { id: 'ink', label: 'Tinta', description: 'Hitam & putih' },
-  { id: 'forest', label: 'Hutan', description: 'Aksen hijau' },
-  { id: 'sunset', label: 'Senja', description: 'Aksen terakota' },
+  { id: 'kampung', label: 'Kampung', description: 'Aksen hijau' },
+  { id: 'laut', label: 'Laut', description: 'Aksen biru' },
 ]
 
 function initialTheme(): Theme {

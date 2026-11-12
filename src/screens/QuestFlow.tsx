@@ -6,11 +6,12 @@ import { Camera } from '../components/Camera'
 import { HoldButton } from '../components/HoldButton'
 import { Map3D } from '../components/Map3D'
 import { Avatar, CatTile } from '../components/art'
+import { BuddyTip } from '../components/KampungBuddy'
 import { Bar, Button, CheckList, Empty, Note, Points, toast } from '../components/ui'
 import { CATS } from '../lib/catalog'
 import { fmtDist, offset } from '../lib/geo'
 import { assessSubmission, validateFix, type Assessment, type EvidenceRef } from '../lib/integrity'
-import { currentFix, useMyPos } from '../lib/location'
+import { currentFix, useMyPos, useTestPos } from '../lib/location'
 import { demoPhoto } from '../lib/photo'
 import { useQuestView } from '../lib/quests'
 import { personById, useIsRT, useMe, useMyGroup, useStore } from '../lib/store'
@@ -69,7 +70,7 @@ export function QuestFlow() {
   const checkIn = useStore((s) => s.checkIn)
   const setEvidence = useStore((s) => s.setEvidence)
   const submit = useStore((s) => s.submit)
-  const setSimPos = useStore((s) => s.setSimPos)
+  const setTestPos = useTestPos((s) => s.set)
   const { pos, jumpAt } = useMyPos()
 
   const [cam, setCam] = useState<'before' | 'after' | null>(null)
@@ -185,7 +186,6 @@ export function QuestFlow() {
           territory={group?.territory}
           circle={{ lat: q.lat, lng: q.lng, radius: q.radius }}
           threeD={false}
-          onMapClick={(p) => testMode && !rt && setSimPos(p)}
         />
         <div className="absolute left-3 top-0 z-10 flex items-center gap-2" style={{ paddingTop: 'calc(var(--safe-t) + 10px)' }}>
           <button type="button" aria-label="Kembali" onClick={() => nav(-1)} className="btn btn--white btn--icon !h-10 !min-h-10 !w-10">
@@ -255,6 +255,11 @@ export function QuestFlow() {
             <Clock size={15} className="flex-none text-ink-3" /> {fmtWindow(q.startAt, q.endAt, now)} / <span className="text-ink-2">{phaseLabel(q, now)}</span>
           </p>
           <p className="mt-2 leading-relaxed text-ink-2">{q.desc}</p>
+          {!rt && view.phase !== 'ended' && (
+            <BuddyTip who={cat.buddy} className="mt-5">
+              {cat.tip}
+            </BuddyTip>
+          )}
 
           {fromPost && requester && (
             <button
@@ -345,8 +350,8 @@ export function QuestFlow() {
                       </HoldButton>
                       {testMode && !view.inRange && (
                         <Note className="mt-3">
-                          Mode uji: ketuk peta di atas, atau{' '}
-                          <button type="button" className="font-semibold underline" onClick={() => setSimPos(offset(q, 8, -6))}>
+                          Mode uji:{' '}
+                          <button type="button" className="font-semibold underline" onClick={() => setTestPos(offset(q, 8, -6))}>
                             pindah ke lokasi misi
                           </button>
                           .

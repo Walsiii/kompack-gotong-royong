@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { CATS } from '../lib/catalog'
+import { kompiSvg } from './KampungBuddy'
 import type { Category } from '../lib/types'
 
 const INK = 'var(--color-ink)'
@@ -19,17 +20,17 @@ const CAT_PATHS: Record<Category, string> = {
   bantu: `<path d="M12 11.2c-2-2.4-5.6-1.2-4.4 1.6.6 1.4 2.4 2.7 4.4 4 2-1.3 3.8-2.6 4.4-4 1.2-2.8-2.4-4-4.4-1.6z" fill="var(--color-inverse)"/><path d="M2.8 15.6l3.4 3.8c.8.9 1.9 1.4 3.1 1.4h5.8c1.1 0 2.2-.4 3-1.2l3.1-3"/><path d="M12 6.2V3.4M8.6 7.2 7.4 5M15.4 7.2 16.6 5"/>`,
 }
 
-export function catIconSvg(cat: Category, size = 24, stroke = INK): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${CAT_PATHS[cat]}</svg>`
+export function catIconSvg(cat: Category, size = 24, stroke = INK, fill = 'var(--color-inverse)'): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${CAT_PATHS[cat].replaceAll('var(--color-inverse)', fill)}</svg>`
 }
 
-export function CatIcon({ cat, size = 24, className }: { cat: Category; size?: number; className?: string }) {
+export function CatIcon({ cat, size = 24, className, stroke, fill }: { cat: Category; size?: number; className?: string; stroke?: string; fill?: string }) {
   return (
     <span
       className={className}
       style={{ display: 'inline-flex', width: size, height: size, flex: 'none' }}
       aria-hidden="true"
-      dangerouslySetInnerHTML={{ __html: catIconSvg(cat, size) }}
+      dangerouslySetInnerHTML={{ __html: catIconSvg(cat, size, stroke, fill) }}
     />
   )
 }
@@ -43,11 +44,11 @@ export function CatTile({ cat, size = 44, muted, className = '' }: { cat: Catego
         width: size,
         height: size,
         borderRadius: size * 0.3,
-        background: muted ? 'var(--color-surface)' : 'var(--color-accent-soft)',
-        color: CATS[cat].color,
+        background: muted ? 'var(--color-surface)' : CATS[cat].soft,
+        color: muted ? 'var(--color-ink-3)' : CATS[cat].color,
       }}
     >
-      <CatIcon cat={cat} size={size * 0.56} />
+      <CatIcon cat={cat} size={size * 0.56} stroke="currentColor" fill={muted ? 'var(--color-surface)' : CATS[cat].soft} />
     </span>
   )
 }
@@ -145,20 +146,35 @@ export function Avatar({ index, size = 40, className = '', style }: { index: num
 
 /* ───────────── Logo ───────────── */
 
-export function Logo({ size = 28, light, className = '' }: { size?: number; light?: boolean; className?: string }) {
+/** Wajah Kompi (statis) untuk logo */
+export function KompiMark({ size = 28, className = '' }: { size?: number; className?: string }) {
   return (
     <span
-      className={`font-display inline-flex select-none items-baseline whitespace-nowrap ${className}`}
-      style={{
-        fontSize: size,
-        lineHeight: 1,
-        fontWeight: 750,
-        letterSpacing: '-0.05em',
-        color: light ? 'var(--color-inverse)' : INK,
-      }}
-    >
-      kompack
-      <span style={{ color: 'var(--color-rompi)' }}>!</span>
+      className={`inline-block flex-none ${className}`}
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: kompiSvg({ shadow: false, viewBox: '30 34 168 156' }).replace('<svg ', '<svg style="display:block;width:100%;height:100%" ') }}
+    />
+  )
+}
+
+export function Logo({ size = 28, light, className = '', mark = true }: { size?: number; light?: boolean; className?: string; mark?: boolean }) {
+  return (
+    <span className={`inline-flex select-none items-center whitespace-nowrap ${className}`} style={{ gap: size * 0.22 }}>
+      {mark && <KompiMark size={size * 1.25} />}
+      <span
+        className="font-display"
+        style={{
+          fontSize: size,
+          lineHeight: 1,
+          fontWeight: 800,
+          letterSpacing: '-0.045em',
+          color: light ? 'var(--color-inverse)' : INK,
+        }}
+      >
+        kompack
+        <span style={{ color: light ? 'var(--color-sun)' : 'var(--color-rompi)' }}>!</span>
+      </span>
     </span>
   )
 }

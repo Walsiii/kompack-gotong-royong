@@ -1,15 +1,17 @@
 import { useLive } from '../lib/live'
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
-import { ArrowLeftRight, Check, ChevronRight, FlaskConical, MapPinned, RotateCcw, ShieldCheck, Ticket } from 'lucide-react'
+import { ArrowLeftRight, Check, ChevronRight, Flame, FlaskConical, MapPinned, RotateCcw, ShieldCheck, Ticket } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, CatTile, Coin } from '../components/art'
+import { CHARACTERS, TapCharacter, type CharacterId } from '../components/KampungBuddy'
 import { Bar, Button, RollingNumber, Note, Page, Section, Sheet, TopBar, toast } from '../components/ui'
 import { COMMUNITY, REWARDS, nextRank, rankOf, rankProgress } from '../lib/catalog'
 import { fmtArea, ringArea } from '../lib/geo'
 import { isNative } from '../lib/location'
 import { groupPoints, personById, useIsRT, useMe, useMyGroup, usePoints, useSession, useSnap, useStore } from '../lib/store'
 import { fmtDateTime, useNow } from '../lib/time'
+import { streakOf } from '../lib/streak'
 import type { Redemption, Reward } from '../lib/types'
 import { THEMES, useTheme } from '../lib/theme'
 
@@ -47,6 +49,7 @@ export function Me() {
   const reset = useStore((s) => s.reset)
   const setActing = useSession((s) => s.setActing)
   const pts = usePoints(me?.id)
+  const streak = me ? streakOf(snap, me.id, now) : null
   const [confirm, setConfirm] = useState<Reward | null>(null)
   const [ticket, setTicket] = useState<Redemption | null>(null)
   const [askReset, setAskReset] = useState(false)
@@ -129,6 +132,35 @@ export function Me() {
                 Skor kepercayaan turun bila setoran ditolak Ketua RT, dan ikut dilihat saat pemeriksaan.
               </p>
             </div>
+
+            {streak && (
+              <div className="panel week-panel p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="meta-label">Pekan ini</p>
+                    <p className="mt-0.5 text-[1.5rem] font-bold leading-tight tnum">
+                      {Math.min(streak.weekPts, streak.target)} <span className="text-[1rem] font-medium text-ink-2">/ {streak.target} poin</span>
+                    </p>
+                  </div>
+                  <div className={`week-flame ${streak.weeks > 0 ? 'is-on' : ''}`} aria-label={`${streak.weeks} pekan beruntun`}>
+                    <Flame size={20} strokeWidth={2.4} aria-hidden="true" />
+                    <b className="tnum">{streak.weeks}</b>
+                    <span>pekan beruntun</span>
+                  </div>
+                </div>
+                <Bar value={Math.min(1, streak.weekPts / streak.target)} className="mt-3" />
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <ol className="week-dots" aria-label="Enam pekan terakhir">
+                    {streak.recent.map((on, i) => (
+                      <li key={i} className={on ? 'is-on' : ''} aria-label={`${i === streak.recent.length - 1 ? 'Pekan ini' : `${streak.recent.length - 1 - i} pekan lalu`}: ${on ? 'ada aksi' : 'kosong'}`} />
+                    ))}
+                  </ol>
+                  <p className="text-right text-[0.84rem] text-ink-2">
+                    {streak.weekPts >= streak.target ? 'Target pekan ini tercapai!' : streak.thisWeek ? `${streak.target - streak.weekPts} poin lagi` : 'Satu misi pekan ini menjaga beruntunmu'}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* misi */}
             <section>
@@ -270,6 +302,21 @@ export function Me() {
           </>
         )}
 
+        {/* keluarga karakter */}
+        <section aria-labelledby="cast-title">
+          <h3 id="cast-title" className="text-[1.2rem]">Warga Kompack!</h3>
+          <p className="mt-0.5 text-[0.9rem] text-ink-2">Teman yang menemanimu di tiap misi. Ketuk untuk menyapa.</p>
+          <ul className="no-scrollbar -mx-4 mt-3 flex snap-x gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
+            {(Object.keys(CHARACTERS) as CharacterId[]).map((id) => (
+              <li key={id} className="w-[104px] flex-none snap-start rounded-[20px] bg-white px-2 pb-3 pt-2 text-center">
+                <TapCharacter who={id} react={id === 'kompi' ? 'celebrate' : 'hello'} className="mx-auto w-[84px]" />
+                <p className="mt-1 text-[0.95rem] font-semibold">{CHARACTERS[id].name}</p>
+                <p className="text-[0.76rem] leading-tight text-ink-2">{CHARACTERS[id].role}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* pengaturan */}
         <section>
           <h3 className="mb-2 text-[1.2rem]">Pengaturan</h3>
@@ -295,7 +342,7 @@ export function Me() {
                     Mode uji (coba di PC)
                   </label>
                   <p className="text-[0.86rem] text-ink-2">
-                    Posisi dipindah dengan mengetuk peta, boleh pakai foto contoh, dan waktu tunggu bisa dilewati. Semua setoran mode uji ditandai untuk Ketua RT.
+                    Lokasi tetap dari GPS. Boleh pakai foto contoh, posisi uji lewat tombol (Jalan otomatis, Pindah ke lokasi misi), dan waktu tunggu bisa dilewati. Semua setoran mode uji ditandai untuk Ketua RT.
                   </p>
                 </div>
                 <Switch

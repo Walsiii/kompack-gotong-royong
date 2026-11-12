@@ -36,6 +36,8 @@ interface GeoState {
   status: GeoStatus
   /** waktu terakhir posisi "melompat" tidak wajar */
   jumpAt: number | null
+  /** arah hadap (derajat dari utara): dari GPS saat bergerak, atau kompas HP */
+  heading: number | null
   nonce: number
   retry: () => void
 }
@@ -44,13 +46,29 @@ export const useGeo = create<GeoState>()((set) => ({
   pos: null,
   acc: null,
   at: 0,
+  heading: null,
   status: 'idle',
   jumpAt: null,
   nonce: 0,
   retry: () => set((s) => ({ nonce: s.nonce + 1, status: 'locating' })),
 }))
 
-function onReading(lat: number, lng: number, acc: number, at: number) {
+/**
+ * Posisi uji (mode uji di PC): hanya diisi lewat tombol yang jelas
+ * ("Jalan otomatis", "Pindah ke lokasi misi"), tidak pernah dengan mengetuk peta.
+ */
+export const useTestPos = create<{ pos: LatLng | null; set: (p: LatLng | null) => void }>()((set) => ({
+  pos: null,
+  set: (pos) => set({ pos }),
+}))
+
+function onHeading(h: number | null | undefined) {
+  if (h === null || h === undefined || !Number.isFinite(h)) return
+  useGeo.setState({ heading: ((h % 360) + 360) % 360 })
+}
+
+function onReading(lat: number, lng: number, acc: number, at: number, heading?: number | null) {
+  if (heading !== null && heading !== undefined && Number.isFinite(heading)) onHeading(heading)
   const prev = useGeo.getState()
   let jumpAt = prev.jumpAt
   if (prev.pos && prev.at && at > prev.at) {
@@ -94,14 +112,29 @@ export function locateOnce(timeout = 12000): Promise<LatLng | null> {
   })
 }
 
-/** Dipasang sekali di App: memantau GPS selama mode uji mati. */
+/** Dipasang sekali di App: memantau GPS terus (juga di mode uji), seperti aplikasi peta. */
 export function useGeoWatcher(): void {
-  const testMode = useStore((s) => s.testMode)
   const registered = useStore((s) => s.meId !== null)
   const nonce = useGeo((s) => s.nonce)
 
+  /* kompas HP untuk arah hadap titik biru saat diam */
   useEffect(() => {
-    if (!registered || testMode) return
+    if (!registered || typeof window === 'undefined') return
+    const onOrient = (e: DeviceOrientationEvent) => {
+      const ios = (e as DeviceOrientationEvent & { webkitCompassHeading?: number }).webkitCompassHeading
+      if (typeof ios === 'number') onHeading(ios)
+      else if (e.absolute && typeof e.alpha === 'number') onHeading(360 - e.alpha)
+    }
+    window.addEventListener('deviceorientationabsolute', onOrient as EventListener)
+    window.addEventListener('deviceorientation', onOrient as EventListener)
+    return () => {
+      window.removeEventListener('deviceorientationabsolute', onOrient as EventListener)
+      window.removeEventListener('deviceorientation', onOrient as EventListener)
+    }
+  }, [registered])
+
+  useEffect(() => {
+    if (!registered) return
     if (!('geolocation' in navigator)) {
       useGeo.setState({ status: 'unavailable' })
       return
@@ -110,7 +143,7 @@ export function useGeoWatcher(): void {
     let id: number | null = null
     try {
       id = navigator.geolocation.watchPosition(
-        (p) => onReading(p.coords.latitude, p.coords.longitude, p.coords.accuracy, p.timestamp || Date.now()),
+        (p) => onReading(p.coords.latitude, p.coords.longitude, p.coords.accuracy, p.timestamp || Date.now(), p.coords.heading),
         (err) => {
           if (err.code === err.PERMISSION_DENIED) useGeo.setState({ status: 'denied', pos: null, acc: null, at: 0 })
           else if (!useGeo.getState().pos) useGeo.setState({ status: 'unavailable' })
@@ -134,26 +167,33 @@ export function useGeoWatcher(): void {
       window.removeEventListener('online', refresh)
       if (id !== null) navigator.geolocation.clearWatch(id)
     }
-  }, [testMode, registered, nonce])
+  }, [registered, nonce])
 }
 
 export interface MyPos {
   pos: LatLng | null
   acc: number | null
+  heading: number | null
   test: boolean
+  /** posisi sedang diganti posisi uji (bukan GPS) */
+  simulated: boolean
   status: GeoStatus
   jumpAt: number | null
   retry: () => void
 }
 
-/** Posisi yang dipakai aplikasi: GPS asli, atau titik uji (mode uji). */
+/**
+ * Posisi yang dipakai aplikasi: selalu GPS asli. Di mode uji, posisi uji hanya dipakai bila diaktifkan
+ * lewat tombol; bila GPS tidak tersedia di PC, dipakai titik rumah saat mendaftar.
+ */
 export function useMyPos(): MyPos {
   const test = useStore((s) => s.testMode)
-  const simPos = useStore((s) => s.simPos)
   const home = useStore((s) => s.home)
+  const override = useTestPos((s) => s.pos)
   const geo = useGeo()
-  if (test) return { pos: simPos ?? home, acc: 5, test, status: 'ok', jumpAt: null, retry: geo.retry }
-  return { pos: geo.pos, acc: geo.acc, test, status: geo.status, jumpAt: geo.jumpAt, retry: geo.retry }
+  if (test && override) return { pos: override, acc: 5, heading: geo.heading, test, simulated: true, status: 'ok', jumpAt: null, retry: geo.retry }
+  if (test && !geo.pos) return { pos: home, acc: null, heading: geo.heading, test, simulated: true, status: 'ok', jumpAt: null, retry: geo.retry }
+  return { pos: geo.pos, acc: geo.acc, heading: geo.heading, test, simulated: false, status: geo.status, jumpAt: test ? null : geo.jumpAt, retry: geo.retry }
 }
 
 /**
@@ -163,7 +203,8 @@ export function useMyPos(): MyPos {
 export async function currentFix(): Promise<Fix | null> {
   const s = useStore.getState()
   if (s.testMode) {
-    const p = s.simPos ?? s.home
+    const g = useGeo.getState()
+    const p = useTestPos.getState().pos ?? g.pos ?? s.home
     if (!p) return null
     const n = await nativeCheck()
     return { ...p, acc: 5, at: Date.now(), simulated: true, mock: n.mock, emulator: n.emulator }

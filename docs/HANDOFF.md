@@ -19,6 +19,19 @@ Catatan serah terima untuk sesi Claude Code (atau pengembang) berikutnya.
 | `src/components/NavigationMode.tsx` | UI navigasi: banner belokan, panel waktu tiba, daftar langkah, suara |
 | `src/lib/routing.ts` | Rute Valhalla, proyeksi GPS, jarak ke belokan, cadangan rute perangkat |
 | `src/lib/localRoute.ts` | Router di perangkat (Dijkstra di atas jalan OSM dari ubin peta) |
+| `src/lib/location.ts` | GPS realtime (posisi, akurasi, arah kompas); `useTestPos` hanya untuk tombol mode uji |
+
+## Karakter & keseruan
+
+| Berkas | Isi |
+|---|---|
+| `src/components/KampungBuddy.tsx` | Keluarga karakter hitam-putih (Kompi utama, Resik, Jaga, Asih, Tunas): `Character`, `TapCharacter`, `BuddyTip`, `characterSvg` |
+| `src/lib/catalog.ts` | Tiap kategori punya `buddy` (karakter pendamping) dan `tip` |
+| `src/components/MapGreeting.tsx` | Sapaan karakter sekali per sesi di peta (malam: Jaga) |
+| `src/lib/streak.ts` | Pekan beruntun & target 100 poin per pekan (hanya dari aksi yang diterima RT) |
+| `src/components/Celebration.tsx` | Perayaan setoran disetujui: karakter kategori melompat, cap, poin bergulir, koin terbang |
+
+Ikon aplikasi dibuat dari `characterSvg('kompi')` di latar #171717 (web `public/`, Android `mipmap-*`, Tauri `src-tauri/icons`).
 
 ## Perintah
 

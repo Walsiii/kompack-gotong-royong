@@ -1,63 +1,85 @@
 import type { Category, Reward } from './types'
+import type { CharacterId } from '../components/KampungBuddy'
 
 export interface CatInfo {
   id: Category
   label: string
   /** warna kategori: dipakai di penanda peta dan ikon */
   color: string
+  /** latar lembut untuk ubin ikon */
+  soft: string
   /** judul & deskripsi bawaan saat Ketua RT membuat misi */
   title: string
   desc: string
   points: number
   /** contoh isi laporan (placeholder) */
   hint: string
+  /** karakter pendamping kategori ini */
+  buddy: CharacterId
+  /** saran singkat dari karakter pendamping */
+  tip: string
 }
 
 export const CATS: Record<Category, CatInfo> = {
   sampah: {
     id: 'sampah',
     label: 'Sampah',
-    color: 'var(--color-ink)',
+    color: 'var(--cat-sampah)',
+    soft: 'var(--cat-sampah-soft)',
     title: 'Angkut sampah liar',
     desc: 'Kumpulkan sampah yang menumpuk ke karung, pisahkan plastik, lalu bawa ke titik kumpul.',
     points: 50,
     hint: 'mis. Tumpukan sampah plastik di pojok gang, sudah 3 hari',
+    buddy: 'resik',
+    tip: 'Pakai sarung tangan dan pisahkan plastik dari sampah basah. Foto sesudah dari sudut yang sama, ya!',
   },
   got: {
     id: 'got',
     label: 'Selokan',
-    color: 'var(--color-ink)',
+    color: 'var(--cat-got)',
+    soft: 'var(--cat-got-soft)',
     title: 'Bersihkan selokan',
     desc: 'Angkat sampah dan lumpur dari selokan supaya air mengalir. Pakai sarung tangan.',
     points: 70,
     hint: 'mis. Selokan depan warung mampet, air meluap kalau hujan',
+    buddy: 'resik',
+    tip: 'Angkat lumpur ke karung, jangan ditaruh di pinggir selokan, nanti masuk lagi kalau hujan.',
   },
   rusak: {
     id: 'rusak',
     label: 'Fasilitas rusak',
-    color: 'var(--color-ink)',
+    color: 'var(--cat-rusak)',
+    soft: 'var(--cat-rusak-soft)',
     title: 'Perbaiki fasilitas',
     desc: 'Bantu perbaiki fasilitas umum yang rusak bersama pengurus RT. Alat disediakan.',
     points: 80,
     hint: 'mis. Lampu jalan depan musala mati sejak minggu lalu',
+    buddy: 'kompi',
+    tip: 'Kerjakan bareng pengurus RT. Jangan naik tangga sendirian, minta tetangga pegangi.',
   },
   taman: {
     id: 'taman',
     label: 'Taman',
-    color: 'var(--color-ink)',
+    color: 'var(--cat-taman)',
+    soft: 'var(--cat-taman-soft)',
     title: 'Rawat taman warga',
     desc: 'Siram tanaman, cabut rumput liar, dan rapikan pot di taman RT.',
     points: 45,
     hint: 'mis. Taman dekat pos ronda penuh rumput liar',
+    buddy: 'tunas',
+    tip: 'Siram di pangkal batang, bukan di daun. Rumput liar dicabut sampai akarnya.',
   },
   bantu: {
     id: 'bantu',
     label: 'Bantu warga',
-    color: 'var(--color-ink)',
+    color: 'var(--cat-bantu)',
+    soft: 'var(--cat-bantu-soft)',
     title: 'Bantu tetangga',
     desc: 'Bantu warga yang butuh tenaga, misalnya lansia yang tidak kuat mengangkat barang.',
     points: 60,
     hint: 'mis. Minta tolong angkat lemari ke lantai atas, saya sudah sepuh',
+    buddy: 'asih',
+    tip: 'Tanya dulu apa yang dibutuhkan. Barang berat diangkat berdua, pelan-pelan saja.',
   },
 }
 

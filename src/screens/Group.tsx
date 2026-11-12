@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { ArrowRight, BellRing, Check, Eye, Lock, MapPin, Megaphone, Users } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Avatar, CatTile } from '../components/art'
+import { TapCharacter } from '../components/KampungBuddy'
 import { Button, Empty, Page, Points, Section, Segmented, Sheet, TopBar, toast } from '../components/ui'
 import { CATS } from '../lib/catalog'
 import { personById, takenSlots, useIsRT, useMe, useStore } from '../lib/store'
@@ -146,12 +147,8 @@ export function Group() {
         </div>
 
         {/* kentongan */}
-        <div className="relative overflow-hidden rounded-[22px] bg-ink p-4 text-white">
-          <div className="pointer-events-none absolute right-6 top-6" aria-hidden="true">
-            {[0, 1, 2].map((i) => (
-              <span key={i} className="absolute left-0 top-0 h-20 w-20 rounded-full border border-rompi/60" style={{ animation: 'kp-pulse 3s ease-out infinite', animationDelay: `${i}s` }} />
-            ))}
-          </div>
+        <div className="relative overflow-hidden rounded-[22px] bg-ink p-4 pr-[96px] text-white">
+          <TapCharacter who="jaga" intro="hello" className="on-dark absolute bottom-1 right-1 w-[92px]" label="Jaga, teman ronda malam. Ketuk untuk menyapa." />
           <p className="mono flex items-center gap-1.5 text-[0.8rem] text-inverse">
             <BellRing size={13} /> Kentongan {group?.name}
           </p>

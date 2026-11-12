@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#0D5E3F</color>
-    <color name="kompack_sun">#0D5E3F</color>
-    <color name="kompack_ink">#16123A</color>
+    <color name="ic_launcher_background">#171717</color>
+    <color name="kompack_sun">#171717</color>
+    <color name="kompack_ink">#171717</color>
 </resources>

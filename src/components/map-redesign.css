@@ -121,3 +121,28 @@
 .map-points { display: inline-flex; flex: none; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--color-surface); font-size: 15px; font-weight: 650; pointer-events: auto; }
 .map-desktop-avatar { display: flex; align-items: center; gap: 8px; }
 .map-desktop-avatar .map-points { background: var(--color-card); box-shadow: 0 1px 2px var(--color-shadow); }
+
+/* sapaan karakter di peta */
+.map-greeting { position: absolute; z-index: 610; display: flex; align-items: flex-end; gap: 4px; pointer-events: none; }
+.map-greeting > * { pointer-events: auto; }
+.map-greeting-char { flex: none; width: 66px; margin-bottom: -10px; }
+.map-greeting-bubble {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  max-width: 300px;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 18px;
+  padding: 10px 14px 11px;
+  border: 1.5px solid var(--color-ink);
+  border-radius: 20px 20px 20px 6px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  text-align: left;
+  box-shadow: 0 6px 18px var(--color-shadow);
+}
+.map-greeting-bubble strong { font-size: 15px; font-weight: 650; line-height: 1.25; }
+.map-greeting-bubble span { font-size: 14px; line-height: 1.4; color: var(--color-ink-2); text-wrap: pretty; }
+.map-streak { display: inline-flex; align-items: center; gap: 3px; padding-right: 8px; margin-right: 2px; border-right: 1px solid var(--color-line); color: var(--color-ink); }
+.map-streak svg { color: var(--color-coral); }

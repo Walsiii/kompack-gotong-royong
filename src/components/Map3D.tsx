@@ -5,7 +5,7 @@ import maplibregl, { type GeoJSONSource, type Map as MLMap } from 'maplibre-gl'
 import { CATS } from '../lib/catalog'
 import { circleRing, ringCenter } from '../lib/geo'
 import type { Category, LatLng, Ring } from '../lib/types'
-import { avatarSvg, catIconSvg } from './art'
+import { catIconSvg } from './art'
 import { RASTER_TILES, VECTOR_URL, kompackStyle, mapPalette } from './mapStyle'
 
 export interface MapPin {
@@ -55,6 +55,10 @@ interface Props {
   navigating?: boolean
   /** arah hadap (derajat dari utara) untuk panah & kamera navigasi */
   meHeading?: number | null
+  /** akurasi GPS (meter) — lingkaran biru muda di sekitar titik posisi */
+  meAccuracy?: number | null
+  /** arah hadap HP (kompas) untuk sorot titik biru saat tidak navigasi */
+  meFacing?: number | null
   /** bagian rute yang sudah dilewati (0–1), digambar abu-abu */
   routeProgress?: number
   onFollowChange?: (following: boolean) => void
@@ -122,9 +126,19 @@ function iconName(p: MapPin): string {
   return `pin-${p.kind === 'tolong' ? 'bantu' : p.category}`
 }
 
-async function loadPinImages(map: MLMap, ink: string, paper: string): Promise<void> {
-  const svgs: Record<string, string> = { 'pin-warn': WARN_SVG(ink, paper), 'pin-check': CHECK_SVG(ink) }
-  for (const cat of Object.keys(CATS) as Category[]) svgs[`pin-${cat}`] = catIconSvg(cat, 24, ink)
+/** warna kategori yang sudah diselesaikan (MapLibre butuh nilai warna, bukan var()) */
+function catColors(): Record<Category, string> {
+  const css = getComputedStyle(document.documentElement)
+  const out = {} as Record<Category, string>
+  for (const cat of Object.keys(CATS) as Category[]) out[cat] = css.getPropertyValue(`--cat-${cat}`).trim() || '#2c9a4c'
+  return out
+}
+
+async function loadPinImages(map: MLMap, _ink: string, paper: string): Promise<void> {
+  // ikon putih di atas cakram berwarna kategori
+  const colors = catColors()
+  const svgs: Record<string, string> = { 'pin-warn': WARN_SVG(paper, colors.rusak), 'pin-check': CHECK_SVG(paper) }
+  for (const cat of Object.keys(CATS) as Category[]) svgs[`pin-${cat}`] = catIconSvg(cat, 24, paper, colors[cat])
   await Promise.all(
     Object.entries(svgs).map(async ([name, svg]) => {
       const img = new Image(48, 48)
@@ -141,13 +155,15 @@ async function loadPinImages(map: MLMap, ink: string, paper: string): Promise<vo
   )
 }
 
+let PIN_COLORS: Record<string, string> = {}
+
 function pinsFC(pins: MapPin[]): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
     features: pins.map((p) => ({
       type: 'Feature',
       id: p.id,
-      properties: { id: p.id, kind: p.kind, state: p.state, icon: iconName(p), label: p.kind === 'misi' ? (p.label ?? CATS[p.category].label) : p.kind === 'tolong' ? 'Minta tolong' : 'Laporan' },
+      properties: { id: p.id, kind: p.kind, state: p.state, icon: iconName(p), color: PIN_COLORS[p.kind === 'laporan' ? 'rusak' : p.kind === 'tolong' ? 'bantu' : p.category] ?? '#2c9a4c', label: p.kind === 'misi' ? (p.label ?? CATS[p.category].label) : p.kind === 'tolong' ? 'Minta tolong' : 'Laporan' },
       geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
     })),
   }
@@ -157,10 +173,11 @@ function pinsFC(pins: MapPin[]): GeoJSON.FeatureCollection {
 const backOut = (t: number) => 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2)
 const cubicOut = (t: number) => 1 - Math.pow(1 - t, 3)
 
-function meElement(avatar: number): HTMLElement {
+function meElement(_avatar: number): HTMLElement {
+  // Titik biru GPS seperti aplikasi peta: inti biru berbingkai putih + sorot arah hadap.
   const el = document.createElement('div')
-  el.className = 'me-mk'
-  el.innerHTML = `<div class="me-pulse"></div><div class="me-av">${avatarSvg(avatar)}</div>`
+  el.className = 'gps-dot'
+  el.innerHTML = '<div class="gps-beam"></div><div class="gps-halo"></div><div class="gps-core"></div>'
   return el
 }
 
@@ -193,6 +210,8 @@ export function Map3D({
   followMe = false,
   navigating = false,
   meHeading = null,
+  meAccuracy = null,
+  meFacing = null,
   routeProgress = 0,
   onFollowChange,
   onReady,
@@ -305,21 +324,35 @@ export function Map3D({
       map.addSource('territory', { type: 'geojson', data: EMPTY })
       map.addSource('neighbors', { type: 'geojson', data: EMPTY })
       map.addSource('circle', { type: 'geojson', data: EMPTY })
-      map.addLayer({ id: 'nb-fill', type: 'fill', source: 'neighbors', paint: { 'fill-color': c.ink, 'fill-opacity': 0.05 } }, beforeLabels)
-      map.addLayer({ id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': c.ink, 'fill-opacity': 0.06 } })
+      // Batas wilayah: isian tipis + garis lembut bersudut bulat, seperti batas area di aplikasi peta.
+      map.addLayer({ id: 'nb-fill', type: 'fill', source: 'neighbors', paint: { 'fill-color': c.muted, 'fill-opacity': 0.04 } }, beforeLabels)
+      map.addLayer({ id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': c.ink, 'fill-opacity': 0.035 } }, beforeLabels)
+      map.addLayer({ id: 'terr-fill', type: 'fill', source: 'territory', paint: { 'fill-color': c.accent, 'fill-opacity': 0.05 } }, beforeLabels)
       map.addLayer({
         id: 'nb-line',
         type: 'line',
         source: 'neighbors',
-        paint: { 'line-color': c.muted, 'line-width': 1.6, 'line-dasharray': [3, 2], 'line-opacity': 0.8 },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': c.muted, 'line-width': 1.2, 'line-opacity': 0.45 },
+      })
+      map.addLayer({
+        id: 'terr-glow',
+        type: 'line',
+        source: 'territory',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': c.accent, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 6, 18, 12], 'line-opacity': 0.12, 'line-blur': 2 },
       })
       map.addLayer({
         id: 'terr-line',
         type: 'line',
         source: 'territory',
-        layout: { 'line-join': 'round' },
-        paint: { 'line-color': c.accent, 'line-width': 1.4, 'line-opacity': 0.55, 'line-dasharray': [2.2, 1.4] },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': c.accent, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 1.6, 18, 2.6], 'line-opacity': 0.75 },
       })
+      // lingkaran akurasi GPS
+      map.addSource('me-acc', { type: 'geojson', data: EMPTY })
+      map.addLayer({ id: 'me-acc', type: 'fill', source: 'me-acc', paint: { 'fill-color': c.gps, 'fill-opacity': 0.12 } })
+      map.addLayer({ id: 'me-acc-line', type: 'line', source: 'me-acc', paint: { 'line-color': c.gps, 'line-width': 1, 'line-opacity': 0.35 } })
       map.addLayer({
         id: 'circle-fill',
         type: 'fill',
@@ -347,15 +380,27 @@ export function Map3D({
       const H: unknown = ['coalesce', ['feature-state', 'h'], 0]
       const base: unknown = ['match', ['get', 'kind'], 'misi', 16, 13]
       map.addLayer({ id: 'ripple', type: 'circle', source: 'ripple', paint: { 'circle-radius': 0, 'circle-color': c.ink, 'circle-opacity': 0, 'circle-pitch-alignment': 'map' } })
-      map.addLayer({ id: 'pin-pulse', type: 'circle', source: 'pins', filter: ['==', ['get', 'id'], ''], paint: { 'circle-radius': 0, 'circle-color': c.ink, 'circle-opacity': 0 } })
+      map.addLayer({ id: 'pin-pulse', type: 'circle', source: 'pins', filter: ['==', ['get', 'id'], ''], paint: { 'circle-radius': 0, 'circle-color': ['get', 'color'], 'circle-opacity': 0 } })
+      map.addLayer({
+        id: 'pin-shadow',
+        type: 'circle',
+        source: 'pins',
+        paint: {
+          'circle-radius': ['*', ['coalesce', ['feature-state', 'a'], 0], ['+', ['match', ['get', 'kind'], 'misi', 18, 15], ['*', ['coalesce', ['feature-state', 's'], 0], 6]]],
+          'circle-color': '#000',
+          'circle-opacity': 0.18,
+          'circle-blur': 0.6,
+          'circle-translate': [0, 2],
+        },
+      } as maplibregl.LayerSpecification)
       map.addLayer({
         id: 'pin-disc',
         type: 'circle',
         source: 'pins',
         paint: {
           'circle-radius': ['*', A, ['+', base, ['*', S, 6], ['*', H, 2]]],
-          'circle-color': ['match', ['get', 'state'], 'off', c.ground, c.light],
-          'circle-stroke-color': c.ink,
+          'circle-color': ['match', ['get', 'state'], 'off', c.muted, 'done', c.accent, ['get', 'color']],
+          'circle-stroke-color': c.light,
           'circle-stroke-width': ['+', 2, ['*', S, 2]],
           'circle-stroke-opacity': ['*', A, ['match', ['get', 'state'], 'off', 0.4, 1]],
           'circle-opacity': A,
@@ -461,15 +506,16 @@ export function Map3D({
         for (const [name, value] of Object.entries(layer.paint)) map.setPaintProperty(layer.id, name, value)
       }
       const paints: [string, string, unknown][] = [
-        ['nb-fill', 'fill-color', palette.ink], ['mask', 'fill-color', palette.ink],
+        ['nb-fill', 'fill-color', palette.muted], ['mask', 'fill-color', palette.ink],
         ['nb-line', 'line-color', palette.muted], ['terr-line', 'line-color', palette.accent],
+        ['terr-glow', 'line-color', palette.accent], ['terr-fill', 'fill-color', palette.accent],
+        ['me-acc', 'fill-color', palette.gps], ['me-acc-line', 'line-color', palette.gps],
         ['circle-fill', 'fill-color', ['case', ['get', 'bad'], palette.bad, palette.accent]],
         ['circle-line', 'line-color', ['case', ['get', 'bad'], palette.bad, palette.accent]],
         ['walking-route-halo', 'line-color', palette.light], ['walking-route-line', 'line-color', palette.accent],
         ['walking-gap', 'line-color', palette.accent],
         ['walking-destination-point', 'circle-color', palette.accent], ['walking-destination-point', 'circle-stroke-color', palette.light],
-        ['pin-disc', 'circle-color', ['match', ['get', 'state'], 'off', palette.ground, palette.light]], ['pin-disc', 'circle-stroke-color', palette.ink],
-        ['pin-pulse', 'circle-color', palette.ink], ['ripple', 'circle-color', palette.ink],
+        ['pin-disc', 'circle-color', ['match', ['get', 'state'], 'off', palette.muted, 'done', palette.accent, ['get', 'color']]], ['pin-disc', 'circle-stroke-color', palette.light], ['ripple', 'circle-color', palette.ink],
         ['pin-label', 'text-color', palette.ink], ['pin-label', 'text-halo-color', palette.light],
       ]
       void loadPinImages(map, palette.ink, palette.light)
@@ -661,12 +707,14 @@ export function Map3D({
     const palette = mapPalette()
     const c = territoryBad ? palette.bad : palette.accent
     map.setPaintProperty('terr-line', 'line-color', c)
+    map.setPaintProperty('terr-glow', 'line-color', c)
+    map.setPaintProperty('terr-fill', 'fill-color', c)
   }, [territoryBad])
 
   /* gedung "tumbuh" saat masuk 3D */
   const riseBuildings = () => {
     const map = mapRef.current
-    if (!map?.getLayer('building')) return
+    if (map?.getLayer('building')?.type !== 'fill-extrusion') return
     tween('rise', 900, (t) => {
       const k = 0.08 + 0.92 * backOut(t)
       map.setPaintProperty('building', 'fill-extrusion-height', ['interpolate', ['linear'], ['zoom'], 14, 0, 15.2, ['*', k, ['coalesce', ['get', 'render_height'], 6]]])
@@ -677,6 +725,7 @@ export function Map3D({
   const applyPins = () => {
     const map = mapRef.current
     if (!map || !pinsReady.current) return
+    PIN_COLORS = catColors()
     const list = latest.current.pins
     ;(map.getSource('pins') as GeoJSONSource | undefined)?.setData(pinsFC(list))
     const ids = new Set(list.map((p) => p.id))
@@ -745,7 +794,7 @@ export function Map3D({
       return
     }
     if (!meMk.current) {
-      meMk.current = new maplibregl.Marker({ element: meElement(meAvatar), anchor: 'center', pitchAlignment: 'viewport' }).setLngLat([me.lng, me.lat]).addTo(map)
+      meMk.current = new maplibregl.Marker({ element: meElement(meAvatar), anchor: 'center', pitchAlignment: 'map', rotationAlignment: 'map' }).setLngLat([me.lng, me.lat]).addTo(map)
       navMk.current?.setLngLat([me.lng, me.lat])
       return
     }
@@ -770,12 +819,27 @@ export function Map3D({
     meAnim.current = requestAnimationFrame(step)
   }, [me?.lat, me?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* sorot arah hadap titik biru (kompas HP / arah gerak) */
   useEffect(() => {
     const mk = meMk.current
     if (!mk) return
-    const elem = mk.getElement()
-    elem.innerHTML = meElement(meAvatar).innerHTML
-  }, [meAvatar])
+    const el = mk.getElement()
+    el.classList.toggle('has-heading', meFacing !== null && meFacing !== undefined)
+    if (meFacing !== null && meFacing !== undefined) mk.setRotation(meFacing)
+  }, [meFacing, !!me]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* lingkaran akurasi */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loaded.current) return
+    const src = map.getSource('me-acc') as GeoJSONSource | undefined
+    if (!src) return
+    if (!me || !meAccuracy || meAccuracy < 6 || meAccuracy > 2000 || navigating) {
+      src.setData(EMPTY)
+      return
+    }
+    src.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [close(circleRing(me, meAccuracy, 48))] } }] })
+  }, [me?.lat, me?.lng, meAccuracy, navigating]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* 2D ↔ 3D */
   const firstTilt = useRef(true)

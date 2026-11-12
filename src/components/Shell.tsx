@@ -83,7 +83,7 @@ export function Shell({ children }: { children: ReactNode }) {
       {/* rel kiri — layar lebar */}
       <aside className="app-rail hidden w-[208px] flex-none flex-col bg-card lg:flex">
         <div className="px-6 pb-6 pt-8">
-          <button type="button" aria-label="Kompack, ke peta" onClick={() => nav('/')}><Logo size={31} /></button>
+          <button type="button" aria-label="Kompack, ke peta" onClick={() => nav('/')}><Logo size={28} /></button>
           <div className="mt-4">
             <span className="text-[0.9rem] text-ink-3">
               {group?.name ?? 'RT'}, {group?.rw}

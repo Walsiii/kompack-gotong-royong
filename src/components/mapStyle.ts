@@ -41,6 +41,10 @@ export function mapPalette() {
     accent: read('rompi', 'ink'),
     soft: read('accent-soft', 'paper'),
     bad: read('bad', 'ink'),
+    gps: read('gps', 'ink'),
+    major: read('map-major', 'card'),
+    majorEdge: read('map-major-edge', 'line'),
+    road: read('map-road', 'card'),
   }
 }
 
@@ -109,7 +113,7 @@ export function kompackStyle(): StyleSpecification {
         filter: ['in', ['get', 'class'], ['literal', [...MINOR, ...MID, ...MAJOR]]],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': c.edge,
+          'line-color': ['match', ['get', 'class'], MAJOR, c.majorEdge, c.edge],
           'line-width': byClass([5, 30], [4, 24], [2.4, 15]),
         },
       },
@@ -121,33 +125,18 @@ export function kompackStyle(): StyleSpecification {
         filter: ['in', ['get', 'class'], ['literal', [...MINOR, ...MID, ...MAJOR]]],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': ['match', ['get', 'class'], MAJOR, c.light, c.light],
+          'line-color': ['match', ['get', 'class'], MAJOR, c.major, c.road],
           'line-width': byClass([3.6, 26], [2.8, 20], [1.4, 12]),
         },
       },
       {
+        // gedung datar seperti Google Maps (tanpa 3D)
         id: 'building',
-        type: 'fill-extrusion',
+        type: 'fill',
         source: 'ofm',
         'source-layer': 'building',
-        minzoom: 14,
-        paint: {
-          'fill-extrusion-color': [
-            'interpolate',
-            ['linear'],
-            ['coalesce', ['get', 'render_height'], 6],
-            0,
-            c.building,
-            10,
-            c.building,
-            30,
-            c.muted,
-          ],
-          'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.2, ['coalesce', ['get', 'render_height'], 6]],
-          'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-          'fill-extrusion-opacity': 0.94,
-          'fill-extrusion-vertical-gradient': true,
-        },
+        minzoom: 14.5,
+        paint: { 'fill-color': c.building, 'fill-outline-color': c.edge, 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 14.5, 0, 15.5, 1] },
       },
       {
         id: 'street-name',

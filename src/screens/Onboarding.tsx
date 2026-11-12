@@ -170,7 +170,7 @@ export function Onboarding() {
                     <Button full disabled={!!busy} aria-busy={busy === 'gps'} onClick={() => finish('gps')}><LocateFixed size={19} /> {busy === 'gps' ? 'Mencari lokasimu…' : 'Pakai lokasiku (GPS)'}</Button>
                     <Button full tone="ghost" disabled={!!busy} aria-busy={busy === 'uji'} onClick={() => finish('uji')}><FlaskConical size={19} /> {busy === 'uji' ? 'Menyiapkan…' : 'Coba di PC (mode uji)'}</Button>
                   </div>
-                  <p className="welcome-helper">Mode uji: posisi dipindah dengan mengetuk peta dan boleh memakai foto contoh. Semua hasilnya ditandai.</p>
+                  <p className="welcome-helper">Mode uji: lokasi tetap dari GPS, tapi boleh memakai foto contoh dan posisi uji lewat tombol. Semua hasilnya ditandai.</p>
                 </>}
               </motion.section>
             </AnimatePresence>

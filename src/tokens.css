@@ -1,6 +1,7 @@
 /* Hallmark · theme: custom (by request) · surface: absolute · scope: app */
 :root {
   color-scheme: light;
+  /* Kampung cerah: hijau kompak untuk aksi, kuning matahari untuk poin, koral untuk api streak & laporan. */
   --theme-ink: #171717;
   --theme-ink-2: #454545;
   --theme-ink-3: #646464;
@@ -15,19 +16,37 @@
   --theme-ok: #343434;
   --theme-warn: #484848;
   --theme-bad: #171717;
+  --theme-sun: #ffc23d;
+  --theme-sun-ink: #6b4a00;
+  --theme-coral: #ff6b4a;
+  --theme-gps: #1a73e8;
+  /* warna kategori misi: kuat untuk penanda peta, lembut untuk ubin ikon */
+  --cat-sampah: #e0820b;
+  --cat-sampah-soft: #fff0d9;
+  --cat-got: #1c82c4;
+  --cat-got-soft: #e0f0fa;
+  --cat-rusak: #c0503a;
+  --cat-rusak-soft: #fbe7e2;
+  --cat-taman: #2c9a4c;
+  --cat-taman-soft: #e1f4e6;
+  --cat-bantu: #d4447a;
+  --cat-bantu-soft: #fce5ee;
   --theme-overlay: rgb(0 0 0 / 0.48);
   --theme-evidence-band: rgb(0 0 0 / 0.82);
   --theme-shadow: rgb(0 0 0 / 0.09);
-  --theme-map-land: #eaeaea;
+  /* peta: palet yang sudah akrab dari aplikasi peta */
+  --theme-map-land: #f1f3ee;
   --theme-map-road: #ffffff;
-  --theme-map-building: #d5d5d5;
-  --theme-map-water: #d2d2d2;
-  --theme-map-green: #e1e1e1;
-  --theme-avatar-light: #ededed;
-  --theme-avatar-mid: #c3c3c3;
-  --theme-avatar-deep: #929292;
-  --theme-forest-swatch: #224e3a;
-  --theme-sunset-swatch: #963a24;
+  --theme-map-major: #fde8a6;
+  --theme-map-major-edge: #efc75b;
+  --theme-map-building: #e5e8e2;
+  --theme-map-water: #a8d2f3;
+  --theme-map-green: #cdeac6;
+  --theme-avatar-light: #e9f0eb;
+  --theme-avatar-mid: #bcd2c4;
+  --theme-avatar-deep: #86a796;
+  --theme-forest-swatch: #0e8a5f;
+  --theme-sunset-swatch: #1f6fd1;
   --font-body: 'Public Sans Variable', sans-serif;
   --font-display: 'Public Sans Variable', sans-serif;
   --font-mono: 'Public Sans Variable', sans-serif;
@@ -48,6 +67,12 @@
   --color-map-water: var(--theme-map-water);
   --color-map-green: var(--theme-map-green);
   --color-forest-swatch: var(--theme-forest-swatch);
+  --color-sun: var(--theme-sun);
+  --color-sun-ink: var(--theme-sun-ink);
+  --color-coral: var(--theme-coral);
+  --color-gps: var(--theme-gps);
+  --color-map-major: var(--theme-map-major);
+  --color-map-major-edge: var(--theme-map-major-edge);
   --color-sunset-swatch: var(--theme-sunset-swatch);
   --radius-panel: 20px;
   --radius-control: 12px;
@@ -57,16 +82,16 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-:root[data-theme='forest'] {
-  --theme-accent: #224e3a;
-  --theme-accent-hover: #163a29;
-  --theme-accent-soft: #e7efe9;
-  --theme-ok: #224e3a;
+:root[data-theme='laut'] {
+  --theme-accent: #1f6fd1;
+  --theme-accent-hover: #1858a8;
+  --theme-accent-soft: #e2edfb;
+  --theme-ok: #1f6fd1;
 }
 
-:root[data-theme='sunset'] {
-  --theme-accent: #963a24;
-  --theme-accent-hover: #762915;
-  --theme-accent-soft: #f5e8e1;
-  --theme-ok: #963a24;
+:root[data-theme='kampung'] {
+  --theme-accent: #0e8a5f;
+  --theme-accent-hover: #0a7450;
+  --theme-accent-soft: #dcf2e7;
+  --theme-ok: #0e8a5f;
 }

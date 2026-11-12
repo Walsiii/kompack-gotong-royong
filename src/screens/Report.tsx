@@ -4,8 +4,9 @@ import { Camera as CamIcon, Check, MapPin, RotateCcw, Send, ShieldCheck, X } fro
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { Camera } from '../components/Camera'
 import { Map3D } from '../components/Map3D'
-import { CatIcon } from '../components/art'
-import { Button, Note, Segmented, TopBar, toast } from '../components/ui'
+import { CatTile } from '../components/art'
+import { BuddyTip } from '../components/KampungBuddy'
+import { Button, Segmented, TopBar, toast } from '../components/ui'
 import { CATS, REPORT_CATS, RULES } from '../lib/catalog'
 import { DEFAULT_HOME, pointInRing } from '../lib/geo'
 import { validateFix } from '../lib/integrity'
@@ -84,9 +85,7 @@ export function Report() {
               <div className="flex flex-wrap gap-2">
                 {REPORT_CATS.map((c) => (
                   <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className="chip !py-2">
-                    <span className="grid h-5 w-5 place-items-center rounded-md" style={{ background: 'var(--color-accent-soft)' }}>
-                      <CatIcon cat={c} size={14} />
-                    </span>
+                    <CatTile cat={c} size={22} />
                     {CATS[c].label}
                   </button>
                 ))}
@@ -156,9 +155,9 @@ export function Report() {
             <input id="r-place" className="field" maxLength={60} placeholder="mis. Depan warung Bu Tini" value={place} onChange={(e) => setPlace(e.target.value)} />
           </div>
 
-          <Note tone="info">
-            Ketua RT memeriksa dulu. Kalau diterima, ini jadi misi untuk warga lain dan kamu dapat +{RULES.reporterBonus} poin pelapor. Kamu tidak bisa mengerjakan misi dari {kind === 'tolong' ? 'permintaanmu' : 'laporanmu'} sendiri.
-          </Note>
+          <BuddyTip key={CATS[category].buddy} who={CATS[category].buddy}>
+            Ketua RT memeriksa dulu. Kalau diterima, ini jadi misi untuk warga lain dan kamu dapat <b>+{RULES.reporterBonus} poin</b> pelapor. Kamu tidak bisa mengerjakan misi dari {kind === 'tolong' ? 'permintaanmu' : 'laporanmu'} sendiri.
+          </BuddyTip>
 
           <div>
             <Button full disabled={problems.length > 0 || !inside} onClick={send}>

@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ChevronsUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { nextRank, rankOf, rankProgress } from '../lib/catalog'
+import { CATS, nextRank, rankOf, rankProgress } from '../lib/catalog'
 import { ME, pointsOf, useSnap, useStore } from '../lib/store'
 import { Coin } from './art'
+import { Character } from './KampungBuddy'
 import { Button, RollingNumber } from './ui'
 import './welcome.css'
 import './celebration.css'
@@ -26,11 +27,12 @@ export function Celebration() {
   const total = pointsOf(snap, ME)
   const live = useMemo(() => {
     const gained = fresh.reduce((t, s) => t + (s.awarded ?? 0), 0)
-    return { gained, total, before: total - gained, title: snap.quests.find((q) => q.id === fresh[0]?.questId)?.title, n: fresh.length }
+    const quest = snap.quests.find((q) => q.id === fresh[0]?.questId)
+    return { gained, total, before: total - gained, title: quest?.title, who: quest ? CATS[quest.category].buddy : ('kompi' as const), n: fresh.length }
   }, [fresh, total, snap.quests])
   const kept = useRef(live)
   if (open) kept.current = live
-  const { gained, before, title, n } = kept.current
+  const { gained, before, title, who, n } = kept.current
   const after = kept.current.total
   const rankBefore = rankOf(before)
   const rankAfter = rankOf(after)
@@ -110,19 +112,21 @@ export function Celebration() {
           }}
         >
           <div className="cel">
-            {/* cap disetujui */}
+            {/* karakter girang + cap disetujui */}
+            <div className="cel-hero">
+              <Character who={who} mood={phase >= 1 ? 'celebrate' : 'ready'} className="cel-char" />
             <motion.div
               className="cel-stamp"
               initial={reduced ? false : { scale: 2.2, opacity: 0, rotate: -18 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 17, delay: 0.1 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 17, delay: 0.55 }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <motion.path d="M5 12.5l4.5 4.5L19 7.5" initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.38, delay: 0.32, ease: EASE }} />
+                <motion.path d="M5 12.5l4.5 4.5L19 7.5" initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.38, delay: 0.78, ease: EASE }} />
               </svg>
               {!reduced && (
                 <>
-                  <motion.span className="cel-ring" initial={{ scale: 1, opacity: 0.5 }} animate={{ scale: 1.9, opacity: 0 }} transition={{ duration: 0.7, delay: 0.28, ease: EASE }} />
+                  <motion.span className="cel-ring" initial={{ scale: 1, opacity: 0.5 }} animate={{ scale: 1.9, opacity: 0 }} transition={{ duration: 0.7, delay: 0.74, ease: EASE }} />
                   <span className="cel-ticks" aria-hidden="true">
                     {Array.from({ length: 10 }, (_, i) => {
                       const ang = (i / 10) * Math.PI * 2
@@ -130,9 +134,9 @@ export function Celebration() {
                         <motion.span
                           key={i}
                           style={{ rotate: `${(ang * 180) / Math.PI + 90}deg` }}
-                          initial={{ x: Math.cos(ang) * 52, y: Math.sin(ang) * 52, opacity: 0, scaleY: 0.4 }}
-                          animate={{ x: Math.cos(ang) * 84, y: Math.sin(ang) * 84, opacity: [0, 1, 0], scaleY: [0.4, 1, 0.2] }}
-                          transition={{ duration: 0.55, delay: 0.3 + i * 0.012, ease: EASE }}
+                          initial={{ x: Math.cos(ang) * 34, y: Math.sin(ang) * 34, opacity: 0, scaleY: 0.4 }}
+                          animate={{ x: Math.cos(ang) * 56, y: Math.sin(ang) * 56, opacity: [0, 1, 0], scaleY: [0.4, 1, 0.2] }}
+                          transition={{ duration: 0.55, delay: 0.76 + i * 0.012, ease: EASE }}
                         />
                       )
                     })}
@@ -140,6 +144,7 @@ export function Celebration() {
                 </>
               )}
             </motion.div>
+            </div>
 
             <motion.h2 className="cel-title" initial={reduced ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35, ease: EASE }}>
               Disetujui Ketua RT

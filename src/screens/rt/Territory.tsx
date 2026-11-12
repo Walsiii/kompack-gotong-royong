@@ -115,16 +115,16 @@ export function Territory() {
                 Batas sah: tidak menimpa RT tetangga dan semua misi aktif masih di dalam.
               </Note>
             )}
-            <div className="mt-3 flex gap-2">
-              <Button tone="soft" small disabled={sel === null || ring.length <= 3} onClick={() => (setRing((r) => r.filter((_, i) => i !== sel)), setSel(null))}>
-                <Trash2 size={15} /> Hapus titik
+            <div className="mt-3 grid grid-cols-2 gap-2 min-[420px]:flex">
+              <Button tone="soft" small className="min-w-0" disabled={sel === null || ring.length <= 3} onClick={() => (setRing((r) => r.filter((_, i) => i !== sel)), setSel(null))}>
+                <Trash2 size={15} className="flex-none" /> Hapus titik
               </Button>
-              <Button tone="soft" small onClick={() => (setRing(group.territory), setSel(null))}>
-                <RotateCcw size={15} /> Batal ubah
+              <Button tone="soft" small className="min-w-0" onClick={() => (setRing(group.territory), setSel(null))}>
+                <RotateCcw size={15} className="flex-none" /> Batal ubah
               </Button>
               <Button
                 small
-                className="ml-auto"
+                className="col-span-2 min-[420px]:ml-auto"
                 disabled={!!problem}
                 onClick={async () => {
                   const r = await save(group.id, ring)

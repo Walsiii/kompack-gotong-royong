@@ -6,7 +6,11 @@ Kerja bakti jadi misi di peta lingkunganmu. Purwarupa hackathon tim **Batak Inte
 |---|---|---|
 | ![](docs/ui-welcome.png) | ![](docs/ui-map.png) | ![](docs/ui-review.png) |
 
-Tampilan bawaan hitam-putih dengan Public Sans; aksen Hutan/Senja bisa dipilih di **Aku → Pengaturan**. Screenshot peta di atas diambil saat server ubin terblokir oleh jaringan cloud, sehingga jalan belum terlihat. Aplikasi memakai data geografis OpenFreeMap/OpenStreetMap.
+Tampilan bawaan hitam-putih dengan Public Sans; aksen Kampung (hijau) / Laut (biru) bisa dipilih di **Aku → Pengaturan**. Warna hanya ada di isi: peta 2D berwarna ala Google Maps, titik GPS biru, dan satu warna per kategori misi.
+
+**Warga Kompack!** — keluarga karakter hitam-putih ala Duolingo. **Kompi** (maskot utama, ikat kepala kerja bakti) ada di logo, ikon aplikasi, dan pendaftaran. **Resik** (kebersihan), **Tunas** (taman), dan **Asih** (bantuan) memberi saran di halaman misi/lapor dan ikut girang saat setoranmu disetujui. **Jaga** khusus ronda malam: menyapa di Pos Ronda dan saat aplikasi dibuka malam hari. Semua karakter bisa diketuk dan melambai balik.
+
+**Pekan beruntun & target pekanan:** dihitung hanya dari aksi yang sudah diterima Ketua RT, jadi tidak bisa dipancing sendiri. Tampil di chip poin peta dan halaman **Aku**. Screenshot peta di atas memakai data jalan sintetis karena server ubin terblokir di jaringan cloud; aplikasi sungguhan memakai data geografis OpenFreeMap/OpenStreetMap.
 
 ## Cara mencoba
 
@@ -18,7 +22,7 @@ Tampilan bawaan hitam-putih dengan Public Sans; aksen Hutan/Senja bisa dipilih d
 | **Web / PC** | Node ≥22.12; `npm ci` lalu `npm run dev` → buka http://localhost:5173 |
 | **Desktop (Rust/Tauri)** | `npm run desktop:dev` atau `npm run desktop:build` (butuh Rust; di Linux juga `libwebkit2gtk-4.1-dev`) |
 
-Di PC pilih **"Coba di PC (mode uji)"** saat pendaftaran: posisi dipindah dengan mengetuk peta, foto contoh boleh dipakai bila tak ada webcam, dan waktu tunggu bisa dilewati. Semua setoran mode uji ditandai untuk Ketua RT.
+Di PC pilih **"Coba di PC (mode uji)"** saat pendaftaran: posisi tetap memakai GPS (atau titik rumah bila tidak ada GPS); mengetuk peta tidak memindahkan posisimu. Untuk mencoba tanpa berjalan, pakai **Jalan otomatis** saat navigasi atau **pindah ke lokasi misi** di halaman misi. Foto contoh boleh dipakai bila tak ada webcam, dan waktu tunggu bisa dilewati. Semua setoran mode uji ditandai untuk Ketua RT.
 
 Untuk mencoba sisi Ketua RT: **Aku → Masuk sebagai Ketua RT** (akun demo Pak Hendra). Buka dua jendela browser untuk melihat warga dan RT berjalan bersamaan.
 
@@ -74,11 +78,11 @@ Aturannya ada di `src/lib/integrity.ts` dan `src/lib/store.ts`.
 
 ## Teknologi
 
-React 19 + Vite + TypeScript · MapLibre GL (peta vektor 3D, ubin OpenFreeMap, cadangan otomatis ke ubin OpenStreetMap) · Zustand + IndexedDB · Motion · Capacitor 8 (Android) · Tauri 2 / Rust (desktop) · PWA.
+React 19 + Vite + TypeScript · MapLibre GL (peta vektor 2D ala Google Maps, ubin OpenFreeMap, cadangan otomatis ke ubin OpenStreetMap) · Zustand + IndexedDB · Motion · Capacitor 8 (Android) · Tauri 2 / Rust (desktop) · PWA.
 
 ```
 src/lib/         data, aturan, geometri wilayah, anti-curang
-src/components/  peta 3D, kamera bukti, tombol tahan, UI
+src/components/  peta 2D, karakter (KampungBuddy), kamera bukti, tombol tahan, UI
 src/screens/     peta, misi, lapor, pos ronda, klasemen, aku, rt/*
 android/         proyek Capacitor + IntegrityPlugin.java
 src-tauri/       pembungkus desktop Rust

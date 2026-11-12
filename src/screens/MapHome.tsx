@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useDragControls } from 'motion/react'
-import { Box, ChevronDown, ChevronUp, Clock3, Compass, Eye, Search, X, MapPin as PinIcon, MapPinned, Navigation, Square, Users, Plus, Minus } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock3, Compass, Eye, Flame, Search, X, MapPin as PinIcon, MapPinned, Navigation, Users, Plus, Minus } from 'lucide-react'
 import type { Map as MLMap } from 'maplibre-gl'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Map3D, type MapPin, type Neighbor } from '../components/Map3D'
@@ -8,9 +8,11 @@ import { Avatar, CatTile, Coin } from '../components/art'
 import { Button, Points, RollingNumber, Segmented, toast, useIsWide } from '../components/ui'
 import { CATS } from '../lib/catalog'
 import { DEFAULT_HOME, distM, fmtDist, ringCenter } from '../lib/geo'
-import { useGeo, useMyPos } from '../lib/location'
+import { useGeo, useMyPos, useTestPos } from '../lib/location'
 import { useOpenReports, useQuestViews, type QuestView } from '../lib/quests'
-import { activeSubOf, personById, useIsRT, useMe, useMyGroup, usePoints, useStore } from '../lib/store'
+import { activeSubOf, personById, useIsRT, useMe, useMyGroup, usePoints, useSnap, useStore } from '../lib/store'
+import { streakOf } from '../lib/streak'
+import { MapGreeting } from '../components/MapGreeting'
 import { fmtAgo, fmtWindow, phaseLabel, useNow } from '../lib/time'
 import { useWalkingRoute, type RoadSource } from '../lib/routing'
 import type { RoadLine } from '../lib/localRoute'
@@ -22,7 +24,6 @@ import '../components/map-redesign.css'
 
 /* kamera & animasi pembuka diingat selama aplikasi terbuka */
 let introDone = false
-let tilt = false
 
 type Item = { key: string; type: 'misi'; view: QuestView } | { key: string; type: 'post'; post: Post; dist: number | null }
 
@@ -39,9 +40,8 @@ export function MapHome() {
   const quests = useStore((s) => s.quests)
   const home = useStore((s) => s.home) ?? DEFAULT_HOME
   const testMode = useStore((s) => s.testMode)
-  const setSimPos = useStore((s) => s.setSimPos)
   const toggleWitness = useStore((s) => s.toggleWitness)
-  const { pos, acc, status, retry } = useMyPos()
+  const { pos, acc, heading: facing, status, retry } = useMyPos()
   const gpsTimestamp = useGeo((s) => s.at)
   const mapApi = useRef<MLMap | null>(null)
   const [mapReady, setMapReady] = useState(false)
@@ -63,7 +63,7 @@ export function MapHome() {
   const normalizedQuery = query.trim().toLocaleLowerCase('id-ID')
   const filteredViews = useMemo(() => views.filter(({ misi: q }) => (category === 'all' || q.category === category) && [q.title, q.desc, q.place, CATS[q.category].label].some((value) => value.toLocaleLowerCase('id-ID').includes(normalizedQuery))), [views, category, normalizedQuery])
   const filteredReports = useMemo(() => reports.filter((p) => (category === 'all' || (p.category ?? (p.kind === 'tolong' ? 'bantu' : 'sampah')) === category) && [p.text, p.place ?? '', personById(users, p.authorId)?.name ?? '', CATS[p.category ?? (p.kind === 'tolong' ? 'bantu' : 'sampah')].label].some((value) => value.toLocaleLowerCase('id-ID').includes(normalizedQuery))), [reports, users, category, normalizedQuery])
-  const [threeD, setThreeD] = useState(tilt)
+  const threeD = false
   const [selected, setSelected] = useState<string | null>(null)
   const [focus, setFocus] = useState<{ lat: number; lng: number; key: number } | null>(null)
   const [expanded, setExpanded] = useState(Boolean(params.get('q')?.trim()))
@@ -72,9 +72,6 @@ export function MapHome() {
   useEffect(() => {
     introDone = true
   }, [])
-  useEffect(() => {
-    tilt = threeD
-  }, [threeD])
 
   const items: Item[] = useMemo(() => {
     const q: Item[] = filteredViews.map((v) => ({ key: `q:${v.misi.id}`, type: 'misi', view: v }))
@@ -157,6 +154,18 @@ export function MapHome() {
   const sel = items.find((i) => i.key === selected) ?? null
   const active = me ? activeSubOf(subs, me.id) : undefined
   const activeQuest = active && quests.find((q) => q.id === active.questId)
+  const snap = useSnap()
+  const streak = useMemo(() => (me ? streakOf(snap, me.id, now) : null), [snap, me, now])
+  const greetLine = useMemo(() => {
+    if (activeQuest) return `Misimu belum selesai: ${activeQuest.title}.`
+    if (streak && streak.weeks > 0 && !streak.thisWeek) return `${streak.weeks} pekan beruntun! Satu misi pekan ini biar tetap menyala.`
+    const open = views.filter((v) => v.phase === 'live' && !v.own && !v.mySub && !v.full)
+    if (open.length) {
+      const near = [...open].sort((a, b) => (a.dist ?? 1e9) - (b.dist ?? 1e9))[0]
+      return `${open.length} misi terbuka di ${group?.name ?? 'wilayahmu'}. Terdekat: ${near.misi.title}${near.dist !== null ? `, ${fmtDist(near.dist)}` : ''}.`
+    }
+    return 'Belum ada misi terbuka. Lihat laporan warga, siapa tahu ada yang bisa dibantu.'
+  }, [activeQuest, streak, views, group])
   const selQuest = sel?.type === 'misi' ? sel.view.misi : null
   const navigationTarget = useMemo(() => selQuest ? { id: selQuest.id, title: selQuest.title, lat: selQuest.lat, lng: selQuest.lng, radius: selQuest.radius } : null, [selQuest?.id, selQuest?.title, selQuest?.lat, selQuest?.lng, selQuest?.radius])
   /* data jalan dari ubin peta yang sudah termuat, untuk rute di perangkat */
@@ -213,10 +222,10 @@ export function MapHome() {
       const f = (walked - cum[i - 1]) / Math.max(0.01, cum[i] - cum[i - 1])
       const a = coords[i - 1]
       const b = coords[i]
-      useStore.getState().setSimPos({ lng: a[0] + (b[0] - a[0]) * f, lat: a[1] + (b[1] - a[1]) * f })
+      useTestPos.getState().set({ lng: a[0] + (b[0] - a[0]) * f, lat: a[1] + (b[1] - a[1]) * f })
       if (walked >= cum[cum.length - 1]) {
         const t = navigationTarget
-        if (t) useStore.getState().setSimPos({ lat: t.lat, lng: t.lng })
+        if (t) useTestPos.getState().set({ lat: t.lat, lng: t.lng })
         window.clearInterval(id)
       }
     }, 400)
@@ -243,9 +252,8 @@ export function MapHome() {
   }
   const center = useMemo(() => (group?.territory.length ? ringCenter(group.territory) : home), [group?.territory, home])
 
-  const onMapClick = (p: { lat: number; lng: number }) => {
-    if (testMode && !rt) setSimPos(p)
-  }
+  // Mengetuk peta hanya memilih penanda; posisimu selalu dari GPS.
+  const onMapClick = undefined
 
   /* ───── isi panel ───── */
 
@@ -359,14 +367,15 @@ export function MapHome() {
         <p>{rt ? 'Ketua RT' : `${points.total} poin`}</p>
         <button type="button" onClick={() => nav('/aku')}>Profil dan pengaturan</button>
         <button type="button" onClick={() => nav('/grup')}>{group?.name}, {group?.rw}</button>
-        {testMode && !rt && <p>Mode uji. Ketuk peta untuk memindahkan posisi. Bukti tetap ditandai sebagai percobaan.</p>}
+        {testMode && !rt && <p>Mode uji. Posisi tetap dari GPS; tombol jalan otomatis ada saat navigasi. Bukti ditandai sebagai percobaan.</p>}
         {activeQuest && !rt && <button type="button" onClick={() => nav(`/misi/${activeQuest.id}`)}>Lanjutkan: {activeQuest.title}</button>}
         {!testMode && !rt && status !== 'ok' && <button type="button" onClick={retry}>{status === 'locating' ? 'Mencari GPS…' : 'Coba lokasi lagi'}</button>}
       </div>
     </details>
   )
   const pointsHud = me && !rt ? (
-    <span className="map-points" aria-label={`${points.total} poin`}>
+    <span className="map-points" aria-label={`${points.total} poin${streak?.weeks ? `, ${streak.weeks} pekan beruntun` : ''}`}>
+      {!!streak?.weeks && <span className="map-streak"><Flame size={15} strokeWidth={2.4} aria-hidden="true" />{streak.weeks}</span>}
       <Coin size={16} />
       <RollingNumber value={points.total} />
     </span>
@@ -418,6 +427,8 @@ export function MapHome() {
         followMe={following && navActive}
         navigating={navActive && walking.status === 'ready'}
         meHeading={navActive && walking.status === 'ready' ? walking.heading : null}
+        meAccuracy={acc}
+        meFacing={facing}
         routeProgress={walking.progressFraction}
         onFollowChange={setFollowing}
         onReady={(map) => { mapApi.current = map; setMapReady(true) }}
@@ -455,18 +466,16 @@ export function MapHome() {
 
       </div>
 
+      {me && !rt && (
+        <MapGreeting
+          hour={new Date(now).getHours()}
+          name={me.name}
+          line={greetLine}
+          style={wide ? { left: 404, bottom: 28, right: 'auto' } : { left: 12, right: 72, bottom: `calc(var(--nav-h) + var(--safe-b) + ${peek + 12}px)` }}
+        />
+      )}
+
       <div className="map-tools" role="group" aria-label="Kendali peta" style={{ bottom: wide ? 32 : `calc(var(--nav-h) + var(--safe-b) + ${peek + 16}px)` }}>
-        <motion.button
-          type="button"
-          onClick={() => setThreeD((t) => !t)}
-          whileTap={{ scale: 0.94 }}
-          className="map-tool"
-          aria-label={threeD ? 'Lihat peta 2D' : 'Lihat peta 3D'}
-          aria-pressed={threeD}
-        >
-          {threeD ? <Box size={20} aria-hidden="true" /> : <Square size={19} aria-hidden="true" />}
-          <span>{threeD ? '3D' : '2D'}</span>
-        </motion.button>
         <motion.button
           type="button"
           whileTap={{ scale: 0.94 }}
@@ -477,7 +486,7 @@ export function MapHome() {
         <button type="button" className="map-tool" aria-label="Perbesar peta" disabled={!mapReady} onClick={() => mapApi.current?.zoomIn({ duration: 180 })}><Plus size={20} aria-hidden="true" /></button>
         <button type="button" className="map-tool" aria-label="Perkecil peta" disabled={!mapReady} onClick={() => mapApi.current?.zoomOut({ duration: 180 })}><Minus size={20} aria-hidden="true" /></button>
         <AnimatePresence>
-          {Math.abs(bearing) > 2 && !threeD && (
+          {Math.abs(bearing) > 2 && (
             <motion.button
               key="compass"
               type="button"
