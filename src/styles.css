@@ -632,3 +632,9 @@ summary:active { transform: translateY(1px); }
 .camera-screen > div:last-child > div > button { min-height: 44px; }
 
 .nb-label { background: var(--color-card); color: var(--color-ink-2); border: 1px solid var(--color-line); font-size: 14px; }
+
+/* angka bergulir (odometer) */
+.roll { display: inline-flex; line-height: 1; }
+.roll-col { display: inline-block; height: 1em; overflow: hidden; }
+.roll-strip { display: flex; flex-direction: column; will-change: transform; }
+.roll-strip > span { display: block; height: 1em; line-height: 1; text-align: center; }

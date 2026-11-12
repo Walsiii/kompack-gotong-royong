@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useDragControls } from 'motion/react'
-import { Box, ChevronDown, ChevronUp, Clock3, Eye, Search, X, MapPin as PinIcon, MapPinned, Navigation, Square, Users, Plus, Minus } from 'lucide-react'
+import { Box, ChevronDown, ChevronUp, Clock3, Compass, Eye, Search, X, MapPin as PinIcon, MapPinned, Navigation, Square, Users, Plus, Minus } from 'lucide-react'
 import type { Map as MLMap } from 'maplibre-gl'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Map3D, type MapPin, type Neighbor } from '../components/Map3D'
-import { Avatar, CatTile } from '../components/art'
-import { Button, Points, Segmented, toast, useIsWide } from '../components/ui'
+import { Avatar, CatTile, Coin } from '../components/art'
+import { Button, Points, RollingNumber, Segmented, toast, useIsWide } from '../components/ui'
 import { CATS } from '../lib/catalog'
 import { DEFAULT_HOME, distM, fmtDist, ringCenter } from '../lib/geo'
 import { useGeo, useMyPos } from '../lib/location'
@@ -43,6 +43,7 @@ export function MapHome() {
   const mapApi = useRef<MLMap | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [following, setFollowing] = useState(false)
+  const [bearing, setBearing] = useState(0)
   const points = usePoints(me?.id)
   const views = useQuestViews(now)
   const reports = useOpenReports()
@@ -212,11 +213,15 @@ export function MapHome() {
           {(normalizedQuery || category !== 'all') && <Button tone="soft" className="mt-4" onClick={() => { setQuery(''); setCategory('all'); setQueryScope('all') }}>Tampilkan semua</Button>}
         </div>
       )}
-      {listed.map((it) => {
+      {listed.map((it, index) => {
         const on = it.key === selected
         return (
-          <button
+          <motion.button
             key={it.key}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: Math.min(index, 8) * 0.035, ease: [0.22, 1, 0.36, 1] }}
+            whileTap={{ scale: 0.985 }}
             type="button"
             onClick={() => pick(it.key)}
             aria-pressed={on}
@@ -249,7 +254,7 @@ export function MapHome() {
                 <span className="map-witness-count"><Eye size={16} aria-hidden="true" /> {it.post.witnesses?.length ?? 0}</span>
               </>
             )}
-          </button>
+          </motion.button>
         )
       })}
     </div>
@@ -288,6 +293,12 @@ export function MapHome() {
       </div>
     </details>
   )
+  const pointsHud = me && !rt ? (
+    <span className="map-points" aria-label={`${points.total} poin`}>
+      <Coin size={16} />
+      <RollingNumber value={points.total} />
+    </span>
+  ) : null
   const navigationCard = walking.active && selQuest ? <WalkingNavigation navigation={walking} targetTitle={selQuest.title} onRecenter={recenter} positionAccuracyM={acc} simulated={testMode} onOpenMission={() => nav(`/misi/${selQuest.id}`)} /> : null
 
   const searchControl = (
@@ -295,6 +306,7 @@ export function MapHome() {
       <Search size={22} aria-hidden="true" />
       <input type="search" aria-label="Cari misi atau laporan" placeholder="Cari misi atau laporan" value={query} onChange={(e) => { setQuery(e.target.value); setQueryScope('all'); if (e.target.value.trim()) setExpanded(true) }} autoComplete="off" />
       {query && <button type="button" onClick={() => { setQuery(''); setQueryScope('all') }} aria-label="Hapus pencarian"><X size={20} aria-hidden="true" /></button>}
+      {!wide && pointsHud}
       {!wide && avatarMenu}
     </div>
   )
@@ -335,6 +347,8 @@ export function MapHome() {
         followMe={following && walking.active}
         onFollowChange={setFollowing}
         onReady={(map) => { mapApi.current = map; setMapReady(true) }}
+        onBearing={setBearing}
+        fitTerritory
         onMapClick={onMapClick}
         threeD={threeD}
         focus={focus}
@@ -344,7 +358,7 @@ export function MapHome() {
 
       <div className="map-floating-header" style={{ paddingTop: 'calc(var(--safe-t) + 16px)' }}>
         {!wide && <>{searchControl}{categoryControl}</>}
-        {wide && <div className="map-desktop-avatar">{avatarMenu}</div>}
+        {wide && <div className="map-desktop-avatar">{pointsHud}{avatarMenu}</div>}
 
       </div>
 
@@ -369,6 +383,22 @@ export function MapHome() {
         ><Navigation size={21} aria-hidden="true" /></motion.button>
         <button type="button" className="map-tool" aria-label="Perbesar peta" disabled={!mapReady} onClick={() => mapApi.current?.zoomIn({ duration: 180 })}><Plus size={20} aria-hidden="true" /></button>
         <button type="button" className="map-tool" aria-label="Perkecil peta" disabled={!mapReady} onClick={() => mapApi.current?.zoomOut({ duration: 180 })}><Minus size={20} aria-hidden="true" /></button>
+        <AnimatePresence>
+          {Math.abs(bearing) > 2 && !threeD && (
+            <motion.button
+              key="compass"
+              type="button"
+              className="map-tool"
+              aria-label="Putar peta kembali ke utara"
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.6 }}
+              onClick={() => mapApi.current?.easeTo({ bearing: 0, duration: 500 })}
+            >
+              <Compass size={21} aria-hidden="true" style={{ transform: `rotate(${-bearing - 45}deg)` }} />
+            </motion.button>
+          )}
+        </AnimatePresence>
         {rt && <motion.button type="button" whileTap={{ scale: 0.94 }} onClick={() => nav('/rt/wilayah')} className="map-tool" aria-label="Atur wilayah RT"><MapPinned size={21} aria-hidden="true" /></motion.button>}
       </div>
 

@@ -1,0 +1,24 @@
+/* Perayaan misi disetujui: cap, poin bergulir, koin terbang ke total, batang pangkat terisi. */
+.earned-celebration .cel { position: relative; width: 100%; max-width: 420px; text-align: center; }
+.cel-stamp { position: relative; display: grid; width: 96px; height: 96px; margin: 0 auto; place-items: center; border-radius: 50%; background: var(--color-ink); color: var(--color-inverse); }
+.cel-stamp svg { width: 52px; height: 52px; }
+.cel-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--color-ink); pointer-events: none; }
+.cel-ticks { position: absolute; inset: 0; pointer-events: none; }
+.cel-ticks > span { position: absolute; left: 50%; top: 50%; width: 3px; height: 14px; margin: -7px 0 0 -1.5px; border-radius: 2px; background: var(--color-ink); }
+.cel-title { margin: 20px 0 0; font-size: 28px; line-height: 1.15; font-weight: 650; letter-spacing: -0.02em; text-wrap: balance; }
+.cel-mission { margin-top: 6px; color: var(--color-ink-2); font-size: 16px; }
+.cel-gain { display: inline-flex; align-items: baseline; gap: 6px; margin-top: 22px; font-size: 76px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; }
+.cel-gain small { font-size: 18px; font-weight: 600; letter-spacing: 0; color: var(--color-ink-2); }
+.cel-total { display: flex; align-items: center; gap: 12px; margin-top: 22px; padding: 14px 16px; border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-card); text-align: left; }
+.cel-total-num { display: flex; align-items: center; gap: 8px; font-size: 26px; font-weight: 650; letter-spacing: -0.02em; }
+.cel-total-label { font-size: 13px; color: var(--color-ink-2); }
+.cel-rank { flex: 1; min-width: 0; }
+.cel-rank-name { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 600; }
+.cel-rank-name span:last-child { color: var(--color-ink-2); font-weight: 500; }
+.cel-track { position: relative; height: 10px; margin-top: 6px; overflow: hidden; border-radius: 999px; background: var(--color-surface); }
+.cel-fill { position: absolute; inset: 0; transform-origin: left center; border-radius: 999px; background: var(--color-ink); }
+.cel-levelup { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 8px 14px; border-radius: 999px; background: var(--color-ink); color: var(--color-inverse); font-size: 15px; font-weight: 600; }
+.cel-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 26px; }
+.cel-coin { position: fixed; left: 0; top: 0; z-index: 5; width: 18px; height: 18px; margin: -9px 0 0 -9px; pointer-events: none; }
+.cel-coin svg { display: block; width: 100%; height: 100%; }
+@media (max-height: 700px) { .cel-stamp { width: 76px; height: 76px; } .cel-gain { font-size: 60px; margin-top: 14px; } .cel-title { font-size: 24px; margin-top: 14px; } }

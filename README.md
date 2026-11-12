@@ -14,7 +14,7 @@ Tampilan bawaan hitam-putih dengan Public Sans; aksen Hutan/Senja bisa dipilih d
 
 | Platform | Cara |
 |---|---|
-| **Android** | Unduh artifact `kompack-apk` dari workflow Build terbaru, atau jalankan `npm run android:apk`. APK dalam `release/` adalah build sebelumnya. |
+| **Android** | Pasang `release/kompack.apk` (build debug terbaru), atau jalankan `npm run android:apk`. |
 | **Web / PC** | Node ≥22.12; `npm ci` lalu `npm run dev` → buka http://localhost:5173 |
 | **Desktop (Rust/Tauri)** | `npm run desktop:dev` atau `npm run desktop:build` (butuh Rust; di Linux juga `libwebkit2gtk-4.1-dev`) |
 

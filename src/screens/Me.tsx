@@ -4,7 +4,7 @@ import { motion } from 'motion/react'
 import { ArrowLeftRight, Check, ChevronRight, FlaskConical, MapPinned, RotateCcw, ShieldCheck, Ticket } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, CatTile, Coin } from '../components/art'
-import { Bar, Button, CountUp, Note, Page, Section, Sheet, TopBar, toast } from '../components/ui'
+import { Bar, Button, RollingNumber, Note, Page, Section, Sheet, TopBar, toast } from '../components/ui'
 import { COMMUNITY, REWARDS, nextRank, rankOf, rankProgress } from '../lib/catalog'
 import { fmtArea, ringArea } from '../lib/geo'
 import { isNative } from '../lib/location'
@@ -96,7 +96,7 @@ export function Me() {
                 <div>
                   <p className="meta-label">Total poin</p>
                   <p className="font-display wd-wide flex items-center gap-1.5 text-[2.4rem] font-bold leading-none">
-                    <CountUp value={pts.total} />
+                    <RollingNumber value={pts.total} />
                   </p>
                 </div>
                 <p className="pb-1 text-right text-[0.86rem] text-ink-2">

@@ -53,6 +53,10 @@ interface Props {
   followMe?: boolean
   onFollowChange?: (following: boolean) => void
   onReady?: (map: MLMap) => void
+  /** arah peta berubah (derajat); dipakai tombol kompas */
+  onBearing?: (deg: number) => void
+  /** paskan tampilan awal ke seluruh wilayah */
+  fitTerritory?: boolean
   className?: string
 }
 
@@ -98,33 +102,54 @@ function maskFC(ring: Ring | null | undefined): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [outer, hole] } }] }
 }
 
-/* ───────────── Elemen penanda ───────────── */
+/* ───────────── Penanda sebagai lapisan peta ─────────────
+   Penanda digambar GPU bersama peta, jadi tidak tertinggal saat digeser, diputar, atau dimiringkan. */
 
-function pinElement(p: MapPin, index: number): HTMLElement {
-  const el = document.createElement('button')
-  el.type = 'button'
-  const color = 'var(--color-ink)'
-  if (p.kind === 'misi') {
-    el.className = `bk is-${p.state}`
-    el.style.setProperty('--c', color)
-    el.style.setProperty('--d', `${Math.min(index, 8) * 80}ms`)
-    el.innerHTML = `<div class="bk-in"><div class="bk-ring"></div><div class="bk-base"></div><div class="bk-stem"></div><div class="bk-head">${catIconSvg(p.category)}${
-      p.label ? `<span class="bk-pts">${p.label}</span>` : ''
-    }</div><span class="bk-label">${CATS[p.category].label}</span></div>`
-  } else {
-    el.className = 'rp'
-    el.style.setProperty('--c', color)
-    el.style.setProperty('--d', `${Math.min(index, 8) * 80 + 200}ms`)
-    el.innerHTML = `<div class="rp-head">${
-      p.kind === 'tolong'
-        ? catIconSvg('bantu', 17)
-        : `<svg viewBox="0 0 24 24" width="17" height="17"><path d="M12 3.5 2.8 19.5h18.4z" fill="var(--color-ink)"/><path d="M12 9.5v4.6" stroke="var(--color-inverse)" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1.3" fill="var(--color-inverse)"/></svg>`
-    }</div>`
-  }
-  el.setAttribute('role', 'button')
-  el.setAttribute('aria-label', p.kind === 'misi' ? `Misi ${CATS[p.category].label}` : p.kind === 'tolong' ? 'Permintaan tolong' : 'Laporan warga')
-  return el
+const WARN_SVG = (ink: string, paper: string) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M12 3.5 2.8 19.5h18.4z" fill="${ink}"/><path d="M12 9.5v4.6" stroke="${paper}" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1.3" fill="${paper}"/></svg>`
+const CHECK_SVG = (ink: string) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="${ink}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`
+
+function iconName(p: MapPin): string {
+  if (p.state === 'done') return 'pin-check'
+  if (p.kind === 'laporan') return 'pin-warn'
+  return `pin-${p.kind === 'tolong' ? 'bantu' : p.category}`
 }
+
+async function loadPinImages(map: MLMap, ink: string, paper: string): Promise<void> {
+  const svgs: Record<string, string> = { 'pin-warn': WARN_SVG(ink, paper), 'pin-check': CHECK_SVG(ink) }
+  for (const cat of Object.keys(CATS) as Category[]) svgs[`pin-${cat}`] = catIconSvg(cat, 24, ink)
+  await Promise.all(
+    Object.entries(svgs).map(async ([name, svg]) => {
+      const img = new Image(48, 48)
+      img.src = `data:image/svg+xml;utf8,${encodeURIComponent(svg.replace(/width="\d+" height="\d+"/, 'width="48" height="48"'))}`
+      try {
+        await img.decode()
+        if (!map.getStyle()) return
+        if (map.hasImage(name)) map.updateImage(name, img)
+        else map.addImage(name, img, { pixelRatio: 2 })
+      } catch {
+        /* ikon gagal dimuat: cakram penanda tetap tampil */
+      }
+    }),
+  )
+}
+
+function pinsFC(pins: MapPin[]): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: pins.map((p) => ({
+      type: 'Feature',
+      id: p.id,
+      properties: { id: p.id, kind: p.kind, state: p.state, icon: iconName(p), label: p.kind === 'misi' ? (p.label ?? CATS[p.category].label) : p.kind === 'tolong' ? 'Minta tolong' : 'Laporan' },
+      geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+    })),
+  }
+}
+
+/** easing dengan sedikit lewat lalu kembali — rasa "pegas" */
+const backOut = (t: number) => 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2)
+const cubicOut = (t: number) => 1 - Math.pow(1 - t, 3)
 
 function meElement(avatar: number): HTMLElement {
   const el = document.createElement('div')
@@ -162,6 +187,8 @@ export function Map3D({
   followMe = false,
   onFollowChange,
   onReady,
+  onBearing,
+  fitTerritory,
   className = '',
 }: Props) {
   const el = useRef<HTMLDivElement>(null)
@@ -169,14 +196,40 @@ export function Map3D({
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const mapRef = useRef<MLMap | null>(null)
   const loaded = useRef(false)
-  const markers = useRef(new Map<string, { m: maplibregl.Marker; sig: string }>())
+  const known = useRef(new Set<string>())
+  const selPrev = useRef<string | null>(null)
+  const tweens = useRef(new Map<string, number>())
+  const pinsReady = useRef(false)
   const nbMarkers = useRef<maplibregl.Marker[]>([])
   const meMk = useRef<maplibregl.Marker | null>(null)
   const meAnim = useRef<number | null>(null)
-  const cb = useRef({ onSelect, onMapClick, onReady, onFollowChange })
-  cb.current = { onSelect, onMapClick, onReady, onFollowChange }
-  const latest = useRef({ territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget })
-  latest.current = { territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget }
+  const cb = useRef({ onSelect, onMapClick, onReady, onFollowChange, onBearing })
+  cb.current = { onSelect, onMapClick, onReady, onFollowChange, onBearing }
+  const latest = useRef({ territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget, pins, selectedId })
+  latest.current = { territory, neighbors, circle, threeD, padding, walkingRoute, walkingTarget, pins, selectedId }
+
+  /** jalankan animasi bernama; yang lama dengan nama sama dihentikan */
+  const tween = (name: string, ms: number, step: (t: number) => void, done?: () => void) => {
+    const prev = tweens.current.get(name)
+    if (prev) cancelAnimationFrame(prev)
+    if (reducedMotion() || ms <= 0) {
+      step(1)
+      done?.()
+      return
+    }
+    const t0 = performance.now()
+    const tick = (now: number) => {
+      if (!mapRef.current?.getStyle()) return
+      const t = Math.min(1, (now - t0) / ms)
+      step(t)
+      if (t < 1) tweens.current.set(name, requestAnimationFrame(tick))
+      else {
+        tweens.current.delete(name)
+        done?.()
+      }
+    }
+    tweens.current.set(name, requestAnimationFrame(tick))
+  }
 
   /* buat peta sekali */
   useEffect(() => {
@@ -199,7 +252,6 @@ export function Map3D({
     })
     map.setPadding({ top: padding?.top ?? 0, bottom: padding?.bottom ?? 0, left: padding?.left ?? 0, right: padding?.right ?? 0 })
     mapRef.current = map
-    map.touchZoomRotate.disableRotation()
     if (!interactive) map.getCanvas().style.cursor = 'default'
 
     /* cadangan ubin raster bila server vektor tidak terjangkau */
@@ -269,23 +321,123 @@ export function Map3D({
         source: 'circle',
         paint: { 'line-color': ['case', ['get', 'bad'], c.bad, c.accent], 'line-width': 2, 'line-dasharray': [1.5, 1.5] },
       })
-      map.addSource('walking-route', { type: 'geojson', data: EMPTY })
-      map.addLayer({ id: 'walking-route-halo', type: 'line', source: 'walking-route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': c.light, 'line-width': 9, 'line-opacity': 0.95 } }, beforeLabels)
-      map.addLayer({ id: 'walking-route-line', type: 'line', source: 'walking-route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': c.accent, 'line-width': 5 } }, beforeLabels)
+      map.addSource('walking-route', { type: 'geojson', data: EMPTY, lineMetrics: true })
+      map.addLayer({ id: 'walking-route-halo', type: 'line', source: 'walking-route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': c.light, 'line-width': ['interpolate', ['linear'], ['zoom'], 15, 8, 18, 13], 'line-opacity': 0.95 } }, beforeLabels)
+      map.addLayer({ id: 'walking-route-line', type: 'line', source: 'walking-route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': c.accent, 'line-width': ['interpolate', ['linear'], ['zoom'], 15, 4, 18, 7] } }, beforeLabels)
       map.addSource('walking-destination', { type: 'geojson', data: EMPTY })
       map.addLayer({ id: 'walking-destination-point', type: 'circle', source: 'walking-destination', paint: { 'circle-radius': 7, 'circle-color': c.accent, 'circle-stroke-color': c.light, 'circle-stroke-width': 3 } })
+      /* penanda misi & laporan */
+      map.addSource('pins', { type: 'geojson', data: EMPTY, promoteId: 'id' })
+      map.addSource('ripple', { type: 'geojson', data: EMPTY })
+      const A: unknown = ['coalesce', ['feature-state', 'a'], 0]
+      const S: unknown = ['coalesce', ['feature-state', 's'], 0]
+      const H: unknown = ['coalesce', ['feature-state', 'h'], 0]
+      const base: unknown = ['match', ['get', 'kind'], 'misi', 16, 13]
+      map.addLayer({ id: 'ripple', type: 'circle', source: 'ripple', paint: { 'circle-radius': 0, 'circle-color': c.ink, 'circle-opacity': 0, 'circle-pitch-alignment': 'map' } })
+      map.addLayer({ id: 'pin-pulse', type: 'circle', source: 'pins', filter: ['==', ['get', 'id'], ''], paint: { 'circle-radius': 0, 'circle-color': c.ink, 'circle-opacity': 0 } })
+      map.addLayer({
+        id: 'pin-disc',
+        type: 'circle',
+        source: 'pins',
+        paint: {
+          'circle-radius': ['*', A, ['+', base, ['*', S, 6], ['*', H, 2]]],
+          'circle-color': ['match', ['get', 'state'], 'off', c.ground, c.light],
+          'circle-stroke-color': c.ink,
+          'circle-stroke-width': ['+', 2, ['*', S, 2]],
+          'circle-stroke-opacity': ['*', A, ['match', ['get', 'state'], 'off', 0.4, 1]],
+          'circle-opacity': A,
+        },
+      } as maplibregl.LayerSpecification)
+      map.addLayer({
+        id: 'pin-icon',
+        type: 'symbol',
+        source: 'pins',
+        layout: { 'icon-image': ['get', 'icon'], 'icon-size': ['match', ['get', 'kind'], 'misi', 0.84, 0.7], 'icon-allow-overlap': true, 'icon-ignore-placement': true },
+        paint: { 'icon-opacity': ['*', A, ['match', ['get', 'state'], 'off', 0.45, 1]] },
+      } as maplibregl.LayerSpecification)
+      map.addLayer({
+        id: 'pin-label',
+        type: 'symbol',
+        source: 'pins',
+        minzoom: 15.4,
+        layout: { 'text-field': ['get', 'label'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-anchor': 'left', 'text-offset': [1.9, 0], 'text-optional': true, 'text-max-width': 9 },
+        paint: { 'text-color': c.ink, 'text-halo-color': c.light, 'text-halo-width': 2, 'text-opacity': A },
+      } as maplibregl.LayerSpecification)
+      void loadPinImages(map, c.ink, c.light)
+      pinsReady.current = true
       applyAreas()
       applyWalkingRoute()
+      applyPins()
+      applySelection(true)
       updateTheme()
-      if (intro && !reduce) {
-        const { threeD: td } = latest.current
-        map.flyTo({ center: [center.lng, center.lat], zoom, pitch: td ? PITCH : 0, bearing: td ? BEARING : 0, duration: 1500, curve: 1.2, essential: false })
+      const { threeD: td, territory: terr } = latest.current
+      let target = { center: [center.lng, center.lat] as [number, number], zoom }
+      if (fitTerritory && terr && terr.length >= 3) {
+        const bounds = new maplibregl.LngLatBounds()
+        for (const p of terr) bounds.extend([p.lng, p.lat])
+        const cam = map.cameraForBounds(bounds, { padding: 28, maxZoom: 17.2 })
+        if (cam?.center && cam.zoom !== undefined) {
+          const cc = maplibregl.LngLat.convert(cam.center)
+          target = { center: [cc.lng, cc.lat], zoom: cam.zoom }
+        }
       }
+      if (intro && !reduce) {
+        map.jumpTo({ center: target.center, zoom: target.zoom - 0.9 })
+        map.flyTo({ ...target, pitch: td ? PITCH : 0, bearing: td ? BEARING : 0, duration: 1600, curve: 1.15, essential: false })
+        if (td) riseBuildings()
+      } else if (fitTerritory) map.jumpTo(target)
       cb.current.onReady?.(map)
     })
 
     map.on('dragstart', () => cb.current.onFollowChange?.(false))
-    map.on('click', (e) => cb.current.onMapClick?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }))
+    const hit = (pt: maplibregl.Point, slop: number): string | null => {
+      if (!pinsReady.current) return null
+      const found = map.queryRenderedFeatures([[pt.x - slop, pt.y - slop], [pt.x + slop, pt.y + slop]], { layers: ['pin-disc'] })
+      let best: string | null = null
+      let bestD = Infinity
+      for (const f of found) {
+        const g = f.geometry as GeoJSON.Point
+        const q = map.project(g.coordinates as [number, number])
+        const d = Math.hypot(q.x - pt.x, q.y - pt.y)
+        if (d < bestD) {
+          bestD = d
+          best = String(f.properties?.id)
+        }
+      }
+      return best
+    }
+    const ripple = (lng: number, lat: number, big: boolean) => {
+      const src = map.getSource('ripple') as GeoJSONSource | undefined
+      if (!src) return
+      src.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [lng, lat] } }] })
+      tween('ripple', 520, (t) => {
+        const e = cubicOut(t)
+        map.setPaintProperty('ripple', 'circle-radius', 6 + e * (big ? 46 : 30))
+        map.setPaintProperty('ripple', 'circle-opacity', 0.22 * (1 - e))
+      })
+    }
+    map.on('click', (e) => {
+      const id = hit(e.point, 20)
+      if (id) {
+        const f = latest.current.pins.find((p) => p.id === id)
+        if (f) ripple(f.lng, f.lat, true)
+        navigator.vibrate?.(8)
+        cb.current.onSelect?.(id)
+        return
+      }
+      if (cb.current.onMapClick) ripple(e.lngLat.lng, e.lngLat.lat, false)
+      cb.current.onMapClick?.({ lat: e.lngLat.lat, lng: e.lngLat.lng })
+    })
+    let hovered: string | null = null
+    map.on('mousemove', (e) => {
+      const id = hit(e.point, 6)
+      if (id === hovered) return
+      if (hovered) map.setFeatureState({ source: 'pins', id: hovered }, { h: 0 })
+      hovered = id
+      if (id) map.setFeatureState({ source: 'pins', id }, { h: 1 })
+      map.getCanvas().style.cursor = id ? 'pointer' : ''
+    })
+    map.on('rotate', () => cb.current.onBearing?.(map.getBearing()))
 
     // Theme changes update paint in place, preserving sources and map interaction state.
     const updateTheme = () => {
@@ -301,7 +453,11 @@ export function Map3D({
         ['circle-line', 'line-color', ['case', ['get', 'bad'], palette.bad, palette.accent]],
         ['walking-route-halo', 'line-color', palette.light], ['walking-route-line', 'line-color', palette.accent],
         ['walking-destination-point', 'circle-color', palette.accent], ['walking-destination-point', 'circle-stroke-color', palette.light],
+        ['pin-disc', 'circle-color', ['match', ['get', 'state'], 'off', palette.ground, palette.light]], ['pin-disc', 'circle-stroke-color', palette.ink],
+        ['pin-pulse', 'circle-color', palette.ink], ['ripple', 'circle-color', palette.ink],
+        ['pin-label', 'text-color', palette.ink], ['pin-label', 'text-halo-color', palette.light],
       ]
+      void loadPinImages(map, palette.ink, palette.light)
       for (const [id, name, value] of paints) if (map.getLayer(id)) map.setPaintProperty(id, name, value)
     }
     const themeObserver = new MutationObserver(() => { if (loaded.current) updateTheme() })
@@ -326,8 +482,14 @@ export function Map3D({
       map.once('idle', () => (orbitRaf = requestAnimationFrame(spin)))
     }
 
-    const store = markers.current
+    const running = tweens.current
+    const seen = known.current
     return () => {
+      for (const id of running.values()) cancelAnimationFrame(id)
+      running.clear()
+      seen.clear()
+      pinsReady.current = false
+      selPrev.current = null
       window.clearTimeout(fbTimer)
       window.removeEventListener('online', retryTiles)
       window.clearTimeout(orbitStopTimer)
@@ -337,13 +499,13 @@ export function Map3D({
       map.remove()
       mapRef.current = null
       loaded.current = false
-      store.clear()
       nbMarkers.current = []
       meMk.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const hadRoute = useRef(false)
   const applyWalkingRoute = () => {
     const map = mapRef.current
     if (!map || !loaded.current) return
@@ -353,11 +515,27 @@ export function Map3D({
     const destination: GeoJSON.FeatureCollection = route && target ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [target.lng, target.lat] } }] } : EMPTY
     ;(map.getSource('walking-route') as GeoJSONSource | undefined)?.setData(data)
     ;(map.getSource('walking-destination') as GeoJSONSource | undefined)?.setData(destination)
+    const fresh = !!route && !hadRoute.current
+    hadRoute.current = !!route
+    if (fresh) {
+      const palette = mapPalette()
+      const clear = 'rgba(0,0,0,0)'
+      tween('route', 900, (t) => {
+        const k = Math.min(0.999, Math.max(0.001, cubicOut(t)))
+        map.setPaintProperty('walking-route-line', 'line-gradient', ['step', ['line-progress'], palette.accent, k, clear])
+        map.setPaintProperty('walking-route-halo', 'line-gradient', ['step', ['line-progress'], palette.light, k, clear])
+      }, () => {
+        map.setPaintProperty('walking-route-line', 'line-gradient', undefined)
+        map.setPaintProperty('walking-route-halo', 'line-gradient', undefined)
+      })
+    }
     if (route && route.coordinates.length > 1) {
       const bounds = new maplibregl.LngLatBounds()
       for (const [lng, lat] of route.coordinates) bounds.extend([lng, lat])
       const p = latest.current.padding
-      map.fitBounds(bounds, { padding: { top: (p?.top ?? 0) + 32, bottom: (p?.bottom ?? 0) + 32, left: (p?.left ?? 0) + 32, right: (p?.right ?? 0) + 32 }, duration: reducedMotion() ? 0 : 450, maxZoom: 18 })
+      // padding peta (panel & kepala) sudah dipasang lewat setPadding; di sini cukup ruang napas
+      map.setPadding({ top: p?.top ?? 0, bottom: p?.bottom ?? 0, left: p?.left ?? 0, right: p?.right ?? 0 })
+      map.fitBounds(bounds, { padding: 48, duration: reducedMotion() ? 0 : 900, maxZoom: 18.4, easing: (t) => 1 - Math.pow(1 - t, 4) })
     }
   }
   useEffect(applyWalkingRoute, [walkingRoute, walkingTarget?.lat, walkingTarget?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -407,44 +585,58 @@ export function Map3D({
     map.setPaintProperty('terr-line', 'line-color', c)
   }, [territoryBad])
 
-  /* penanda misi & laporan */
-  useEffect(() => {
+  /* gedung "tumbuh" saat masuk 3D */
+  const riseBuildings = () => {
     const map = mapRef.current
-    if (!map) return
-    const store = markers.current
-    const seen = new Set<string>()
-    pins.forEach((p, i) => {
-      seen.add(p.id)
-      const sig = `${p.lat},${p.lng},${p.kind},${p.category},${p.label},${p.state}`
-      const cur = store.get(p.id)
-      if (cur && cur.sig === sig) return
-      cur?.m.remove()
-      const elem = pinElement(p, cur ? 0 : i)
-      elem.addEventListener('click', (ev) => {
-        ev.stopPropagation()
-        cb.current.onSelect?.(p.id)
-      })
-      const m = new maplibregl.Marker({ element: elem, anchor: 'bottom', pitchAlignment: 'viewport', rotationAlignment: 'viewport' })
-        .setLngLat([p.lng, p.lat])
-        .addTo(map)
-      store.set(p.id, { m, sig })
+    if (!map?.getLayer('building')) return
+    tween('rise', 900, (t) => {
+      const k = 0.08 + 0.92 * backOut(t)
+      map.setPaintProperty('building', 'fill-extrusion-height', ['interpolate', ['linear'], ['zoom'], 14, 0, 15.2, ['*', k, ['coalesce', ['get', 'render_height'], 6]]])
     })
-    for (const [id, v] of store) {
-      if (!seen.has(id)) {
-        v.m.remove()
-        store.delete(id)
-      }
-    }
-  }, [pins])
+  }
 
-  useEffect(() => {
-    for (const [id, v] of markers.current) {
-      const e = v.m.getElement()
-      e.classList.toggle('is-sel', id === selectedId)
-      e.setAttribute('aria-pressed', String(id === selectedId))
-      e.style.zIndex = id === selectedId ? '5' : ''
+  /* penanda misi & laporan */
+  const applyPins = () => {
+    const map = mapRef.current
+    if (!map || !pinsReady.current) return
+    const list = latest.current.pins
+    ;(map.getSource('pins') as GeoJSONSource | undefined)?.setData(pinsFC(list))
+    const ids = new Set(list.map((p) => p.id))
+    for (const id of known.current) if (!ids.has(id)) known.current.delete(id)
+    // penanda baru muncul berurutan, memantul sedikit
+    const fresh = list.filter((p) => !known.current.has(p.id))
+    fresh.forEach((p, i) => {
+      known.current.add(p.id)
+      map.setFeatureState({ source: 'pins', id: p.id }, { a: 0 })
+      const delay = Math.min(i, 10) * 55
+      window.setTimeout(() => tween(`in:${p.id}`, 420, (t) => mapRef.current?.setFeatureState({ source: 'pins', id: p.id }, { a: backOut(t) })), delay)
+    })
+  }
+  const pinsKey = pins.map((p) => `${p.id},${p.lat},${p.lng},${p.kind},${p.category},${p.label},${p.state}`).join('|')
+  useEffect(applyPins, [pinsKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* penanda terpilih membesar, yang lama mengecil, lalu berdenyut dua kali */
+  const applySelection = (instant = false) => {
+    const map = mapRef.current
+    if (!map || !pinsReady.current) return
+    const next = latest.current.selectedId ?? null
+    const prev = selPrev.current
+    if (prev === next && !instant) return
+    selPrev.current = next
+    if (prev && prev !== next) tween(`sel:${prev}`, 220, (t) => mapRef.current?.setFeatureState({ source: 'pins', id: prev }, { s: 1 - cubicOut(t) }))
+    if (!next) {
+      map.setFilter('pin-pulse', ['==', ['get', 'id'], ''])
+      return
     }
-  }, [selectedId, pins])
+    tween(`sel:${next}`, instant ? 0 : 380, (t) => mapRef.current?.setFeatureState({ source: 'pins', id: next }, { s: backOut(t) }))
+    map.setFilter('pin-pulse', ['==', ['get', 'id'], next])
+    tween('pulse', instant ? 0 : 1500, (t) => {
+      const k = (t * 2) % 1
+      map.setPaintProperty('pin-pulse', 'circle-radius', 22 + cubicOut(k) * 26)
+      map.setPaintProperty('pin-pulse', 'circle-opacity', t >= 1 ? 0 : 0.16 * (1 - k))
+    })
+  }
+  useEffect(() => applySelection(), [selectedId, pinsKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* posisi kamu — bergerak halus */
   useEffect(() => {
@@ -456,7 +648,7 @@ export function Map3D({
       return
     }
     if (!meMk.current) {
-      meMk.current = new maplibregl.Marker({ element: meElement(meAvatar), anchor: 'center', pitchAlignment: 'map' }).setLngLat([me.lng, me.lat]).addTo(map)
+      meMk.current = new maplibregl.Marker({ element: meElement(meAvatar), anchor: 'center', pitchAlignment: 'viewport' }).setLngLat([me.lng, me.lat]).addTo(map)
       return
     }
     const mk = meMk.current
@@ -489,7 +681,8 @@ export function Map3D({
       firstTilt.current = false
       return
     }
-    mapRef.current?.easeTo({ pitch: threeD ? PITCH : 0, bearing: threeD ? BEARING : 0, duration: reducedMotion() ? 0 : 650, easing: (t) => 1 - Math.pow(1 - t, 4) })
+    mapRef.current?.easeTo({ pitch: threeD ? PITCH : 0, bearing: threeD ? BEARING : 0, duration: reducedMotion() ? 0 : 900, easing: (t) => 1 - Math.pow(1 - t, 4) })
+    if (threeD) riseBuildings()
   }, [threeD])
 
   /* fokus ke titik */
@@ -501,7 +694,7 @@ export function Map3D({
       center: [focus.lng, focus.lat],
       zoom: Math.max(map.getZoom(), focus.zoom ?? 16.8),
       padding: { top: p?.top ?? 0, bottom: p?.bottom ?? 0, left: p?.left ?? 0, right: p?.right ?? 0 },
-      duration: reducedMotion() ? 0 : 650,
+      duration: reducedMotion() ? 0 : 750,
       easing: (t) => 1 - Math.pow(1 - t, 4),
       essential: false,
     })

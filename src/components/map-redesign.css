@@ -116,3 +116,8 @@
   .map-mission-row, .map-tool, .bk-head, .bk-stem, .rp-head { transition-duration: 0.01ms; }
   .bk-in, .rp { animation: none; }
 }
+
+/* poin di samping avatar */
+.map-points { display: inline-flex; flex: none; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--color-surface); font-size: 15px; font-weight: 650; pointer-events: auto; }
+.map-desktop-avatar { display: flex; align-items: center; gap: 8px; }
+.map-desktop-avatar .map-points { background: var(--color-card); box-shadow: 0 1px 2px var(--color-shadow); }

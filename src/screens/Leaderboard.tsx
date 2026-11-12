@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { TrendingUp } from 'lucide-react'
 import { Avatar } from '../components/art'
-import { CountUp, Page, Section, Segmented, TopBar } from '../components/ui'
+import { RollingNumber, Page, Section, Segmented, TopBar } from '../components/ui'
 import { rankOf } from '../lib/catalog'
 import { groupPoints, pointsOf, standings, useMe, useMyGroup, useSnap } from '../lib/store'
 import { useNow } from '../lib/time'
@@ -80,7 +80,7 @@ export function Leaderboard() {
                 <div>
                   <p className="mono text-[0.8rem] text-inverse">Posisimu</p>
                   <p className="font-display wd-wide text-[2.6rem] font-bold leading-none">
-                    #<CountUp value={mine.place} duration={0.6} />
+                    #<RollingNumber value={mine.place} />
                   </p>
                 </div>
                 <div className="min-w-0 flex-1 border-l border-white/15 pl-4">
@@ -165,7 +165,7 @@ export function Leaderboard() {
                       </div>
                     </div>
                     <span className="font-display wd-wide tnum text-[1.2rem] font-bold">
-                      <CountUp value={r.points} />
+                      <RollingNumber value={r.points} />
                     </span>
                   </motion.li>
                 )

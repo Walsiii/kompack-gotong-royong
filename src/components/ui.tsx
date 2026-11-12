@@ -114,6 +114,33 @@ export function CountUp({ value, className, duration = 0.9 }: { value: number; c
   )
 }
 
+/** Angka bergulir seperti odometer: tiap digit berputar ke nilai barunya, dari kanan ke kiri. */
+export function RollingNumber({ value, className = '' }: { value: number; className?: string }) {
+  const reduced = useReducedMotion()
+  const digits = String(Math.max(0, Math.round(value))).split('')
+  return (
+    <span className={`roll tnum ${className}`} role="text" aria-label={String(Math.round(value))}>
+      {digits.map((d, i) => {
+        const place = digits.length - 1 - i
+        return (
+          <span key={place} className="roll-col" aria-hidden="true">
+            <motion.span
+              className="roll-strip"
+              initial={false}
+              animate={{ y: `${-Number(d) * 10}%` }}
+              transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 120, damping: 18, mass: 0.9, delay: place * 0.06 }}
+            >
+              {'0123456789'.split('').map((n) => (
+                <span key={n}>{n}</span>
+              ))}
+            </motion.span>
+          </span>
+        )
+      })}
+    </span>
+  )
+}
+
 export function Bar({ value, className = '', tone = 'rompi', height = 8 }: { value: number; className?: string; tone?: 'rompi' | 'plang'; height?: number }) {
   return (
     <div
