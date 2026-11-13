@@ -25,14 +25,14 @@ Catatan serah terima untuk sesi Claude Code (atau pengembang) berikutnya.
 
 | Berkas | Isi |
 |---|---|
-| `src/components/cast.ts` | Desain karakter datar (Kompi semut, Resik, Bu Asih, Mbah Tunas, Mang Jaga, Pak RT): bagian SVG & titik putar |
-| `src/components/KampungBuddy.tsx` | Animasi karakter: `Character` (napas, kedip, mata mengikuti jari, bicara, melambai, girang), `TapCharacter`, `BuddyTip` |
+| `src/components/cast.ts` | Desain karakter bersih (Kompi kucing oren, Resik, Bu Asih, Mbah Tunas, Mang Jaga, Pak RT); manusia dibangun dari satu konstruksi `human()` |
+| `src/components/KampungBuddy.tsx` | Animasi karakter: `Character` (napas, kedip, mata mengikuti jari, bicara, melambai, girang), `TapCharacter`, `BuddyTip`. Semua putaran lewat `Pivot` (Motion memakai titik tengah kotak SVG bila tidak) |
 | `src/lib/catalog.ts` | Tiap kategori punya `buddy` (karakter pendamping) dan `tip` |
 | `src/components/MapGreeting.tsx` | Sapaan karakter sekali per sesi di peta (malam: Jaga) |
 | `src/lib/streak.ts` | Pekan beruntun & target 100 poin per pekan (hanya dari aksi yang diterima RT) |
 | `src/components/Celebration.tsx` | Perayaan setoran disetujui: karakter kategori melompat, cap, poin bergulir, koin terbang |
 
-Ikon aplikasi dibuat dari `characterSvg('kompi')` di latar kuning #ffc23d (web `public/`, Android `mipmap-*`, Tauri `src-tauri/icons`).
+Ikon aplikasi dibuat dari `characterSvg('kompi')` di latar hitam #171717 (web `public/`, Android `mipmap-*`, Tauri `src-tauri/icons`).
 
 ## Perintah
 

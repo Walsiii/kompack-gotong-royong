@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from 'react'
 import { motion, useReducedMotion, useSpring } from 'motion/react'
 import {
   CHARACTERS,
@@ -6,9 +6,9 @@ import {
   RIGS,
   browsSvg,
   characterSvg,
-  cheeksSvg,
   eyeWhite,
   happyEyes,
+  lidsSvg,
   openMouthSvg,
   pupils,
   shadowSvg,
@@ -21,11 +21,24 @@ export { CHARACTERS, characterSvg, type CharacterId }
 export type BuddyMood = 'hello' | 'thinking' | 'ready' | 'celebrate' | 'idle' | 'talk'
 
 /** kompatibel dengan nama lama: maskot utama Kompi */
-export const kompiSvg = (opts: { shadow?: boolean; viewBox?: string } = {}) => characterSvg('kompi', opts)
+export const kompiSvg = (opts: { shadow?: boolean; viewBox?: string; bust?: boolean } = {}) => characterSvg('kompi', opts)
 
 const Part = ({ html }: { html: string }) => <g dangerouslySetInnerHTML={{ __html: html }} />
 const EASE = [0.22, 1, 0.36, 1] as const
-const at = (x: number, y: number) => ({ transformBox: 'view-box' as const, transformOrigin: `${x}px ${y}px` })
+/**
+ * Poros transformasi yang pasti: Motion menghitung titik putar SVG dari kotak isi (50% 50%),
+ * jadi isi dibungkus jangkar tak terlihat yang berpusat tepat di titik (x, y).
+ */
+function Pivot({ x, y, children, ...motionProps }: { x: number; y: number; children: ReactNode } & ComponentProps<typeof motion.g>) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <motion.g {...motionProps} style={{ transformBox: 'fill-box', transformOrigin: '50% 50%' }}>
+        <rect x={-600} y={-600} width={1200} height={1200} fill="none" pointerEvents="none" />
+        <g transform={`translate(${-x} ${-y})`}>{children}</g>
+      </motion.g>
+    </g>
+  )
+}
 
 /* ── mata mengikuti jari / kursor (satu pendengar untuk semua karakter) ── */
 const lookers = new Set<() => void>()
@@ -41,7 +54,7 @@ const onPointer = (e: PointerEvent) => {
 }
 
 function useLook(ref: RefObject<SVGSVGElement | null>, r: Rig, active: boolean, fixed: { x: number; y: number } | null) {
-  const max = Math.max(2.2, r.eyes.w - r.eyes.pupil - 0.5)
+  const max = Math.max(1.8, Math.min(r.eyes.l.w, r.eyes.r.w) - r.eyes.pupil - 0.8)
   const x = useSpring(0, { stiffness: 260, damping: 22 })
   const y = useSpring(0, { stiffness: 260, damping: 22 })
   useEffect(() => {
@@ -60,8 +73,8 @@ function useLook(ref: RefObject<SVGSVGElement | null>, r: Rig, active: boolean, 
       if (!el || !pointer) return
       const b = el.getBoundingClientRect()
       if (!b.width) return
-      const cx = b.left + (b.width * (r.eyes.lx + r.eyes.rx)) / 2 / 200
-      const cy = b.top + (b.height * r.eyes.y) / 240
+      const cx = b.left + (b.width * (r.eyes.l.x + r.eyes.r.x)) / 2 / 200
+      const cy = b.top + (b.height * r.eyes.l.y) / 240
       const dx = pointer.x - cx
       const dy = pointer.y - cy
       const d = Math.hypot(dx, dy) || 1
@@ -130,47 +143,54 @@ export function Character({ who = 'kompi', mood = 'idle', className = '', look =
     : mood === 'hello' ? { rotate: [0, 6, -3, 5, 0] }
     : mood === 'talk' ? { rotate: [0, -3, 3, -2, 0] }
     : { rotate: 0 }
-  const armR =
+  const sign = r.wave === 'R' ? -1 : 1
+  const waver =
     still ? {}
-    : mood === 'hello' ? { rotate: [0, -150, -118, -150, -118, -145, 0] }
-    : mood === 'celebrate' ? { rotate: [0, -150, -125, -150, -125, -150] }
-    : mood === 'ready' ? { rotate: [0, -70, 0] }
-    : mood === 'talk' ? { rotate: [0, -38, -20, -34, 0] }
+    : mood === 'hello' ? { rotate: [0, 122, 96, 122, 96, 118, 0].map((d) => d * sign) }
+    : mood === 'celebrate' ? { rotate: [0, 128, 108, 128, 108, 128].map((d) => d * sign) }
+    : mood === 'ready' ? { rotate: [0, 70 * sign, 0] }
+    : mood === 'talk' ? { rotate: [0, 38, 20, 34, 0].map((d) => d * sign) }
     : { rotate: 0 }
-  const armL = still ? {} : mood === 'celebrate' ? { rotate: [0, 150, 125, 150, 125, 150] } : mood === 'thinking' ? { rotate: 24 } : { rotate: 0 }
+  const other = still ? {} : mood === 'celebrate' ? { rotate: [0, 128, 108, 128, 108, 128].map((d) => -d * sign) } : mood === 'thinking' ? { rotate: -24 * sign } : { rotate: 0 }
+  const armR = r.wave === 'R' ? waver : other
+  const armL = r.wave === 'R' ? other : waver
+  const sc = r.scale ?? 1
   const armT = mood === 'hello' || mood === 'talk' ? { duration: 1.7, ease: 'easeInOut' as const } : mood === 'celebrate' ? { duration: 1.6, ease: 'easeInOut' as const } : { duration: 0.6, ease: EASE }
   const browUp = !still && (mood === 'hello' || mood === 'celebrate' || mood === 'ready' || talking)
 
   return (
     <motion.svg ref={ref} viewBox="0 0 200 240" className={`kampung-buddy character character--${who} ${className}`} aria-hidden="true" overflow="visible">
-      <motion.g style={at(100, 230)} animate={still ? {} : mood === 'celebrate' ? { scale: [1, 0.55, 1, 0.72, 1, 1] } : mood === 'ready' ? { scale: [1, 0.75, 1] } : { scale: 1 }} transition={bodyT}>
+      <Pivot x={100} y={230} animate={still ? {} : mood === 'celebrate' ? { scale: [1, 0.55, 1, 0.72, 1, 1] } : mood === 'ready' ? { scale: [1, 0.75, 1] } : { scale: 1 }} transition={bodyT}>
         <Part html={shadowSvg} />
-      </motion.g>
-      <motion.g style={at(100, 230)} animate={bodyAnim} transition={bodyT}>
-        <motion.g style={at(100, 230)} animate={still ? {} : { scaleY: [1, 1.018, 1], scaleX: [1, 0.993, 1] }} transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}>
+      </Pivot>
+      <Pivot x={100} y={232} animate={bodyAnim} transition={bodyT}>
+        <g transform={sc === 1 ? undefined : `translate(${100 * (1 - sc)} ${232 * (1 - sc)}) scale(${sc})`}>
+        <Pivot x={100} y={232} animate={still ? {} : { scaleY: [1, 1.018, 1], scaleX: [1, 0.993, 1] }} transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}>
           {r.back && <Part html={r.back} />}
           <Part html={r.legs} />
-          {r.neck && <Part html={r.neck} />}
-          <Part html={r.body} />
-          <motion.g style={at(r.armL.px, r.armL.py)} animate={armL} transition={armT}>
+          <Pivot x={r.armL.px} y={r.armL.py} animate={armL} transition={armT}>
+            {r.armL.hold && <Part html={r.armL.hold} />}
             <Part html={r.armL.html} />
-          </motion.g>
-          <motion.g style={at(r.armR.px, r.armR.py)} animate={armR} transition={armT}>
+          </Pivot>
+          <Pivot x={r.armR.px} y={r.armR.py} animate={armR} transition={armT}>
             {r.armR.hold && <Part html={r.armR.hold} />}
             <Part html={r.armR.html} />
-          </motion.g>
-          <motion.g style={at(r.head.px, r.head.py)} animate={headAnim} transition={{ duration: mood === 'thinking' ? 0.5 : 1.4, ease: 'easeInOut' }}>
+          </Pivot>
+          {r.neck && <Part html={r.neck} />}
+          {r.body && <Part html={r.body} />}
+          <Pivot x={r.head.px} y={r.head.py} animate={headAnim} transition={{ duration: mood === 'thinking' ? 0.5 : 1.4, ease: 'easeInOut' }}>
             {r.head.back && <Part html={r.head.back} />}
             <Part html={r.head.base} />
             {happy ? (
               <Part html={happyEyes(r)} />
             ) : (
-              <motion.g style={at(100, r.eyes.y)} animate={still ? {} : { scaleY: [1, 1, 0.08, 1, 1] }} transition={{ duration: 4.4, times: [0, 0.9, 0.93, 0.96, 1], repeat: Infinity }}>
+              <Pivot x={100} y={r.eyes.l.y} animate={still ? {} : { scaleY: [1, 1, 0.08, 1, 1] }} transition={{ duration: 4.4, times: [0, 0.9, 0.93, 0.96, 1], repeat: Infinity }}>
                 <Part html={eyeWhite(r)} />
                 <motion.g style={{ x: eyes.x, y: eyes.y }}>
                   <Part html={pupils(r)} />
                 </motion.g>
-              </motion.g>
+                {r.eyes.lid && <Part html={lidsSvg(r)} />}
+              </Pivot>
             )}
             {r.brows && (
               <motion.g animate={{ y: browUp ? -4 : mood === 'thinking' ? -2 : 0 }} transition={{ type: 'spring', stiffness: 300, damping: 16 }}>
@@ -178,34 +198,34 @@ export function Character({ who = 'kompi', mood = 'idle', className = '', look =
               </motion.g>
             )}
             {r.nose && <Part html={r.nose} />}
-            <Part html={cheeksSvg(r)} />
             {talking && !still ? (
-              <motion.g style={at(r.mouth.x, r.mouth.y - 2)} animate={{ scaleY: [0.25, 1, 0.35, 0.9, 0.3, 1, 0.25] }} transition={{ duration: 1.6, ease: 'easeInOut' }}>
+              <Pivot x={r.mouth.x} y={r.mouth.y - 2} animate={{ scaleY: [0.25, 1, 0.35, 0.9, 0.3, 1, 0.25] }} transition={{ duration: 1.6, ease: 'easeInOut' }}>
                 <Part html={openMouthSvg(r, 0.9)} />
-              </motion.g>
+              </Pivot>
             ) : open ? (
-              <motion.g key={mood} style={at(r.mouth.x, r.mouth.y - 2)} initial={still ? false : { scaleY: 0.2 }} animate={{ scaleY: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
+              <Pivot x={r.mouth.x} y={r.mouth.y - 2} key={mood} initial={still ? false : { scaleY: 0.2 }} animate={{ scaleY: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
                 <Part html={openMouthSvg(r, happy ? 1.25 : 1)} />
-              </motion.g>
+              </Pivot>
             ) : mood === 'thinking' ? (
-              <ellipse cx={r.mouth.x + 6} cy={r.mouth.y + 3} rx={4} ry={4.6} fill={r.mouth.light ? '#ff6b6b' : '#5b1d24'} />
+              <ellipse cx={r.mouth.x + 4} cy={r.mouth.y + 3} rx={4} ry={4.6} fill="#3d1418" />
             ) : (
               <Part html={smileSvg(r)} />
             )}
+            {r.over && <Part html={r.over} />}
             {r.glasses && <Part html={r.glasses} />}
             {r.head.top && <Part html={r.head.top} />}
             {r.sway && (
-              <motion.g
-                style={at(r.sway.px, r.sway.py)}
+              <Pivot x={r.sway.px} y={r.sway.py}
                 animate={still ? {} : mood === 'celebrate' ? { rotate: [0, -r.sway.deg * 2, r.sway.deg * 2, 0] } : { rotate: [-r.sway.deg / 2, r.sway.deg / 2, -r.sway.deg / 2] }}
                 transition={mood === 'celebrate' ? { duration: 0.7, repeat: 2 } : { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
               >
                 <Part html={r.sway.html} />
-              </motion.g>
+              </Pivot>
             )}
-          </motion.g>
-        </motion.g>
-      </motion.g>
+          </Pivot>
+        </Pivot>
+        </g>
+      </Pivot>
 
       {mood === 'thinking' &&
         [0, 1, 2].map((i) => (

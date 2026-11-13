@@ -305,7 +305,7 @@ export function Me() {
         {/* keluarga karakter */}
         <section aria-labelledby="cast-title">
           <h3 id="cast-title" className="text-[1.2rem]">Warga Kompack!</h3>
-          <ul className="no-scrollbar -mx-4 mt-3 flex snap-x gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
+          <ul className="no-scrollbar -mx-4 -mt-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 pt-8 lg:mx-0 lg:px-0">
             {(Object.keys(CHARACTERS) as CharacterId[]).map((id) => (
               <li key={id} className="w-[104px] flex-none snap-start rounded-[20px] bg-white px-2 pb-3 pt-2 text-center">
                 <TapCharacter who={id} className="mx-auto w-[84px]" />

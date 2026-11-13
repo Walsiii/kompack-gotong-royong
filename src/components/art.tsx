@@ -156,7 +156,7 @@ export function KompiMark({ size = 28, className = '' }: { size?: number; classN
       className={`inline-block flex-none ${className}`}
       style={{ width: size, height: size }}
       aria-hidden="true"
-      dangerouslySetInnerHTML={{ __html: kompiSvg({ shadow: false, viewBox: '34 0 166 166' }).replace('<svg ', '<svg style="display:block;width:100%;height:100%" ') }}
+      dangerouslySetInnerHTML={{ __html: kompiSvg({ shadow: false, bust: true, viewBox: '36 20 128 128' }).replace('<svg ', '<svg style="display:block;width:100%;height:100%" ') }}
     />
   )
 }
