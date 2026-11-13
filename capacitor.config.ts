@@ -4,8 +4,8 @@ const config: CapacitorConfig = {
   appId: 'id.kompack.app',
   appName: 'Kompack!',
   webDir: 'dist',
-  backgroundColor: '#171717',
-  android: { backgroundColor: '#171717' },
+  backgroundColor: '#ffc23d',
+  android: { backgroundColor: '#ffc23d' },
 }
 
 export default config

@@ -166,6 +166,8 @@ export interface Reward {
   desc: string
   partner: string
   cost: number
+  /** gambar cepat untuk daftar hadiah */
+  emoji?: string
 }
 
 export interface Redemption {

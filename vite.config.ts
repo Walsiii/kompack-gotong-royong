@@ -20,7 +20,7 @@ export default defineConfig({
         description: 'Kerja bakti jadi quest di peta lingkunganmu. Check-in, kerjakan, kumpulkan poin.',
         lang: 'id',
         theme_color: '#171717',
-        background_color: '#171717',
+        background_color: '#ffc23d',
         display: 'standalone',
         orientation: 'portrait',
         start_url: './',

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowLeft, Camera as CamIcon, Check, ChevronRight, Clock, Eye, Hourglass, LocateFixed, MapPin, RotateCcw, Send, ShieldCheck, Timer } from 'lucide-react'
+import { ArrowLeft, Camera as CamIcon, Check, ChevronRight, Clock, Eye, Hourglass, Layers, LocateFixed, MapPin, RotateCcw, Send, ShieldCheck, Timer, Users, type LucideIcon } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Camera } from '../components/Camera'
 import { HoldButton } from '../components/HoldButton'
 import { Map3D } from '../components/Map3D'
-import { Avatar, CatTile } from '../components/art'
+import { Avatar, CatTile, Coin } from '../components/art'
 import { BuddyTip } from '../components/KampungBuddy'
 import { Bar, Button, CheckList, Empty, Note, Points, toast } from '../components/ui'
 import { CATS } from '../lib/catalog'
@@ -20,22 +20,22 @@ import type { Fix } from '../lib/types'
 
 type Stage = 'checkin' | 'before' | 'work' | 'after' | 'send' | 'pending' | 'approved'
 
-function Step({ n, title, state, children, summary }: { n: number; title: string; state: 'done' | 'active' | 'todo'; children?: ReactNode; summary?: ReactNode }) {
+function Step({ icon: Icon, title, state, children, summary }: { n?: number; icon: LucideIcon; title: string; state: 'done' | 'active' | 'todo'; children?: ReactNode; summary?: ReactNode }) {
   return (
     <li className="relative flex gap-3.5 pb-1">
       <div className="flex flex-col items-center">
         <motion.span
           animate={state === 'active' ? { scale: [1, 1.12, 1] } : { scale: 1 }}
-          className={`mono grid h-8 w-8 flex-none place-items-center rounded-full text-[0.8rem] font-semibold ${
+          className={`grid h-10 w-10 flex-none place-items-center rounded-full ${
             state === 'done' ? 'bg-plang text-white' : state === 'active' ? 'bg-rompi text-white' : 'bg-surface text-ink-3'
           }`}
         >
-          {state === 'done' ? <Check size={16} strokeWidth={3} /> : n}
+          {state === 'done' ? <Check size={18} strokeWidth={3} /> : <Icon size={19} strokeWidth={2.3} aria-hidden="true" />}
         </motion.span>
         <span className={`mt-1 w-[2px] flex-1 rounded-full ${state === 'done' ? 'bg-plang' : 'bg-surface'}`} />
       </div>
       <div className="min-w-0 flex-1 pb-4">
-        <h3 className={`pt-1 text-[1.08rem] ${state === 'todo' ? 'text-ink-3' : ''}`}>{title}</h3>
+        <h3 className={`pt-2 text-[1.08rem] ${state === 'todo' ? 'text-ink-3' : ''}`}>{title}</h3>
         {state === 'done' && summary && <div className="mt-0.5 text-[0.86rem] text-ink-2">{summary}</div>}
         <AnimatePresence initial={false}>
           {state === 'active' && (
@@ -52,6 +52,22 @@ function Step({ n, title, state, children, summary }: { n: number; title: string
         </AnimatePresence>
       </div>
     </li>
+  )
+}
+
+/** jarak ke area check-in sebagai batang visual, bukan kalimat */
+function RangeMeter({ dist, radius, inRange }: { dist: number | null; radius: number; inRange: boolean }) {
+  const left = dist === null ? null : Math.max(0, dist - radius)
+  const fill = dist === null ? 0 : inRange ? 1 : Math.max(0.06, 1 - Math.min(1, left! / 300))
+  return (
+    <div className={`range-meter mb-3 ${inRange ? 'is-in' : ''}`} aria-live="polite">
+      <span className="range-meter-icon"><LocateFixed size={18} aria-hidden="true" /></span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[0.95rem] font-semibold">{dist === null ? 'Mencari GPS…' : inRange ? 'Sudah di lokasi' : `${fmtDist(left!)} lagi`}</p>
+        <div className="range-meter-track"><motion.span initial={false} animate={{ scaleX: fill }} transition={{ type: 'spring', stiffness: 120, damping: 18 }} /></div>
+      </div>
+      {inRange && <Check size={22} strokeWidth={3} className="text-ok" aria-hidden="true" />}
+    </div>
   )
 }
 
@@ -236,17 +252,23 @@ export function QuestFlow() {
             </div>
           </div>
 
-          {/* angka utama */}
-          <dl className="mt-5 divide-y divide-line border-y border-line">
-            {[
-              ['Poin', <span className="text-rompi">+{q.points}</span>],
-              ['Jarak darimu', view.dist !== null ? fmtDist(view.dist) : '—'],
-              ['Peserta', `${view.taken} dari ${q.slots} orang`],
-              ['Lama kerja minimal', `${q.minMinutes} menit`],
-            ].map(([k, v]) => (
-              <div key={k as string} className="flex items-baseline justify-between gap-4 py-2.5">
-                <dt className="text-ink-2">{k}</dt>
-                <dd className="text-[1.1rem] font-bold tnum">{v}</dd>
+          {/* angka utama: ikon + angka, tanpa kalimat */}
+          <dl className="quest-stats mt-5">
+            {(
+              [
+                [<Coin size={22} />, `+${q.points}`, 'poin', true],
+                [<MapPin size={22} strokeWidth={2.3} />, view.dist !== null ? fmtDist(view.dist) : '—', 'jarak', false],
+                [<Users size={22} strokeWidth={2.3} />, `${view.taken}/${q.slots}`, 'orang', false],
+                [<Timer size={22} strokeWidth={2.3} />, `${q.minMinutes}′`, 'menit', false],
+              ] as [ReactNode, string, string, boolean][]
+            ).map(([icon, value, label, hot]) => (
+              <div key={label} className={hot ? 'is-hot' : ''}>
+                <dt className="sr-only">{label}</dt>
+                <span aria-hidden="true">{icon}</span>
+                <dd>
+                  <b className="tnum">{value}</b>
+                  <small>{label}</small>
+                </dd>
               </div>
             ))}
           </dl>
@@ -254,7 +276,7 @@ export function QuestFlow() {
           <p className="mt-4 flex items-center gap-1.5 text-[0.86rem] font-medium">
             <Clock size={15} className="flex-none text-ink-3" /> {fmtWindow(q.startAt, q.endAt, now)} / <span className="text-ink-2">{phaseLabel(q, now)}</span>
           </p>
-          <p className="mt-2 leading-relaxed text-ink-2">{q.desc}</p>
+          <p className="mt-2 line-clamp-3 leading-relaxed text-ink-2">{q.desc}</p>
           {!rt && view.phase !== 'ended' && (
             <BuddyTip who={cat.buddy} className="mt-5">
               {cat.tip}
@@ -324,80 +346,61 @@ export function QuestFlow() {
                 </Note>
               )}
               <ol>
-                <Step n={1} title="Datang & check-in" state={st(0)} summary={sub && `${fmtDateTime(sub.checkin.at, now)} / ${fmtDist(sub.checkin.dist)} dari titik`}>
+                <Step n={1} icon={LocateFixed} title="Check-in" state={st(0)} summary={sub && `${fmtDateTime(sub.checkin.at, now)} / ${fmtDist(sub.checkin.dist)} dari titik`}>
                   {view.phase === 'upcoming' ? (
                     <p className="text-ink-2">
-                      Check-in dibuka <b className="text-ink">{fmtDateTime(q.startAt - EARLY_MS, now)}</b>.
+                      <Clock size={15} className="mr-1 inline" /> Buka <b className="text-ink">{fmtDateTime(q.startAt - EARLY_MS, now)}</b>
                     </p>
                   ) : view.phase === 'ended' ? (
-                    <p className="text-ink-2">Misi ini sudah selesai.</p>
+                    <p className="text-ink-2">Sudah selesai.</p>
                   ) : view.full ? (
-                    <p className="text-ink-2">Kuota peserta sudah penuh.</p>
+                    <p className="text-ink-2"><Users size={15} className="mr-1 inline" /> Penuh</p>
                   ) : (
                     <>
-                      <div className={`mb-3 flex items-center gap-2.5 rounded-xl px-3 py-2.5 ${view.inRange ? 'bg-surface' : 'bg-paper'}`} aria-live="polite">
-                        <LocateFixed size={18} className={view.inRange ? 'text-ok' : 'text-ink-3'} />
-                        <span className="text-[0.88rem] font-medium">
-                          {view.dist === null
-                            ? 'Mencari posisimu…'
-                            : view.inRange
-                              ? `Kamu di dalam area (${fmtDist(view.dist)} dari titik)`
-                              : `${fmtDist(view.dist - q.radius)} lagi ke area check-in`}
-                        </span>
-                      </div>
+                      <RangeMeter dist={view.dist} radius={q.radius} inRange={view.inRange} />
                       <HoldButton key={holdKey} disabled={!canHold || checking} onComplete={doCheckIn} doneLabel="Memeriksa lokasi…">
                         <LocateFixed size={19} /> Tahan untuk check-in
                       </HoldButton>
                       {testMode && !view.inRange && (
-                        <Note className="mt-3">
-                          Mode uji:{' '}
-                          <button type="button" className="font-semibold underline" onClick={() => setTestPos(offset(q, 8, -6))}>
-                            pindah ke lokasi misi
-                          </button>
-                          .
-                        </Note>
+                        <button type="button" className="test-chip mt-3" onClick={() => setTestPos(offset(q, 8, -6))}>
+                          <MapPin size={15} aria-hidden="true" /> Mode uji: pindah ke lokasi misi
+                        </button>
                       )}
                     </>
                   )}
                 </Step>
 
-                <Step n={2} title="Foto sebelum mulai" state={st(1)} summary={sub?.before && `Difoto ${fmtDateTime(sub.before.at, now)}`}>
-                  <p className="mb-3 text-[0.9rem] text-ink-2">Foto kondisi lokasi sebelum dikerjakan. Hanya bisa dari kamera aplikasi.</p>
+                <Step n={2} icon={CamIcon} title="Foto sebelum" state={st(1)} summary={sub?.before && `Difoto ${fmtDateTime(sub.before.at, now)}`}>
                   <Button onClick={() => setCam('before')}>
                     <CamIcon size={18} /> Buka kamera
                   </Button>
                 </Step>
 
-                <Step n={3} title="Kerjakan" state={st(2)} summary={sub?.before && `Minimal ${q.minMinutes} menit kerja`}>
+                <Step n={3} icon={Timer} title="Kerjakan" state={st(2)} summary={sub?.before && `${q.minMinutes} menit`}>
                   <div className="rounded-2xl bg-ink p-4 text-white">
-                    <p className="mono flex items-center gap-1.5 text-[0.8rem] text-inverse">
-                      <Timer size={13} /> Foto sesudah terbuka dalam
+                    <p className="flex items-center gap-1.5 text-[0.86rem] text-inverse">
+                      <Timer size={15} aria-hidden="true" /> Sisa waktu kerja
                     </p>
                     <p className="font-display wd-wide mt-1 text-[2.6rem] font-bold leading-none tnum">{fmtCountdown(workLeft)}</p>
                     <div className="mt-3">
                       <Bar value={sub?.before ? 1 - workLeft / (q.minMinutes * 60000) : 0} height={6} />
                     </div>
-                    <p className="mt-2.5 text-[0.86rem] text-white/70">Waktu minimal ini mencegah setoran asal-asalan. Selesaikan pekerjaannya dengan tenang.</p>
                   </div>
                   {testMode && (
-                    <Note className="mt-3">
-                      Mode uji:{' '}
-                      <button type="button" className="font-semibold underline" onClick={() => setSkipWait(true)}>
-                        lewati waktu tunggu
-                      </button>{' '}
-                      (akan ditandai untuk Ketua RT).
-                    </Note>
+                    <button type="button" className="test-chip mt-3" onClick={() => setSkipWait(true)}>
+                      <Timer size={15} aria-hidden="true" /> Mode uji: lewati waktu tunggu
+                    </button>
                   )}
                 </Step>
 
-                <Step n={4} title="Foto sesudah" state={st(3)} summary={sub?.after && `Difoto ${fmtDateTime(sub.after.at, now)}`}>
-                  <p className="mb-3 text-[0.9rem] text-ink-2">Ambil dari sudut yang sama. Foto sebelum tampil samar sebagai panduan.</p>
+                <Step n={4} icon={CamIcon} title="Foto sesudah" state={st(3)} summary={sub?.after && `Difoto ${fmtDateTime(sub.after.at, now)}`}>
+                  <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-[0.86rem] font-semibold"><Layers size={15} aria-hidden="true" /> Sudut sama</p>
                   <Button onClick={() => setCam('after')}>
                     <CamIcon size={18} /> Buka kamera
                   </Button>
                 </Step>
 
-                <Step n={5} title="Pemeriksaan & kirim" state={st(4)}>
+                <Step n={5} icon={Send} title="Kirim" state={st(4)}>
                   {sub?.before && sub.after && (
                     <div className="grid grid-cols-2 gap-2">
                       {[sub.before, sub.after].map((e, i) => (
@@ -426,7 +429,7 @@ export function QuestFlow() {
                   ) : (
                     <>
                       <label className="label mt-4" htmlFor="q-note">
-                        Catatan untuk Ketua RT <span className="font-normal text-ink-3">(boleh kosong)</span>
+                        Catatan <span className="font-normal text-ink-3">(boleh kosong)</span>
                       </label>
                       <textarea id="q-note" className="field" maxLength={140} placeholder="mis. Dapat dua karung sampah plastik" value={note} onChange={(e) => setNote(e.target.value)} />
                       <Button full className="mt-3" disabled={!assess || sending} onClick={doSubmit}>
@@ -440,10 +443,8 @@ export function QuestFlow() {
               {stage === 'pending' && (
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-paper p-4">
                   <p className="flex items-center gap-2 font-display text-[1.15rem] font-bold">
-                    <Hourglass size={18} className="text-rompi" /> Menunggu diperiksa Ketua RT
-                  </p>
-                  <p className="mt-1 text-[0.88rem] text-ink-2">
-                    <Points value={q.points} plus /> masuk setelah disetujui. Hasil pemeriksaan otomatis ikut terkirim.
+                    <Hourglass size={18} className="text-rompi" /> Menunggu RT
+                    <span className="ml-auto"><Points value={q.points} plus /></span>
                   </p>
                   {sub?.checks && (
                     <div className="mt-3">
@@ -455,7 +456,7 @@ export function QuestFlow() {
               {stage === 'approved' && (
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="overflow-hidden rounded-2xl bg-plang p-4 text-white">
                   <p className="font-display wd-wide text-[2rem] font-bold leading-none">+{sub?.awarded ?? q.points}</p>
-                  <p className="mt-1 font-semibold">Disetujui {sub?.reviewedAt ? fmtDateTime(sub.reviewedAt, now) : ''}. Terima kasih sudah turun!</p>
+                  <p className="mt-1 font-semibold">Disetujui. Mantap!</p>
                   <Button tone="white" small className="mt-3" onClick={() => nav('/peringkat')}>
                     Lihat klasemen
                   </Button>

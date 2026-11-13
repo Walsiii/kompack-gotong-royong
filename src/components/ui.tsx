@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { create } from 'zustand'
 import type { Check as CheckT } from '../lib/types'
 import { Coin } from './art'
+import { TapCharacter, type CharacterId } from './KampungBuddy'
 
 /* ───────────── Tombol ───────────── */
 
@@ -210,12 +211,12 @@ export function Note({ children, tone = 'test', className = '' }: { children: Re
   )
 }
 
-export function Empty({ title, text, action }: { title: string; text: string; action?: ReactNode }) {
+export function Empty({ title, text, action, who = 'kompi' }: { title: string; text?: string; action?: ReactNode; who?: CharacterId }) {
   return (
-    <div className="flex flex-col items-center px-6 py-12 text-center">
-      <div className="reflect-stripes h-3 w-24 rounded-full opacity-80" style={{ animation: 'kp-sweep 3s linear infinite' }} />
-      <h3 className="mt-5 text-xl">{title}</h3>
-      <p className="mt-1.5 max-w-[34ch] text-ink-2">{text}</p>
+    <div className="flex flex-col items-center px-6 py-8 text-center">
+      <TapCharacter who={who} intro="thinking" className="w-[110px]" />
+      <h3 className="mt-3 text-xl">{title}</h3>
+      {text && <p className="mt-1 max-w-[30ch] text-[0.9rem] text-ink-2">{text}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   )

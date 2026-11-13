@@ -74,28 +74,25 @@ export function Report() {
             onChange={setKind}
             className="w-full"
             options={[
-              { value: 'laporan', label: 'Laporan masalah' },
+              { value: 'laporan', label: 'Lapor masalah' },
               { value: 'tolong', label: 'Minta tolong' },
             ]}
           />
 
           {kind === 'laporan' && (
-            <div>
-              <span className="label">Jenis masalah</span>
-              <div className="flex flex-wrap gap-2">
-                {REPORT_CATS.map((c) => (
-                  <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className="chip !py-2">
-                    <CatTile cat={c} size={22} />
-                    {CATS[c].label}
-                  </button>
-                ))}
-              </div>
+            <div className="cat-picker" role="group" aria-label="Jenis masalah">
+              {REPORT_CATS.map((c) => (
+                <motion.button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} whileTap={{ scale: 0.92 }} className="cat-pick">
+                  <CatTile cat={c} size={46} />
+                  <span>{CATS[c].label}</span>
+                </motion.button>
+              ))}
             </div>
           )}
 
           {/* foto */}
           <div>
-            <span className="label">Foto di lokasi</span>
+            <span className="label">Foto</span>
             {photo ? (
               <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="relative overflow-hidden rounded-2xl bg-ink">
                 <img src={photo.img} alt="Foto laporan" className="aspect-[4/3] w-full object-cover" />
@@ -122,8 +119,8 @@ export function Report() {
                 <span className="grid h-16 w-16 place-items-center rounded-full bg-rompi text-white shadow-float transition-transform group-active:scale-90">
                   <CamIcon size={26} />
                 </span>
-                <span className="font-semibold text-ink">Buka kamera</span>
-                <span id="report-camera-help" className="max-w-[28ch] text-center text-[0.9rem]">Foto langsung di tempat. Galeri tidak bisa dipakai supaya laporan tidak dipalsukan.</span>
+                <span className="font-semibold text-ink">Foto di tempat</span>
+                <span id="report-camera-help" className="sr-only">Hanya kamera aplikasi, galeri tidak bisa dipakai.</span>
               </button>
             )}
           </div>
@@ -138,30 +135,30 @@ export function Report() {
             </div>
             <p className={`mt-2 flex items-center gap-1.5 text-[0.86rem] font-semibold ${inside ? 'text-ok' : 'text-bad'}`}>
               {inside ? <Check size={15} strokeWidth={3} /> : <MapPin size={15} />}
-              {inside === null ? 'Mencari posisimu…' : inside ? `Di dalam wilayah ${group.name}` : `Di luar wilayah ${group.name} — laporan tidak bisa dikirim`}
+              {inside === null ? 'Mencari posisimu…' : inside ? `Di ${group.name}` : `Di luar ${group.name}`}
             </p>
           </div>
 
           <div>
             <label className="label" htmlFor="r-text">
-              {kind === 'tolong' ? 'Butuh bantuan apa?' : 'Apa masalahnya?'}
+              {kind === 'tolong' ? 'Butuh bantuan apa?' : 'Ceritakan singkat'}
             </label>
             <textarea id="r-text" className="field" maxLength={280} placeholder={CATS[category].hint} value={text} onChange={(e) => setText(e.target.value)} />
           </div>
           <div>
             <label className="label" htmlFor="r-place">
-              Patokan tempat <span className="font-normal text-ink-3">(boleh kosong)</span>
+              Patokan <span className="font-normal text-ink-3">(boleh kosong)</span>
             </label>
             <input id="r-place" className="field" maxLength={60} placeholder="mis. Depan warung Bu Tini" value={place} onChange={(e) => setPlace(e.target.value)} />
           </div>
 
           <BuddyTip key={CATS[category].buddy} who={CATS[category].buddy}>
-            Ketua RT memeriksa dulu. Kalau diterima, ini jadi misi untuk warga lain dan kamu dapat <b>+{RULES.reporterBonus} poin</b> pelapor. Kamu tidak bisa mengerjakan misi dari {kind === 'tolong' ? 'permintaanmu' : 'laporanmu'} sendiri.
+            RT terima = <b>+{RULES.reporterBonus} poin</b> buatmu!
           </BuddyTip>
 
           <div>
             <Button full disabled={problems.length > 0 || !inside} onClick={send}>
-              <Send size={17} /> Kirim ke grup {group.name}
+              <Send size={17} /> Kirim
             </Button>
             {problems.length > 0 && <p className="mt-2 text-center text-[0.8rem] text-ink-2">{problems[0]}</p>}
           </div>

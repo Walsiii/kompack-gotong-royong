@@ -31,7 +31,7 @@ export const CATS: Record<Category, CatInfo> = {
     points: 50,
     hint: 'mis. Tumpukan sampah plastik di pojok gang, sudah 3 hari',
     buddy: 'resik',
-    tip: 'Pakai sarung tangan dan pisahkan plastik dari sampah basah. Foto sesudah dari sudut yang sama, ya!',
+    tip: 'Pakai sarung tangan, pisahkan plastik!',
   },
   got: {
     id: 'got',
@@ -43,7 +43,7 @@ export const CATS: Record<Category, CatInfo> = {
     points: 70,
     hint: 'mis. Selokan depan warung mampet, air meluap kalau hujan',
     buddy: 'resik',
-    tip: 'Angkat lumpur ke karung, jangan ditaruh di pinggir selokan, nanti masuk lagi kalau hujan.',
+    tip: 'Lumpurnya masuk karung, ya!',
   },
   rusak: {
     id: 'rusak',
@@ -54,8 +54,8 @@ export const CATS: Record<Category, CatInfo> = {
     desc: 'Bantu perbaiki fasilitas umum yang rusak bersama pengurus RT. Alat disediakan.',
     points: 80,
     hint: 'mis. Lampu jalan depan musala mati sejak minggu lalu',
-    buddy: 'kompi',
-    tip: 'Kerjakan bareng pengurus RT. Jangan naik tangga sendirian, minta tetangga pegangi.',
+    buddy: 'rt',
+    tip: 'Naik tangga? Minta dipegangi.',
   },
   taman: {
     id: 'taman',
@@ -67,7 +67,7 @@ export const CATS: Record<Category, CatInfo> = {
     points: 45,
     hint: 'mis. Taman dekat pos ronda penuh rumput liar',
     buddy: 'tunas',
-    tip: 'Siram di pangkal batang, bukan di daun. Rumput liar dicabut sampai akarnya.',
+    tip: 'Siram di pangkal, cabut sampai akar.',
   },
   bantu: {
     id: 'bantu',
@@ -79,7 +79,7 @@ export const CATS: Record<Category, CatInfo> = {
     points: 60,
     hint: 'mis. Minta tolong angkat lemari ke lantai atas, saya sudah sepuh',
     buddy: 'asih',
-    tip: 'Tanya dulu apa yang dibutuhkan. Barang berat diangkat berdua, pelan-pelan saja.',
+    tip: 'Barang berat? Angkat berdua.',
   },
 }
 
@@ -120,11 +120,11 @@ export function rankProgress(points: number): number {
 }
 
 export const REWARDS: Reward[] = [
-  { id: 'esteh', title: 'Es teh jumbo', desc: 'Tunjukkan kode ke Bu Tini.', partner: 'Warung Bu Tini', cost: 60 },
-  { id: 'print', title: 'Print 20 lembar', desc: 'Pas buat tugas sekolah atau kuliah.', partner: 'Fotokopi Barokah', cost: 90 },
-  { id: 'cukur', title: 'Potong rambut −50%', desc: 'Sekali pakai, semua model.', partner: 'Pangkas Mas Agus', cost: 150 },
+  { id: 'esteh', emoji: '🧋', title: 'Es teh jumbo', desc: 'Tunjukkan kode ke Bu Tini.', partner: 'Warung Bu Tini', cost: 60 },
+  { id: 'print', emoji: '🖨️', title: 'Print 20 lembar', desc: 'Pas buat tugas sekolah atau kuliah.', partner: 'Fotokopi Barokah', cost: 90 },
+  { id: 'cukur', emoji: '💈', title: 'Potong rambut −50%', desc: 'Sekali pakai, semua model.', partner: 'Pangkas Mas Agus', cost: 150 },
   {
-    id: 'sertifikat',
+    id: 'sertifikat', emoji: '📜',
     title: 'Sertifikat Bakti Lingkungan',
     desc: 'Ditandatangani Ketua RT. Untuk portofolio, OSIS, atau beasiswa.',
     partner: 'Pengurus RT',

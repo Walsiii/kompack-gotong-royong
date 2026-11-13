@@ -23,6 +23,33 @@ function Shape({ ring, active }: { ring: Ring; active: boolean }) {
   )
 }
 
+type Row = { person: { id: string; name: string; avatar: number }; points: number; place: number }
+
+/** podium juara 1–3: siapa di atas langsung terlihat */
+function Podium({ rows, meId }: { rows: Row[]; meId?: string }) {
+  if (rows.length < 3) return null
+  const order = [rows[1], rows[0], rows[2]]
+  const H = [92, 124, 72]
+  const C = ['#d9d9d9', '#ffc23d', '#e0a679']
+  return (
+    <div className="podium" aria-label="Tiga teratas">
+      {order.map((r, i) => (
+        <div key={r.person.id} className={`podium-col ${r.person.id === meId ? 'is-me' : ''}`}>
+          <motion.div className="podium-face" initial={{ y: 30, opacity: 0, scale: 0.6 }} animate={{ y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.35 + [1, 0, 2][i] * 0.15 }}>
+            {i === 1 && <span className="podium-crown" aria-hidden="true">👑</span>}
+            <Avatar index={r.person.avatar} size={i === 1 ? 68 : 56} />
+          </motion.div>
+          <p className="podium-name">{r.person.id === meId ? 'Kamu' : r.person.name}</p>
+          <p className="podium-pts tnum">{r.points}</p>
+          <motion.div className="podium-block" style={{ height: H[i], background: C[i] }} initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ type: 'spring', stiffness: 120, damping: 16, delay: [1, 0, 2][i] * 0.12 }}>
+            <b>{r.place}</b>
+          </motion.div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function Leaderboard() {
   const snap = useSnap()
   const now = useNow(60000)
@@ -84,17 +111,19 @@ export function Leaderboard() {
                   </p>
                 </div>
                 <div className="min-w-0 flex-1 border-l border-white/15 pl-4">
-                  <p className="font-semibold">dari {rows.length} warga muda</p>
-                  <p className="mt-0.5 flex items-center gap-1.5 text-[0.86rem] text-white/75">
+                  <p className="font-semibold">dari {rows.length}</p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-[0.9rem] text-white/80">
                     <TrendingUp size={15} className="flex-none text-inverse" />
-                    {ahead ? `${ahead.points - mine.points + 1} poin lagi menyalip ${ahead.person.name}` : 'Kamu di puncak. Pertahankan!'}
+                    {ahead ? <>+{ahead.points - mine.points + 1} salip <Avatar index={ahead.person.avatar} size={22} /> {ahead.person.name}</> : 'Juara! 👑'}
                   </p>
                 </div>
               </motion.div>
             )}
 
+            <Podium rows={rows.slice(0, 3)} meId={me?.id} />
+
             <ol className="panel flex flex-col p-2">
-              {rows.map((r, i) => {
+              {rows.slice(3).map((r, i) => {
                 const isMe = r.person.id === me?.id
                 return (
                   <motion.li
@@ -134,8 +163,13 @@ export function Leaderboard() {
           <>
             <div className="reflect-stripes overflow-hidden rounded-[22px] p-[3px]" style={{ animation: 'kp-sweep 6s linear infinite' }}>
               <div className="rounded-[19px] bg-white p-4">
-                <p className="meta-label">Lomba kebersihan {group?.rw}</p>
-                <p className="mt-1 font-display text-[1.25rem] font-bold leading-tight">RT dengan poin warga muda tertinggi bulan ini dapat kas pemuda Rp500.000</p>
+                <p className="flex items-center gap-3">
+                  <span className="text-[2.2rem] leading-none" aria-hidden="true">🏆</span>
+                  <span>
+                    <span className="meta-label block">Juara {group?.rw} bulan ini</span>
+                    <span className="font-display text-[1.5rem] font-bold leading-tight">Rp500.000</span>
+                  </span>
+                </p>
               </div>
             </div>
             <ol className="panel flex flex-col gap-1 p-2">
@@ -171,7 +205,6 @@ export function Leaderboard() {
                 )
               })}
             </ol>
-            <p className="px-1 text-[0.8rem] text-ink-3">Setiap misi yang kamu selesaikan menambah poin RT-mu.</p>
           </>
         )}
       </Section>

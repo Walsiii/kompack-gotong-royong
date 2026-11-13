@@ -157,14 +157,14 @@ export function MapHome() {
   const snap = useSnap()
   const streak = useMemo(() => (me ? streakOf(snap, me.id, now) : null), [snap, me, now])
   const greetLine = useMemo(() => {
-    if (activeQuest) return `Misimu belum selesai: ${activeQuest.title}.`
-    if (streak && streak.weeks > 0 && !streak.thisWeek) return `${streak.weeks} pekan beruntun! Satu misi pekan ini biar tetap menyala.`
+    if (activeQuest) return `Lanjut: ${activeQuest.title}`
+    if (streak && streak.weeks > 0 && !streak.thisWeek) return `🔥 ${streak.weeks} pekan beruntun. Jaga, ya!`
     const open = views.filter((v) => v.phase === 'live' && !v.own && !v.mySub && !v.full)
     if (open.length) {
       const near = [...open].sort((a, b) => (a.dist ?? 1e9) - (b.dist ?? 1e9))[0]
-      return `${open.length} misi terbuka di ${group?.name ?? 'wilayahmu'}. Terdekat: ${near.misi.title}${near.dist !== null ? `, ${fmtDist(near.dist)}` : ''}.`
+      return `${open.length} misi menunggu. Terdekat ${near.dist !== null ? fmtDist(near.dist) : 'di dekatmu'}.`
     }
-    return 'Belum ada misi terbuka. Lihat laporan warga, siapa tahu ada yang bisa dibantu.'
+    return 'Cek laporan warga, yuk!'
   }, [activeQuest, streak, views, group])
   const selQuest = sel?.type === 'misi' ? sel.view.misi : null
   const navigationTarget = useMemo(() => selQuest ? { id: selQuest.id, title: selQuest.title, lat: selQuest.lat, lng: selQuest.lng, radius: selQuest.radius } : null, [selQuest?.id, selQuest?.title, selQuest?.lat, selQuest?.lng, selQuest?.radius])

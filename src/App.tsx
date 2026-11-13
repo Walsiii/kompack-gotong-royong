@@ -12,6 +12,7 @@ import { Group } from './screens/Group'
 import { Leaderboard } from './screens/Leaderboard'
 import { MapHome } from './screens/MapHome'
 import { Me } from './screens/Me'
+import { Character } from './components/KampungBuddy'
 import { Onboarding } from './screens/Onboarding'
 import { QuestFlow } from './screens/QuestFlow'
 import { Report } from './screens/Report'
@@ -23,11 +24,13 @@ import { Territory } from './screens/rt/Territory'
 
 function Splash() {
   return (
-    <motion.div className="fixed inset-0 z-[2000] flex flex-col items-center justify-center bg-plang" exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-      <motion.div initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 18 }}>
-        <Logo size={48} light />
+    <motion.div className="fixed inset-0 z-[2000] flex flex-col items-center justify-center" style={{ background: '#ffc23d' }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+      <motion.div className="w-[150px]" initial={{ y: 40, scale: 0.7, opacity: 0 }} animate={{ y: 0, scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 16 }}>
+        <Character who="kompi" mood="hello" look={false} />
       </motion.div>
-      <motion.div className="mt-6 h-1 w-12 rounded-full bg-inverse" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.7 }} />
+      <motion.div className="mt-3" initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.25, type: 'spring', stiffness: 260, damping: 18 }}>
+        <Logo size={40} mark={false} />
+      </motion.div>
     </motion.div>
   )
 }

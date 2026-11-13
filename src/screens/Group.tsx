@@ -13,11 +13,11 @@ import type { Group as GroupT, Person, Post, Misi } from '../lib/types'
 /* Pos Ronda — papan kasus RT. Bukan ruang obrolan: warga merespons dengan aksi
    (jadi saksi, gabung regu, sanggup bawa alat), dan hanya pengurus yang memukul kentongan. */
 
-const TOOLS: { key: string; label: string }[] = [
-  { key: 'karung', label: 'Karung' },
-  { key: 'sapu', label: 'Sapu' },
-  { key: 'cangkul', label: 'Cangkul' },
-  { key: 'sarung', label: 'Sarung tangan' },
+const TOOLS: { key: string; label: string; emoji: string }[] = [
+  { key: 'karung', label: 'Karung', emoji: '🧺' },
+  { key: 'sapu', label: 'Sapu', emoji: '🧹' },
+  { key: 'cangkul', label: 'Cangkul', emoji: '⛏️' },
+  { key: 'sarung', label: 'Sarung tangan', emoji: '🧤' },
 ]
 
 const CALLS = [
@@ -200,7 +200,7 @@ export function Group() {
             <div ref={boardRef} className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               {lane === 'regu' &&
                 (questPosts.length === 0 ? (
-                  <Empty title="Belum ada misi" text="Misi dari Ketua RT muncul di sini." />
+                  <Empty who="rt" title="Belum ada misi" />
                 ) : (
                   questPosts.map(({ p, q }, i) => {
                     const regu = who(p.reactions?.ikut)
@@ -222,8 +222,10 @@ export function Group() {
 
                         <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2">
                           <Faces people={regu} />
-                          <span className="min-w-[120px] flex-1 text-[0.86rem] text-ink-2">
-                            {regu.length ? `${regu.length} sanggup datang` : 'Belum ada regu'} / {done}/{q.slots} sudah check-in
+                          <span className="slot-dots min-w-[96px] flex-1" aria-label={`${regu.length} ikut regu, ${done} dari ${q.slots} sudah check-in`}>
+                            {Array.from({ length: q.slots }, (_, k) => (
+                              <i key={k} className={k < done ? 'is-done' : k < done + regu.length ? 'is-joined' : ''} />
+                            ))}
                           </span>
                           {me && !rt && !own && (
                             <motion.button type="button" whileTap={{ scale: 0.92 }} onClick={() => toggleReaction(p.id, 'ikut', me.id)} className={`btn btn--sm ${joined ? 'btn--plang' : 'btn--soft'}`}>
@@ -233,8 +235,7 @@ export function Group() {
                         </div>
 
                         <div className="mt-3 border-t border-line pt-3">
-                          <p className="meta-label mb-2">Siapa bawa apa</p>
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Siapa bawa apa">
                             {TOOLS.map((t) => {
                               const ids = p.reactions?.[t.key] ?? []
                               const on = !!me && ids.includes(me.id)
@@ -245,11 +246,12 @@ export function Group() {
                                   disabled={!me || rt || own}
                                   aria-pressed={on}
                                   onClick={() => me && toggleReaction(p.id, t.key, me.id)}
-                                  className={`chip !text-[0.86rem] ${ids.length && !on ? '!bg-surface !text-plang-2 !shadow-none' : ''}`}
+                                  aria-label={`${t.label}${ids.length ? `, dibawa ${who(ids).map((x) => (x.id === me?.id ? 'kamu' : x.name)).join(', ')}` : ''}`}
+                                  className={`tool-chip ${ids.length && !on ? 'is-taken' : ''}`}
                                 >
-                                  {ids.length > 0 && <Check size={12} strokeWidth={3} />}
-                                  {t.label}
-                                  {ids.length > 0 && <span className="opacity-70">· {who(ids).map((x) => (x.id === me?.id ? 'kamu' : x.name)).join(', ')}</span>}
+                                  <span className="text-[1.25rem] leading-none" aria-hidden="true">{t.emoji}</span>
+                                  <span>{t.label}</span>
+                                  {ids.length > 0 && <Faces people={who(ids)} max={2} />}
                                 </button>
                               )
                             })}
@@ -266,7 +268,7 @@ export function Group() {
 
               {lane === 'laporan' &&
                 (reports.length === 0 ? (
-                  <Empty title="Belum ada laporan" text="Lihat sampah menumpuk atau fasilitas rusak? Tekan tombol Lapor." />
+                  <Empty who="resik" title="Belum ada laporan" text="Lihat sampah? Tekan Lapor." />
                 ) : (
                   reports.map((p, i) => {
                     const a = personById(users, p.authorId)

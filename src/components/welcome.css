@@ -219,8 +219,9 @@
   .welcome-details { margin-block: 8px; }
   .welcome-primary { margin-top: 8px; }
   .welcome-companion--step-1, .welcome-companion--step-2 { flex-direction: row; justify-content: flex-start; gap: 12px; }
-  .welcome-companion--step-1 .welcome-buddy-button,
-  .welcome-companion--step-2 .welcome-buddy-button { width: 64px; flex: none; }
+  .welcome-companion--step-1 .welcome-stage,
+  .welcome-companion--step-2 .welcome-stage { width: 72px; flex: none; margin: 0; }
+  .welcome-companion--step-0 .welcome-stage { max-width: 150px; }
   .welcome-companion--step-1 .welcome-bubble,
   .welcome-companion--step-2 .welcome-bubble { margin-top: 0px; text-align: left; font-size: 15px; }
   .welcome-footer { font-size: 14px; }
@@ -239,4 +240,39 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .welcome *, .earned-celebration *, .kampung-buddy { animation: none !important; transition: none !important; }
+}
+
+/* panggung warga di layar pertama */
+.welcome-companion { overflow-x: clip; }
+.welcome-stage { position: relative; width: 100%; max-width: 210px; margin-inline: auto; }
+.welcome-stage .welcome-buddy-button { position: relative; z-index: 1; max-width: none; }
+.welcome-crowd { position: absolute; inset: auto 0 0 0; z-index: 0; transform-origin: 50% 100%; pointer-events: none; }
+.welcome-bubble {
+  position: relative;
+  display: inline-block;
+  margin-top: 14px;
+  padding: 8px 16px;
+  border-radius: 18px;
+  background: var(--color-ink);
+  color: var(--color-inverse);
+  font-size: 17px;
+  font-weight: 650;
+}
+.welcome-bubble::before { content: ''; position: absolute; left: 50%; top: -6px; width: 14px; height: 14px; margin-left: -7px; background: inherit; border-radius: 3px; transform: rotate(45deg); }
+.welcome-how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 28px; }
+.welcome-how li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.welcome-how-icon { position: relative; display: grid; width: 76px; height: 76px; place-items: center; border-radius: 24px; }
+.welcome-how-icon b { position: absolute; left: -6px; top: -6px; display: grid; width: 26px; height: 26px; place-items: center; border: 3px solid var(--color-card); border-radius: 50%; background: var(--color-ink); color: var(--color-inverse); font-size: 13px; }
+.welcome-how-label { font-size: 15px; font-weight: 650; line-height: 1.2; }
+.welcome-how-arrow { position: absolute; right: -14px; top: 29px; color: var(--color-ink-3); }
+.welcome-rules { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
+.welcome-rules li { display: flex; align-items: center; gap: 14px; padding: 10px 12px; border-radius: 18px; background: var(--color-surface); font-size: 18px; font-weight: 650; }
+.welcome-rule-icon { display: grid; flex: none; width: 46px; height: 46px; place-items: center; border-radius: 50%; background: var(--color-ink); color: var(--color-inverse); }
+.welcome-helper { margin-top: 10px; text-align: center; font-size: 14px; color: var(--color-ink-2); }
+@media (max-width: 959px) {
+  .welcome-companion--step-1 .welcome-bubble, .welcome-companion--step-2 .welcome-bubble { margin-top: 0; }
+  .welcome-companion--step-1 .welcome-bubble::before, .welcome-companion--step-2 .welcome-bubble::before { left: -1px; top: 50%; margin: -7px 0 0; }
+  .welcome-how { margin-top: 22px; }
+  .welcome-companion--step-0 .welcome-bubble { margin-top: 12px; }
+  .welcome-how-icon { width: 68px; height: 68px; border-radius: 22px; }
 }

@@ -1,7 +1,7 @@
 import { useLive } from '../lib/live'
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
-import { ArrowLeftRight, Check, ChevronRight, Flame, FlaskConical, MapPinned, RotateCcw, ShieldCheck, Ticket } from 'lucide-react'
+import { ArrowLeftRight, Check, ChevronRight, Flame, FlaskConical, MapPinned, RotateCcw, Ticket } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, CatTile, Coin } from '../components/art'
 import { CHARACTERS, TapCharacter, type CharacterId } from '../components/KampungBuddy'
@@ -127,10 +127,6 @@ export function Me() {
                   </div>
                 ))}
               </dl>
-              <p className="mt-3 flex items-start gap-1.5 text-[0.86rem] text-ink-3">
-                <ShieldCheck size={14} className="mt-px flex-none text-plang" />
-                Skor kepercayaan turun bila setoran ditolak Ketua RT, dan ikut dilihat saat pemeriksaan.
-              </p>
             </div>
 
             {streak && (
@@ -156,7 +152,7 @@ export function Me() {
                     ))}
                   </ol>
                   <p className="text-right text-[0.84rem] text-ink-2">
-                    {streak.weekPts >= streak.target ? 'Target pekan ini tercapai!' : streak.thisWeek ? `${streak.target - streak.weekPts} poin lagi` : 'Satu misi pekan ini menjaga beruntunmu'}
+                    {streak.weekPts >= streak.target ? 'Target pekan ini tercapai!' : streak.thisWeek ? `${streak.target - streak.weekPts} poin lagi` : 'Ayo, 1 misi lagi!'}
                   </p>
                 </div>
               </div>
@@ -166,7 +162,7 @@ export function Me() {
             <section>
               <h3 className="mb-2 text-[1.2rem]">Misi-ku</h3>
               <div className="panel divide-y divide-line">
-                {mySubs.length === 0 && <p className="p-4 text-ink-2">Belum ada. Pilih misi di peta dan check-in di lokasinya.</p>}
+                {mySubs.length === 0 && <p className="p-4 text-ink-2">Belum ada misi. <button type="button" className="font-semibold text-ink underline" onClick={() => nav('/')}>Cari di peta</button></p>}
                 {mySubs.map(({ s, q }) => (
                   <button key={s.id} type="button" onClick={() => nav(`/misi/${q!.id}`)} className="flex w-full items-center gap-3 p-3 text-left">
                     <CatTile cat={q!.category} size={38} />
@@ -198,9 +194,13 @@ export function Me() {
               <h3 className="mb-2 text-[1.2rem]">Hadiah</h3>
               <div className="panel overflow-hidden">
                 <div className="bg-plang p-4 text-white">
-                  <p className="mono text-[0.8rem] text-white/70">Hadiah bersama {group?.name}</p>
-                  <p className="font-display mt-1 text-[1.3rem] font-bold">{COMMUNITY.goalTitle}</p>
-                  <p className="mt-0.5 text-[0.86rem] text-white/75">{COMMUNITY.goalDesc}</p>
+                  <p className="flex items-center gap-3">
+                    <span className="text-[2.2rem] leading-none" aria-hidden="true">🎬🌽</span>
+                    <span>
+                      <span className="mono block text-[0.8rem] text-white/70">Hadiah bersama {group?.name}</span>
+                      <span className="font-display block text-[1.3rem] font-bold leading-tight">{COMMUNITY.goalTitle}</span>
+                    </span>
+                  </p>
                   <div className="mt-3">
                     <Bar value={Math.min(1, team / COMMUNITY.goalTarget)} height={10} />
                   </div>
@@ -213,8 +213,8 @@ export function Me() {
                     const lack = r.cost - pts.spendable
                     return (
                       <li key={r.id} className="flex items-center gap-3 p-3.5">
-                        <span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-paper">
-                          <Ticket size={18} className="text-ink-2" />
+                        <span className="grid h-12 w-12 flex-none place-items-center rounded-2xl bg-paper text-[1.6rem]" aria-hidden="true">
+                          {r.emoji ?? <Ticket size={18} className="text-ink-2" />}
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-semibold">{r.title}</span>
@@ -305,11 +305,10 @@ export function Me() {
         {/* keluarga karakter */}
         <section aria-labelledby="cast-title">
           <h3 id="cast-title" className="text-[1.2rem]">Warga Kompack!</h3>
-          <p className="mt-0.5 text-[0.9rem] text-ink-2">Teman yang menemanimu di tiap misi. Ketuk untuk menyapa.</p>
           <ul className="no-scrollbar -mx-4 mt-3 flex snap-x gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
             {(Object.keys(CHARACTERS) as CharacterId[]).map((id) => (
               <li key={id} className="w-[104px] flex-none snap-start rounded-[20px] bg-white px-2 pb-3 pt-2 text-center">
-                <TapCharacter who={id} react={id === 'kompi' ? 'celebrate' : 'hello'} className="mx-auto w-[84px]" />
+                <TapCharacter who={id} className="mx-auto w-[84px]" />
                 <p className="mt-1 text-[0.95rem] font-semibold">{CHARACTERS[id].name}</p>
                 <p className="text-[0.76rem] leading-tight text-ink-2">{CHARACTERS[id].role}</p>
               </li>
@@ -322,7 +321,7 @@ export function Me() {
           <h3 className="mb-2 text-[1.2rem]">Pengaturan</h3>
           <fieldset className="appearance-picker mb-5">
             <legend className="font-semibold">Warna pilihanmu</legend>
-            <p className="mt-1 mb-4 text-ink-2">Mulai dengan tinta. Ganti suasana kapan saja.</p>
+            <div className="mb-3" />
             <div className="grid grid-cols-3 gap-2" role="group" aria-label="Tema tampilan">
               {THEMES.map((option) => (
                 <button key={option.id} type="button" aria-pressed={theme === option.id} onClick={() => setTheme(option.id)} className={`theme-choice theme-choice--${option.id}`}>
@@ -342,7 +341,7 @@ export function Me() {
                     Mode uji (coba di PC)
                   </label>
                   <p className="text-[0.86rem] text-ink-2">
-                    Lokasi tetap dari GPS. Boleh pakai foto contoh, posisi uji lewat tombol (Jalan otomatis, Pindah ke lokasi misi), dan waktu tunggu bisa dilewati. Semua setoran mode uji ditandai untuk Ketua RT.
+                    Foto contoh, lewati tunggu. Hasil ditandai.
                   </p>
                 </div>
                 <Switch

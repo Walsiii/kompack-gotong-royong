@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowLeft, Camera, Check, FlaskConical, LocateFixed, MapPinned, ShieldCheck, Trophy } from 'lucide-react'
+import { ArrowLeft, BadgeCheck, Camera, Check, ChevronRight, FlaskConical, LocateFixed, MapPin, MapPinned, Trophy } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AVATAR_COUNT, Avatar, Logo } from '../components/art'
-import { KampungBuddy } from '../components/KampungBuddy'
+import { Character, KampungBuddy, type CharacterId } from '../components/KampungBuddy'
 import { Button, toast } from '../components/ui'
 import { DEFAULT_HOME } from '../lib/geo'
 import { locateOnce } from '../lib/location'
@@ -11,9 +11,21 @@ import { useSession, useStore } from '../lib/store'
 import '../components/welcome.css'
 
 const HOW = [
-  { icon: MapPinned, title: 'Lihat misi di peta 3D RT-mu', text: 'Ketua RT memasang tugas; warga bisa melapor sampah atau minta tolong.' },
-  { icon: Camera, title: 'Datang, check-in, foto', text: 'Check-in GPS di lokasi, foto sebelum dan sesudah dari kamera aplikasi.' },
-  { icon: Trophy, title: 'Dapat poin, angkat RT-mu', text: 'Naik pangkat, tukar hadiah, dan menangkan lomba antar-RT.' },
+  { icon: MapPinned, label: 'Pilih misi', bg: 'var(--cat-sampah-soft)', fg: 'var(--cat-sampah)' },
+  { icon: Camera, label: 'Foto kerjamu', bg: 'var(--cat-got-soft)', fg: 'var(--cat-got)' },
+  { icon: Trophy, label: 'Dapat poin', bg: 'var(--cat-taman-soft)', fg: 'var(--cat-taman)' },
+]
+const RULES_VISUAL = [
+  { icon: MapPin, label: 'Datang ke lokasi' },
+  { icon: Camera, label: 'Foto di tempat' },
+  { icon: BadgeCheck, label: 'RT menyetujui' },
+]
+/** warga yang ikut menyambut di layar pertama */
+const CROWD: { who: CharacterId; x: number; s: number; d: number }[] = [
+  { who: 'resik', x: -86, s: 0.58, d: 0.15 },
+  { who: 'asih', x: -50, s: 0.66, d: 0.3 },
+  { who: 'tunas', x: 50, s: 0.66, d: 0.45 },
+  { who: 'rt', x: 86, s: 0.58, d: 0.6 },
 ]
 const FAIR_PLAY = [
   'Check-in dicek GPS; aplikasi pemalsu lokasi terdeteksi dan ditolak.',
@@ -81,12 +93,27 @@ export function Onboarding() {
         </header>
         <div className="welcome-layout">
           <div className={`welcome-companion welcome-companion--step-${step}`}>
-            <button type="button" className="welcome-buddy-button" aria-label="Sapa teman kampungmu" onClick={() => setGreeting((g) => g + 1)}>
-              <KampungBuddy key={`${step}-${greeting}`} mood={step === 1 ? (ok ? 'ready' : 'thinking') : step === 2 || greeting > 0 ? 'ready' : 'hello'} />
-            </button>
-            <p className="welcome-bubble" aria-live="polite">
-              {step === 0 ? (greeting > 0 ? 'Senang kenalan.' : 'Tetangga dekat, cerita hebat.') : step === 1 ? (nameOk ? `Halo, ${name.trim()}.` : 'Panggil kamu siapa?') : 'Bikin perubahan yang kelihatan.'}
-            </p>
+            <div className="welcome-stage">
+              {step === 0 &&
+                CROWD.map((c) => (
+                  <motion.div
+                    key={c.who}
+                    className="welcome-crowd"
+                    style={{ x: `${c.x}%`, scale: c.s }}
+                    initial={reduced ? false : { y: 60, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 220, damping: 16, delay: c.d }}
+                  >
+                    <Character who={c.who} mood={greeting > 0 ? 'celebrate' : 'idle'} key={greeting} />
+                  </motion.div>
+                ))}
+              <button type="button" className="welcome-buddy-button" aria-label="Sapa Kompi" onClick={() => setGreeting((g) => g + 1)}>
+                <KampungBuddy key={`${step}-${greeting}`} mood={step === 1 ? (ok ? 'ready' : 'thinking') : step === 2 ? 'talk' : greeting > 0 ? 'celebrate' : 'hello'} />
+              </button>
+            </div>
+            <motion.p key={`${step}-${nameOk}`} className="welcome-bubble" aria-live="polite" initial={reduced ? false : { opacity: 0, y: 6, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 360, damping: 22 }}>
+              {step === 0 ? (greeting > 0 ? 'Yeay! Kompak!' : 'Halo! Aku Kompi.') : step === 1 ? (nameOk ? `Halo, ${name.trim()}!` : 'Siapa namamu?') : 'Siap turun tangan?'}
+            </motion.p>
           </div>
           <div className="welcome-content">
             <nav className="welcome-progress" aria-label={`Langkah ${step + 1} dari 3`}>
@@ -109,26 +136,27 @@ export function Onboarding() {
                 transition={{ duration: 0.18 }}
               >
                 {step === 0 && <>
-                  <h1 className="welcome-title" tabIndex={-1}>Satu kampung.<br />Banyak jagoan.</h1>
-                  <p className="welcome-intro">Kerja bakti jadi misi. Bareng tetangga, bikin perubahan.</p>
-                  <div className="welcome-playbook" aria-label="Cara bermain">
-                    <span><MapPinned size={22} /> Pilih misi</span>
-                    <span><Camera size={22} /> Turun tangan</span>
-                    <span><Trophy size={22} /> Dapat poin</span>
-                  </div>
-                  <details className="welcome-details">
-                    <summary>Cara mainnya</summary>
-                    <ol>{HOW.map((h) => <li key={h.title}><strong>{h.title}</strong><p>{h.text}</p></li>)}</ol>
-                  </details>
+                  <h1 className="welcome-title" tabIndex={-1}>Kerja bakti<br />jadi misi.</h1>
+                  <ol className="welcome-how" aria-label="Cara bermain">
+                    {HOW.map((h, i) => (
+                      <motion.li key={h.label} initial={reduced ? false : { opacity: 0, y: 18, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.25 + i * 0.12 }}>
+                        <span className="welcome-how-icon" style={{ background: h.bg, color: h.fg }}>
+                          <h.icon size={30} strokeWidth={2.2} aria-hidden="true" />
+                          <b>{i + 1}</b>
+                        </span>
+                        <span className="welcome-how-label">{h.label}</span>
+                        {i < HOW.length - 1 && <ChevronRight className="welcome-how-arrow" size={18} aria-hidden="true" />}
+                      </motion.li>
+                    ))}
+                  </ol>
                   <Button full className="welcome-primary" onClick={() => setStep(1)}>Mulai</Button>
                 </>}
                 {step === 1 && <>
                   <h1 className="welcome-title welcome-title--form" tabIndex={-1}>Kenalan dulu.</h1>
-                  <p className="welcome-intro">Nama ini muncul di klasemen RT.</p>
                   <div className="welcome-form">
-                    <label className="label" htmlFor="o-name">Nama panggilan</label>
+                    <label className="label" htmlFor="o-name">Nama</label>
                     <input id="o-name" name="given-name" className="field" maxLength={18} autoComplete="given-name" placeholder="mis. Farel" value={name} onChange={(e) => setName(e.target.value)} />
-                    <span className="label mt-4">Pilih wajahmu</span>
+                    <span className="label mt-4">Wajahmu</span>
                     <div className="welcome-avatars" role="radiogroup" aria-label="Avatar">
                       {Array.from({ length: AVATAR_COUNT }, (_, i) => (
                         <button key={i} type="button" role="radio" aria-checked={avatar === i} tabIndex={avatar === i ? 0 : -1} aria-label={`Avatar ${i + 1}`} className={`welcome-avatar ${avatar === i ? 'is-selected' : ''}`} onClick={() => setAvatar(i)} onKeyDown={(e) => {
@@ -152,31 +180,36 @@ export function Onboarding() {
                     </select>
                     {minor && <label className="welcome-consent" htmlFor="o-consent">
                       <input id="o-consent" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-                      <span>Aku di bawah 18 tahun dan <b>sudah izin orang tua atau wali</b> untuk ikut Kompack!</span>
+                      <span><b>Sudah izin orang tua/wali</b></span>
                     </label>}
                   </div>
                   <Button full className="welcome-primary" disabled={!ok} onClick={() => setStep(2)}>Lanjut</Button>
-                  <p className="welcome-helper" aria-live="polite">{ok ? 'Sip. Kita kenalan sama lingkunganmu, yuk.' : !nameOk ? 'Isi nama panggilan (minimal 2 huruf).' : year === '' ? 'Pilih tahun lahirmu.' : 'Centang izin orang tua untuk lanjut.'}</p>
+                  {!ok && <p className="welcome-helper" aria-live="polite">{!nameOk ? 'Isi nama (min. 2 huruf)' : year === '' ? 'Pilih tahun lahir' : 'Centang izin orang tua'}</p>}
                 </>}
                 {step === 2 && <>
-                  <h1 className="welcome-title welcome-title--form" tabIndex={-1}>Main jujur.<br />Menang bareng.</h1>
-                  <p className="welcome-intro">Poin hanya untuk yang benar-benar turun ke lapangan.</p>
-                  <div className="welcome-fair-play"><ShieldCheck size={30} /><p>Datang ke lokasi. Foto hasil kerjamu.<br /><strong>Ketua RT yang menyetujui.</strong></p></div>
+                  <h1 className="welcome-title welcome-title--form" tabIndex={-1}>Main jujur.</h1>
+                  <ol className="welcome-rules" aria-label="Aturan main">
+                    {RULES_VISUAL.map((r, i) => (
+                      <motion.li key={r.label} initial={reduced ? false : { opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 22, delay: 0.15 + i * 0.12 }}>
+                        <span className="welcome-rule-icon"><r.icon size={24} strokeWidth={2.3} aria-hidden="true" /></span>
+                        <span>{r.label}</span>
+                      </motion.li>
+                    ))}
+                  </ol>
                   <details className="welcome-details">
-                    <summary>Bagaimana bukti diperiksa?</summary>
+                    <summary>Cara bukti diperiksa</summary>
                     <ul>{FAIR_PLAY.map((t) => <li key={t}>{t}</li>)}</ul>
                   </details>
                   <div className="welcome-actions">
                     <Button full disabled={!!busy} aria-busy={busy === 'gps'} onClick={() => finish('gps')}><LocateFixed size={19} /> {busy === 'gps' ? 'Mencari lokasimu…' : 'Pakai lokasiku (GPS)'}</Button>
                     <Button full tone="ghost" disabled={!!busy} aria-busy={busy === 'uji'} onClick={() => finish('uji')}><FlaskConical size={19} /> {busy === 'uji' ? 'Menyiapkan…' : 'Coba di PC (mode uji)'}</Button>
                   </div>
-                  <p className="welcome-helper">Mode uji: lokasi tetap dari GPS, tapi boleh memakai foto contoh dan posisi uji lewat tombol. Semua hasilnya ditandai.</p>
+                  <p className="welcome-helper">Hasil mode uji ditandai.</p>
                 </>}
               </motion.section>
             </AnimatePresence>
           </div>
         </div>
-        <footer className="welcome-footer">Dari tetangga. Buat tetangga.</footer>
       </div>
     </main>
   )

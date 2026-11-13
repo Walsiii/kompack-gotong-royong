@@ -46,7 +46,7 @@ export function Inbox() {
         />
         {tab === 'setoran' ? (
           pending.length === 0 ? (
-            <Empty title="Semua setoran sudah dicek" text="Setoran baru dari warga muncul di sini." />
+            <Empty who="rt" title="Semua sudah dicek 👍" />
           ) : (
             <div className="review-queue">
               {pending.map((s) => {
@@ -77,7 +77,7 @@ export function Inbox() {
             </div>
           )
         ) : reports.length === 0 ? (
-          <Empty title="Tidak ada laporan menunggu" text="Laporan dan permintaan tolong warga muncul di sini." />
+          <Empty who="rt" title="Tidak ada laporan" />
         ) : (
           <div className="review-queue">
             {reports.map((p) => {
